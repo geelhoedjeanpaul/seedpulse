@@ -1,5 +1,5 @@
 const CACHE = 'seedpulse-v1';
-const ASSETS = ['/', '/index.html', '/manifest.json'];
+const ASSETS = ['/seedpulse/', '/seedpulse/index.html', '/seedpulse/manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(
