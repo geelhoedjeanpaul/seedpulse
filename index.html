@@ -284,13 +284,13 @@ var REGIONS=[
 ];
 
 var PERIODS=[
-  {id:"all",label:"All Time"},
-  {id:"7d",label:"Past 7 Days"},
-  {id:"1m",label:"This Month"},
-  {id:"3m",label:"Past 3 Months"},
-  {id:"6m",label:"Past 6 Months"},
-  {id:"2026",label:"2026 Only"},
-  {id:"2025",label:"2025"}
+  {id:"all",  label:"All Time"},
+  {id:"7d",   label:"Past 7 Days"},
+  {id:"30d",  label:"Past 30 Days"},
+  {id:"3m",   label:"Past 3 Months"},
+  {id:"6m",   label:"Past 6 Months"},
+  {id:"2026", label:"2026"},
+  {id:"2025", label:"2025"}
 ];
 
 var CATS=[
@@ -520,13 +520,27 @@ function checkInstallPrompt(){
 }
 
 // ── Filtering ────────────────────────────────────────────────────────────────
+// Parse ISO date strings as local midnight to avoid UTC-offset day-shift issues
+function parseLocalDate(isoStr){
+  if(!isoStr) return new Date();
+  // "2026-03-19" → treat as local midnight, not UTC midnight
+  var parts=isoStr.split('-');
+  if(parts.length===3) return new Date(+parts[0], +parts[1]-1, +parts[2]);
+  var d=new Date(isoStr);
+  return isNaN(d)?new Date():d;
+}
+
+function daysAgo(n){
+  var d=new Date(TODAY); d.setDate(d.getDate()-n); d.setHours(0,0,0,0); return d;
+}
+
 function passesperiod(isoStr){
   if(period==="all") return true;
-  var d=new Date(isoStr);
-  if(period==="7d"){ var cutoff=new Date(TODAY); cutoff.setDate(cutoff.getDate()-7); return d>=cutoff; }
-  if(period==="1m"){ return d.getFullYear()===TODAY.getFullYear()&&d.getMonth()===TODAY.getMonth(); }
-  if(period==="3m"){ var c3=new Date(TODAY); c3.setMonth(c3.getMonth()-3); return d>=c3; }
-  if(period==="6m"){ var c6=new Date(TODAY); c6.setMonth(c6.getMonth()-6); return d>=c6; }
+  var d=parseLocalDate(isoStr);
+  if(period==="7d")  return d>=daysAgo(7);
+  if(period==="30d") return d>=daysAgo(30);
+  if(period==="3m")  return d>=daysAgo(90);
+  if(period==="6m")  return d>=daysAgo(180);
   if(period==="2026") return d.getFullYear()===2026;
   if(period==="2025") return d.getFullYear()===2025;
   return true;
@@ -597,10 +611,25 @@ function render(){
   });
 
   if(!items.length){
-    var msg=A.length===0
-      ? 'Loading articles… please wait a moment.'
-      : 'No articles match your current filters. Try adjusting the region, period, or search term.';
-    html='<div class="empty"><div class="empty-icon">🔍</div><p>'+msg+'</p></div>';
+    var emptyHtml='<div class="empty"><div class="empty-icon">🔍</div>';
+    if(A.length===0){
+      emptyHtml+='<p>Loading articles… please wait a moment.</p>';
+    } else if(period!=='all'){
+      // Show what window was searched so the user understands why it's empty
+      var fromDate=period==='7d'?daysAgo(7):period==='30d'?daysAgo(30):period==='3m'?daysAgo(90):period==='6m'?daysAgo(180):null;
+      var rangeLabel=fromDate
+        ? fromDate.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+' – today'
+        : period;
+      emptyHtml+='<p style="margin-bottom:10px">No articles found between <b>'+rangeLabel+'</b>.<br>'+
+        'Live feeds refresh in the background — try again shortly.</p>'+
+        '<button onclick="period=\'all\';renderPeriods();render();" style="'+
+        'padding:8px 18px;border-radius:8px;border:none;background:var(--hdr2);color:#fff;'+
+        'font:600 13px var(--sans);cursor:pointer">Show All Time</button>';
+    } else {
+      emptyHtml+='<p>No articles match your current filters. Try adjusting the region or search term.</p>';
+    }
+    emptyHtml+='</div>';
+    html=emptyHtml;
   }
 
   document.getElementById("content").innerHTML=html;
