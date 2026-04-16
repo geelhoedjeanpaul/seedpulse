@@ -142,87 +142,82 @@ footer{text-align:center;padding:16px 20px calc(16px + var(--safe-b));font:400 1
 
 <script>
 // ── Constants ────────────────────────────────────────────────────────────────
-var CACHE_KEY='seedpulse_v4';
-var RSS2JSON='https://api.rss2json.com/v1/api.json?count=20&rss_url=';
+var CACHE_KEY='seedpulse_v5';
+// IMPORTANT: do NOT include count= parameter — it requires a paid rss2json API key
+// and silently breaks every feed call on the free tier.
+var RSS2JSON='https://api.rss2json.com/v1/api.json?rss_url=';
 
-// Google News RSS base — covers any public web article AND LinkedIn posts/articles
-// that are publicly indexed. Free, no API key, no CORS issues.
-// LinkedIn direct API requires OAuth; this is the best alternative for a static app.
+// Google News RSS — indexes the full public web including LinkedIn articles/posts.
+// Used both for topic-based queries AND as a proxy for sites whose direct RSS
+// is blocked by rss2json's server (Cloudflare-protected sites return 500).
 var GN='https://news.google.com/rss/search?hl=en&gl=US&ceid=US:en&q=';
 
 // ── Feed list ─────────────────────────────────────────────────────────────────
-// Mix of: direct trade RSS + Google News keyword queries (web-wide + LinkedIn)
+// Verified working: rss2json can fetch these without error (tested Apr 2026)
+// Sites that block server-side crawlers (HortiDaily, FreshPlaza etc.) are covered
+// via Google News site: queries instead, which bypass the blocking.
 var FEEDS=[
 
-  // ── Direct trade & association RSS ───────────────────────────────────────────
+  // ── Verified direct RSS (rss2json can parse these) ────────────────────────────
   {url:'https://www.european-seed.com/feed/',         src:'European Seed'},
-  {url:'https://seedworld.com/feed/',                 src:'Seed World'},
-  {url:'https://seedtoday.com/feed/',                 src:'Seed Today'},
   {url:'https://worldseed.org/feed/',                 src:'ISF World Seed'},
-  {url:'https://www.hortidaily.com/rss/',             src:'HortiDaily'},
-  {url:'https://www.freshplaza.com/rss/',             src:'FreshPlaza'},
-  {url:'https://igrownews.com/feed/',                 src:'iGrow News'},
   {url:'https://agfundernews.com/feed',               src:'AgFunder News'},
-  {url:'https://vegetablegrowersnews.com/feed/',      src:'Vegetable Growers News'},
   {url:'https://www.biobasedpress.eu/feed/',          src:'Biobased Press'},
   {url:'https://allianceforscience.org/feed/',        src:'Alliance for Science'},
-  {url:'https://www.growingproduce.com/feed/',        src:'Growing Produce'},
-  {url:'https://gd.eppo.int/rss/news',               src:'EPPO'},
-  {url:'https://fas.usda.gov/data/rss',              src:'USDA FAS'},
-  {url:'https://news.crunchbase.com/feed/',           src:'Crunchbase News'},
+  {url:'https://www.sciencedaily.com/rss/plants_animals/seeds.xml', src:'ScienceDaily Seeds'},
+  {url:'https://phys.org/rss-feed/biology-news/plants/',            src:'Phys.org Plants'},
+  {url:'https://www.wur.nl/en/newsarticle.rss.xml',                 src:'Wageningen University'},
 
-  // ── Google News keyword queries (web-wide coverage + LinkedIn articles) ──────
-  // These surface articles from ANY indexed website including LinkedIn Pulse,
-  // company LinkedIn pages, and sites that publish no direct RSS feed.
+  // ── Google News site: queries — covers blocked trade sites ───────────────────
+  // Each surfaces the latest indexed articles from that specific domain
+  {url:GN+'site:hortidaily.com',             src:'HortiDaily'},
+  {url:GN+'site:freshplaza.com',             src:'FreshPlaza'},
+  {url:GN+'site:seedworld.com',              src:'Seed World'},
+  {url:GN+'site:igrownews.com',              src:'iGrow News'},
+  {url:GN+'site:vegetablegrowersnews.com',   src:'Veg Growers News'},
+  {url:GN+'site:growingproduce.com',         src:'Growing Produce'},
+  {url:GN+'site:greenhousegrower.com',       src:'Greenhouse Grower'},
+  {url:GN+'site:hortweek.com',              src:'Horticulture Week'},
+  {url:GN+'site:eurofresh-distribution.com', src:'Eurofresh Distribution'},
+  {url:GN+'site:hortibiz.com',              src:'Hortibiz'},
+  {url:GN+'site:newaginternational.com',     src:'New AG International'},
+  {url:GN+'site:seedtoday.com',             src:'Seed Today'},
+  {url:GN+'site:thepacker.com',             src:'The Packer'},
+  {url:GN+'site:producegrower.com',         src:'Produce Grower'},
+  {url:GN+'site:freshfel.org',              src:'Freshfel Europe'},
+  {url:GN+'site:syngenta.com',              src:'Syngenta'},
+  {url:GN+'site:agriculture.basf.com',      src:'BASF Ag Solutions'},
+  {url:GN+'site:euroseeds.eu',              src:'ESA European Seed'},
+  {url:GN+'site:plantum.nl',               src:'Plantum'},
+  {url:GN+'site:gd.eppo.int',              src:'EPPO'},
+  {url:GN+'site:infoagro.com',             src:'InfoAgro'},
+  {url:GN+'site:agweb.com',               src:'AgWeb'},
 
-  {url:GN+'seed+technology+treatment+coating+agriculture',
-    src:'Web: Seed Technology'},
+  // ── Google News topic queries — broad web coverage ────────────────────────────
+  {url:GN+'seed+technology+treatment+coating+agriculture',     src:'News: Seed Technology'},
+  {url:GN+'vegetable+seed+market+trade+supply+chain',          src:'News: Seed Market'},
+  {url:GN+'plant+breeding+genetics+hybrid+variety+seed',       src:'News: Breeding & Genetics'},
+  {url:GN+'CRISPR+%22gene+editing%22+crop+plant+breeding',     src:'News: CRISPR & NGT'},
+  {url:GN+'seed+regulation+policy+EU+phytosanitary',           src:'News: Regulation'},
+  {url:GN+'seed+company+acquisition+merger+investment+agtech', src:'News: M&A & AgTech'},
+  {url:GN+'greenhouse+%22controlled+environment%22+horticulture',src:'News: Greenhouse & CEA'},
+  {url:GN+'%22open+field%22+crop+precision+agriculture+seed',  src:'News: Open Field'},
+  {url:GN+'biologicals+biocontrol+seed+biostimulant',          src:'News: Biologicals'},
+  {url:GN+'%22international+seed+federation%22+OR+%22world+seed%22', src:'News: ISF & Policy'},
+  {url:GN+'Syngenta+OR+%22Rijk+Zwaan%22+OR+%22Enza+Zaden%22+seed+news', src:'News: Industry Players'},
+  {url:GN+'Sakata+OR+Limagrain+OR+%22East-West+Seed%22+OR+Corteva+seed', src:'News: Seed Companies'},
+  {url:GN+'Morocco+Agadir+horticulture+seed',                  src:'News: MENA Horticulture'},
+  {url:GN+'%22Asia+Pacific%22+seed+market+India+OR+China+horticulture', src:'News: APAC Seeds'},
+  {url:GN+'microplastic+seed+coating+OR+%22seed+treatment%22', src:'News: Microplastics'},
+  {url:GN+'vertical+farming+indoor+growing+seed+horticulture', src:'News: Vertical Farming'},
+  {url:GN+'%22plant+variety%22+protection+UPOV+OR+IP+seed',    src:'News: Plant IP & UPOV'},
+  {url:GN+'agri+funding+investment+seed+OR+horticulture+startup', src:'News: Agri Investment'},
 
-  {url:GN+'vegetable+seed+market+trade+supply+chain',
-    src:'Web: Seed Market'},
-
-  {url:GN+'plant+breeding+genetics+hybrid+variety+seed',
-    src:'Web: Breeding & Genetics'},
-
-  {url:GN+'CRISPR+gene+editing+crop+plant+breeding',
-    src:'Web: CRISPR & NGT'},
-
-  {url:GN+'seed+regulation+policy+EU+phytosanitary+compliance',
-    src:'Web: Regulation'},
-
-  {url:GN+'seed+company+acquisition+merger+investment+agtech',
-    src:'Web: M&A & Investment'},
-
-  {url:GN+'greenhouse+controlled+environment+agriculture+horticulture',
-    src:'Web: Greenhouse & CEA'},
-
-  {url:GN+'open+field+crop+precision+agriculture+seed',
-    src:'Web: Open Field'},
-
-  {url:GN+'biologicals+biocontrol+seed+treatment+biostimulant',
-    src:'Web: Biologicals'},
-
-  {url:GN+'ISF+%22international+seed+federation%22+OR+%22world+seed%22',
-    src:'Web: ISF & Policy'},
-
-  {url:GN+'Syngenta+OR+%22Rijk+Zwaan%22+OR+%22Enza+Zaden%22+OR+Incotec+seed',
-    src:'Web: Industry Players'},
-
-  {url:GN+'Sakata+OR+Limagrain+OR+%22East-West+Seed%22+OR+Corteva+horticulture',
-    src:'Web: Seed Companies'},
-
-  {url:GN+'Morocco+Agadir+horticulture+OR+seed+export',
-    src:'Web: MENA Horticulture'},
-
-  {url:GN+'Asia+Pacific+seed+market+India+OR+China+horticulture',
-    src:'Web: APAC Seeds'},
-
-  // LinkedIn-targeted: Google News indexes publicly visible LinkedIn articles/posts
-  {url:GN+'site%3Alinkedin.com+seed+OR+horticulture+OR+breeding',
-    src:'LinkedIn via Google'},
-
-  {url:GN+'linkedin+seed+technology+OR+%22seed+market%22+OR+%22plant+breeding%22',
-    src:'LinkedIn: Seed Industry'}
+  // ── LinkedIn via Google News ──────────────────────────────────────────────────
+  // Google News indexes publicly visible LinkedIn articles and company posts.
+  // LinkedIn direct API requires OAuth — not possible in a static app.
+  {url:GN+'site:linkedin.com+seed+horticulture+breeding',      src:'LinkedIn: Seed Industry'},
+  {url:GN+'site:linkedin.com+%22seed+technology%22+OR+%22vegetable+seed%22', src:'LinkedIn: Seed Tech'}
 ];
 
 // ── Keyword maps for auto-categorisation ─────────────────────────────────────
@@ -470,8 +465,8 @@ function loadArticles(){
   var statsEl=document.getElementById('stats');
   if(statsEl) statsEl.appendChild(indicator);
 
-  // Fetch in batches of 5 to stay within rss2json free-tier rate limits
-  batchedFetch(FEEDS,5).then(function(fresh){
+  // Fetch in batches of 4 — rss2json free tier rate-limits at ~5 concurrent requests
+  batchedFetch(FEEDS,4).then(function(fresh){
     fresh=dedupe(fresh.filter(function(a){ return a.t; }));
     if(fresh.length>0){
       // Merge live articles in front, keep fallback for any gaps
