@@ -545,7 +545,7 @@ function daysAgo(n){
 }
 
 function passesperiod(isoStr){
-  if(period==="all") return parseLocalDate(isoStr)>=daysAgo(365);
+  if(period==="all") return true;
   var d=parseLocalDate(isoStr);
   if(period==="7d")  return d>=daysAgo(7);
   if(period==="30d") return d>=daysAgo(30);
