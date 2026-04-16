@@ -300,7 +300,8 @@ var PERIODS=[
   {id:"3m",   label:"Past 3 Months"},
   {id:"6m",   label:"Past 6 Months"},
   {id:"2026", label:"2026"},
-  {id:"2025", label:"2025"}
+  {id:"2025", label:"2025"},
+  {id:"2024", label:"2024"}
 ];
 
 var CATS=[
@@ -553,6 +554,7 @@ function passesperiod(isoStr){
   if(period==="6m")  return d>=daysAgo(180);
   if(period==="2026") return d.getFullYear()===2026;
   if(period==="2025") return d.getFullYear()===2025;
+  if(period==="2024") return d.getFullYear()===2024;
   return true;
 }
 
