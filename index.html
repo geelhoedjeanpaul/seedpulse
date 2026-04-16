@@ -253,6 +253,28 @@ var CAT_KW={
     'greenhouse','vertical farm','open field','controlled environment',
     'hydropon','aeroponic','aquaponic','indoor grow','glasshouse',
     'protected cultivation','precision agriculture','smart farm','soilless'
+  ],
+  // Germains Relevant: seed enhancement techniques + abiotic/biotic stress +
+  // crops with commercial Germains products (field crops & horticulture)
+  germains:[
+    // Core Germains technologies
+    'priming','pelleting','film coat','filmcoat','film-coat',
+    'seed hygiene','seed sanitation','hydro priming','osmo priming',
+    'drum priming','solid matrix priming','biopriming','matrix priming',
+    'abiotic stress','biotic stress','stress tolerance','stress resistance',
+    'germination uniformity','stand establishment','seedling vigour',
+    'emergence rate','seed vigour','seed performance',
+    // Germains field crops
+    'sugar beet','sugarbeet','beet seed','fodder beet',
+    'wheat seed','winter wheat','spring wheat','barley seed',
+    'winter barley','spring barley','oilseed rape','osr','canola seed',
+    'sorghum seed','sunflower seed','maize seed','corn seed',
+    // Germains horticulture crops
+    'carrot seed','onion seed','leek seed','spinach seed',
+    'lettuce seed','celery seed','fennel seed','parsnip seed',
+    'parsley seed','beetroot seed','swiss chard','beet seedling',
+    // Germains brand / company mentions
+    'germains'
   ]
 };
 
@@ -304,6 +326,7 @@ var PERIODS=[
 ];
 
 var CATS=[
+  {id:"germains",label:"Germains Relevant",icon:"🌿",color:"#0A4A2A"},
   {id:"seed_tech",label:"Seed Technology",icon:"⚙️",color:"#1B6B4A"},
   {id:"market",label:"Market & Trade",icon:"📊",color:"#2E7D5B"},
   {id:"breeding",label:"Breeding & Genetics",icon:"🧬",color:"#3D9B6E"},
@@ -364,14 +387,19 @@ function parseIso(s){
 
 function categorize(title,desc){
   var txt=(title+' '+desc).toLowerCase();
-  var cats=Object.keys(CAT_KW);
-  // score each category by number of keyword hits
+  // Score all categories except germains (handled separately as an overlay)
+  var primary=['seed_tech','market','breeding','regulation','competitors','crops'];
   var best='crops', bestScore=0;
-  cats.forEach(function(cat){
+  primary.forEach(function(cat){
     var score=CAT_KW[cat].filter(function(k){ return txt.indexOf(k)>=0; }).length;
     if(score>bestScore){ bestScore=score; best=cat; }
   });
   return best;
+}
+
+function isGermains(title,desc){
+  var txt=(title+' '+desc).toLowerCase();
+  return CAT_KW.germains.some(function(k){ return txt.indexOf(k)>=0; });
 }
 
 function regionalize(title,desc){
@@ -391,6 +419,7 @@ function normalizeItem(item, srcName){
   var pubDate=parseIso(item.pubDate||item.published||'');
   return {
     c: categorize(title,desc),
+    g: isGermains(title,desc),
     r: regionalize(title,desc),
     t: title,
     s: desc,
@@ -582,37 +611,45 @@ function render(){
 
   document.getElementById("emailCount").textContent="Export "+items.length+" articles as formatted report:";
 
-  var html='';
-  CATS.forEach(function(cat){
-    var ci=items.filter(function(a){return a.c===cat.id;});
-    if(!ci.length) return;
+  function renderCards(cat, ci){
     var isOpen=expanded[cat.id];
-    html+='<div style="margin-bottom:24px">';
-    html+='<button class="cat-btn" data-cat="'+cat.id+'">';
-    html+='<span class="cat-icon">'+cat.icon+'</span>';
-    html+='<span class="cat-label">'+cat.label+'</span>';
-    html+='<span class="cat-count" style="background:'+cat.color+'">'+ci.length+'</span>';
-    html+='<span class="cat-arrow '+(isOpen?'open':'')+'">▼</span>';
-    html+='</button>';
+    var h='<div style="margin-bottom:24px">';
+    h+='<button class="cat-btn" data-cat="'+cat.id+'">';
+    h+='<span class="cat-icon">'+cat.icon+'</span>';
+    h+='<span class="cat-label">'+cat.label+'</span>';
+    h+='<span class="cat-count" style="background:'+cat.color+'">'+ci.length+'</span>';
+    h+='<span class="cat-arrow '+(isOpen?'open':'')+'">▼</span>';
+    h+='</button>';
     if(isOpen){
-      html+='<div class="cat-cards">';
+      h+='<div class="cat-cards">';
       ci.forEach(function(a){
         var rtags=a.r.filter(function(r){return r!=="all";}).map(function(r){
           var rr=REGIONS.find(function(x){return x.id===r;});
           return rr?'<span class="tag-region">'+rr.flag+'</span>':'';
         }).join('');
-        html+='<div class="card" style="border-left-color:'+cat.color+'">';
-        html+='<div class="card-top"><h4>'+a.t+'</h4>';
-        if(a.u) html+='<a href="'+a.u+'" target="_blank" rel="noopener" style="color:'+cat.color+'">Source ↗</a>';
-        html+='</div><p>'+a.s+'</p>';
-        html+='<div class="card-meta">';
-        if(a.src) html+='<span class="tag">'+a.src+'</span>';
-        if(a.d) html+='<span class="tag-date">'+a.d+'</span>';
-        html+=rtags+'</div></div>';
+        h+='<div class="card" style="border-left-color:'+cat.color+'">';
+        h+='<div class="card-top"><h4>'+a.t+'</h4>';
+        if(a.u) h+='<a href="'+a.u+'" target="_blank" rel="noopener" style="color:'+cat.color+'">Source ↗</a>';
+        h+='</div><p>'+a.s+'</p>';
+        h+='<div class="card-meta">';
+        if(a.src) h+='<span class="tag">'+a.src+'</span>';
+        if(a.d) h+='<span class="tag-date">'+a.d+'</span>';
+        h+=rtags+'</div></div>';
       });
-      html+='</div>';
+      h+='</div>';
     }
-    html+='</div>';
+    h+='</div>';
+    return h;
+  }
+
+  var html='';
+  CATS.forEach(function(cat){
+    // Germains Relevant is an overlay — collect by g flag, not primary category
+    var ci = cat.id==='germains'
+      ? items.filter(function(a){ return a.g||isGermains(a.t,a.s); })
+      : items.filter(function(a){ return a.c===cat.id; });
+    if(!ci.length) return;
+    html+=renderCards(cat, ci);
   });
 
   if(!items.length){
