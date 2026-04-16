@@ -138,66 +138,91 @@ footer{text-align:center;padding:16px 20px calc(16px + var(--safe-b));font:400 1
   <div id="content"></div>
 </main>
 
-<footer>SeedPulse · Germains Seed Technology · Seed World, HortiDaily, Incotec, ISF, Mordor Intelligence, ASTA, FreshPlaza, Morocco World News</footer>
+<footer>SeedPulse · Sources: Direct RSS (Seed World, HortiDaily, FreshPlaza, ISF, EPPO, AgFunder + more) · Google News web-wide search · LinkedIn articles via Google News · Note: LinkedIn direct API requires user authentication and is not available in static apps</footer>
 
 <script>
 // ── Constants ────────────────────────────────────────────────────────────────
-var CACHE_KEY='seedpulse_v3';
+var CACHE_KEY='seedpulse_v4';
 var RSS2JSON='https://api.rss2json.com/v1/api.json?count=20&rss_url=';
 
-// ── RSS Feed list ─────────────────────────────────────────────────────────────
-// Note: Bloomberg Agriculture and PitchBook do not publish free RSS feeds.
-// ISTA, EU OJ, Agrow and some corporate newsrooms fall back silently if no feed exists.
+// Google News RSS base — covers any public web article AND LinkedIn posts/articles
+// that are publicly indexed. Free, no API key, no CORS issues.
+// LinkedIn direct API requires OAuth; this is the best alternative for a static app.
+var GN='https://news.google.com/rss/search?hl=en&gl=US&ceid=US:en&q=';
+
+// ── Feed list ─────────────────────────────────────────────────────────────────
+// Mix of: direct trade RSS + Google News keyword queries (web-wide + LinkedIn)
 var FEEDS=[
-  // Seed trade press
-  {url:'https://www.european-seed.com/feed/',                  src:'European Seed'},
-  {url:'https://seedtoday.com/feed/',                          src:'Seed Today'},
-  {url:'https://seedworld.com/feed/',                          src:'Seed World'},
-  {url:'https://vegetablegrowersnews.com/feed/',               src:'Vegetable Growers News'},
 
-  // ISF & seed associations
-  {url:'https://worldseed.org/feed/',                          src:'ISF World Seed'},
-  {url:'https://www.euroseeds.eu/feed/',                       src:'ESA'},
-  {url:'https://www.plantum.nl/feed/',                         src:'Plantum'},
-  {url:'https://www.seedtest.org/feed/',                       src:'ISTA'},
+  // ── Direct trade & association RSS ───────────────────────────────────────────
+  {url:'https://www.european-seed.com/feed/',         src:'European Seed'},
+  {url:'https://seedworld.com/feed/',                 src:'Seed World'},
+  {url:'https://seedtoday.com/feed/',                 src:'Seed Today'},
+  {url:'https://worldseed.org/feed/',                 src:'ISF World Seed'},
+  {url:'https://www.hortidaily.com/rss/',             src:'HortiDaily'},
+  {url:'https://www.freshplaza.com/rss/',             src:'FreshPlaza'},
+  {url:'https://igrownews.com/feed/',                 src:'iGrow News'},
+  {url:'https://agfundernews.com/feed',               src:'AgFunder News'},
+  {url:'https://vegetablegrowersnews.com/feed/',      src:'Vegetable Growers News'},
+  {url:'https://www.biobasedpress.eu/feed/',          src:'Biobased Press'},
+  {url:'https://allianceforscience.org/feed/',        src:'Alliance for Science'},
+  {url:'https://www.growingproduce.com/feed/',        src:'Growing Produce'},
+  {url:'https://gd.eppo.int/rss/news',               src:'EPPO'},
+  {url:'https://fas.usda.gov/data/rss',              src:'USDA FAS'},
+  {url:'https://news.crunchbase.com/feed/',           src:'Crunchbase News'},
 
-  // Horticulture & fresh produce
-  {url:'https://www.hortidaily.com/rss/',                      src:'HortiDaily'},
-  {url:'https://www.hortibiz.com/rss/',                        src:'Hortibiz'},
-  {url:'https://www.freshplaza.com/rss/',                      src:'FreshPlaza'},
-  {url:'https://www.eurofresh-distribution.com/rss/',          src:'Eurofresh Distribution'},
-  {url:'https://freshfel.org/feed/',                           src:'Freshfel Europe'},
-  {url:'https://www.hortweek.com/rss/',                        src:'Horticulture Week'},
-  {url:'https://igrownews.com/feed/',                          src:'iGrow News'},
-  {url:'https://www.growingproduce.com/feed/',                 src:'Growing Produce'},
-  {url:'https://www.interempresas.net/Horticultura/rss/',      src:'Interempresas Horticultura'},
-  {url:'https://www.infoagro.com/rss/',                        src:'InfoAgro'},
+  // ── Google News keyword queries (web-wide coverage + LinkedIn articles) ──────
+  // These surface articles from ANY indexed website including LinkedIn Pulse,
+  // company LinkedIn pages, and sites that publish no direct RSS feed.
 
-  // AgTech, biotech & biologicals
-  {url:'https://agfundernews.com/feed',                        src:'AgFunder News'},
-  {url:'https://allianceforscience.org/feed/',                 src:'Alliance for Science'},
-  {url:'https://www.biobasedpress.eu/feed/',                   src:'Biobased Press'},
-  {url:'https://biologicalsinternational.org/feed/',           src:'Biologicals International'},
-  {url:'https://www.newaginternational.com/feed/',             src:'New AG International'},
+  {url:GN+'seed+technology+treatment+coating+agriculture',
+    src:'Web: Seed Technology'},
 
-  // Regulation & policy
-  {url:'https://gd.eppo.int/rss/news',                         src:'EPPO'},
-  {url:'https://fas.usda.gov/data/rss',                        src:'USDA FAS'},
-  {url:'https://eur-lex.europa.eu/rss/OJ_L.xml',              src:'EU Official Journal'},
+  {url:GN+'vegetable+seed+market+trade+supply+chain',
+    src:'Web: Seed Market'},
 
-  // Regional & market intelligence
-  {url:'https://www.mapnews.ma/en/rss',                        src:'Maghreb Arab Press'},
-  {url:'https://news.crunchbase.com/feed/',                    src:'Crunchbase News'},
-  {url:'https://www.agweb.com/rss/news',                       src:'AgWeb'},
+  {url:GN+'plant+breeding+genetics+hybrid+variety+seed',
+    src:'Web: Breeding & Genetics'},
 
-  // Corporate newsrooms
-  {url:'https://www.syngenta.com/en/news-and-media/news-releases/rss', src:'Syngenta Newsroom'},
-  {url:'https://agronews.basf.com/rss',                        src:'BASF Ag Solutions'},
+  {url:GN+'CRISPR+gene+editing+crop+plant+breeding',
+    src:'Web: CRISPR & NGT'},
 
-  // General horticulture
-  {url:'https://www.greenhousegrower.com/rss/',                src:'Greenhouse Grower'},
-  {url:'https://www.thepacker.com/rss.xml',                    src:'The Packer'},
-  {url:'https://producegrower.com/feed',                       src:'Produce Grower'}
+  {url:GN+'seed+regulation+policy+EU+phytosanitary+compliance',
+    src:'Web: Regulation'},
+
+  {url:GN+'seed+company+acquisition+merger+investment+agtech',
+    src:'Web: M&A & Investment'},
+
+  {url:GN+'greenhouse+controlled+environment+agriculture+horticulture',
+    src:'Web: Greenhouse & CEA'},
+
+  {url:GN+'open+field+crop+precision+agriculture+seed',
+    src:'Web: Open Field'},
+
+  {url:GN+'biologicals+biocontrol+seed+treatment+biostimulant',
+    src:'Web: Biologicals'},
+
+  {url:GN+'ISF+%22international+seed+federation%22+OR+%22world+seed%22',
+    src:'Web: ISF & Policy'},
+
+  {url:GN+'Syngenta+OR+%22Rijk+Zwaan%22+OR+%22Enza+Zaden%22+OR+Incotec+seed',
+    src:'Web: Industry Players'},
+
+  {url:GN+'Sakata+OR+Limagrain+OR+%22East-West+Seed%22+OR+Corteva+horticulture',
+    src:'Web: Seed Companies'},
+
+  {url:GN+'Morocco+Agadir+horticulture+OR+seed+export',
+    src:'Web: MENA Horticulture'},
+
+  {url:GN+'Asia+Pacific+seed+market+India+OR+China+horticulture',
+    src:'Web: APAC Seeds'},
+
+  // LinkedIn-targeted: Google News indexes publicly visible LinkedIn articles/posts
+  {url:GN+'site%3Alinkedin.com+seed+OR+horticulture+OR+breeding',
+    src:'LinkedIn via Google'},
+
+  {url:GN+'linkedin+seed+technology+OR+%22seed+market%22+OR+%22plant+breeding%22',
+    src:'LinkedIn: Seed Industry'}
 ];
 
 // ── Keyword maps for auto-categorisation ─────────────────────────────────────
