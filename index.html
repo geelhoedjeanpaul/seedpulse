@@ -93,6 +93,7 @@ footer{text-align:center;padding:16px 20px calc(16px + var(--safe-b));font:400 1
 /* Android install button */
 .btn-install{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:8px 16px;border-radius:8px;background:var(--hdr2);color:#fff;font:600 12px var(--sans);border:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
 @media(hover:hover){.card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.10)}}
 </style>
 </head>
@@ -140,7 +141,45 @@ footer{text-align:center;padding:16px 20px calc(16px + var(--safe-b));font:400 1
 <footer>SeedPulse · Germains Seed Technology · Seed World, HortiDaily, Incotec, ISF, Mordor Intelligence, ASTA, FreshPlaza, Morocco World News</footer>
 
 <script>
-// ── Data ────────────────────────────────────────────────────────────────────
+// ── Constants ────────────────────────────────────────────────────────────────
+var CACHE_KEY='seedpulse_v2';
+var RSS2JSON='https://api.rss2json.com/v1/api.json?count=20&rss_url=';
+
+// RSS feeds covering seed tech, agri markets, breeding, regulation, controlled environment
+var FEEDS=[
+  {url:'https://seedworld.com/feed/',                          src:'Seed World'},
+  {url:'https://www.hortidaily.com/rss/',                     src:'HortiDaily'},
+  {url:'https://agfundernews.com/feed',                        src:'AgFunder News'},
+  {url:'https://igrownews.com/feed/',                          src:'iGrow News'},
+  {url:'https://www.freshplaza.com/rss/',                      src:'FreshPlaza'},
+  {url:'https://www.growingproduce.com/feed/',                 src:'Growing Produce'},
+  {url:'https://worldseed.org/feed/',                          src:'ISF World Seed'},
+  {url:'https://www.greenhousegrower.com/rss/',               src:'Greenhouse Grower'},
+  {url:'https://www.thepacker.com/rss.xml',                   src:'The Packer'},
+  {url:'https://producegrower.com/feed',                       src:'Produce Grower'},
+  {url:'https://www.agweb.com/rss/news',                      src:'AgWeb'},
+  {url:'https://www.reuters.com/rssFeed/businessNews',         src:'Reuters Business'}
+];
+
+// Keyword maps for auto-categorisation
+var CAT_KW={
+  seed_tech:['seed treatment','seed coating','seed priming','pelleting','seed enhancement','seed technology','seed quality','germination','dormancy','incotec','croda','film coat','microplastic','encrust','pellet'],
+  market:['market','trade','export','import','price','revenue','cagr','growth','forecast','billion','million','acquisition','merger','consolidation','supply chain','tariff','commodity'],
+  breeding:['breeding','genetics','variety','hybrid','gmo','gene edit','crispr','genomic','phenotyp','trait','cultivar','cross','marker','precision breed','genotype','allel'],
+  regulation:['regulat','policy','legislation','reach','approval','ban','compliance','directive','pesticide','microplastic','phytosanitary','permit','law','bill','subsid','certif'],
+  competitors:['syngenta','bayer','basf','rijk zwaan','enza zaden','sakata','limagrain','incotec','east-west seed','nunhems','monsanto','corteva','advanta','vilmorin','seminis','known-you','tokita','takii'],
+  crops:['tomato','pepper','cucumber','lettuce','onion','carrot','spinach','fennel','celery','vegetable','wheat','corn','maize','beet','broccoli','kale','leek','courgette','aubergine','eggplant','watermelon','melon','pumpkin','greenhouse','vertical farm','open field','controlled environment','hydropon','aeroponic']
+};
+
+// Keyword maps for region detection
+var REG_KW={
+  europe:['europe','european','netherlands','dutch','holland','spain','spain','italy','italian','france','french','germany','german','uk ','u.k','united kingdom','belgium','poland','scandinavia','scandinav','eu ','e.u.','seed valley','wageningen'],
+  mena:['morocco','morocc','agadir','souss','mena','middle east','africa','african','egypt','egyptian','israel','turkey','turkish','tunisia','jordan','saudi'],
+  apac:['asia','asian','china','chinese','india','indian','japan','japanese','indonesia','vietnam','philippines','thailand','apac','pacific','australia','south korea','taiwan','bangladesh'],
+  americas:['usa','united states','american','canada','canadian','brazil','brazilian','mexico','mexican','latin america','california','florida','arizona','ohio','midwest']
+};
+
+// ── Config ────────────────────────────────────────────────────────────────────
 var REGIONS=[
   {id:"all",label:"All Regions",flag:"🌐"},
   {id:"europe",label:"Europe",flag:"🇪🇺"},
@@ -168,55 +207,109 @@ var CATS=[
   {id:"crops",label:"Crop Intelligence",icon:"🥬",color:"#3D9B6E"}
 ];
 
-var A=[
-  // SEED TECH
-  {c:"seed_tech",r:["all","europe"],t:"Mother Plants 'Pre-Programme' Seeds: Breakthrough Reshapes Breeding",s:"PNAS research reveals plants use abscisic acid as intergenerational signalling to prime developing seeds for climate conditions — a new lever for climate-resilient variety development.",src:"AgTech Navigator",u:"https://www.agtechnavigator.com/Article/2026/02/05/mother-plants-preprogramme-their-seeds-new-discovery-could-reshape-crop-breeding-and-resilience/",d:"5 Feb 2026",iso:"2026-02-05"},
-  {c:"seed_tech",r:["all","europe"],t:"Incotec Appoints Key Account Manager for Vegetable Seeds in Europe",s:"Jord Blokker joined Incotec Europe on Feb 1 for vegetable seed key accounts and business development. Incotec continues expanding microplastic-free coatings and AI-driven seed treatment.",src:"Incotec",u:"https://www.incotec.com/en-gb",d:"28 Jan 2026",iso:"2026-01-28"},
-  {c:"seed_tech",r:["all","europe"],t:"AI Methods Transforming Seed Treatment — Incotec at Seed Meets Technology",s:"Incotec/Croda keynote on AI deployment for optimizing seed treatment formulations — predictive modelling for coating performance and quality control automation at the Zwaagdijk trade fair.",src:"Incotec",u:"https://www.incotec.com/en-gb",d:"Sep 2025",iso:"2025-09-22"},
-  {c:"seed_tech",r:["all"],t:"Seed Enhancement Technologies Integral to Future Crop Programmes",s:"Future seed quality extends beyond germination and purity — requiring 3D imaging, multispectral analysis, digital phenotyping, and non-destructive methods for predicting seed longevity.",src:"Springer Nature",u:"https://link.springer.com/chapter/10.1007/978-981-19-5888-5_17",d:"2026",iso:"2026-01-01"},
-
-  // MARKET
-  {c:"market",r:["all"],t:"Global Seed Market Reaches $81.1B in 2026, Targeting $105B by 2031",s:"Growing at 5.33% CAGR driven by hybrid dominance, digital breeding tools, and government programs. Protected cultivation and vertical farms reshape strategies in APAC urban centres.",src:"Mordor Intelligence",u:"https://www.mordorintelligence.com/industry-reports/seeds-industry",d:"Jan 2026",iso:"2026-01-07"},
-  {c:"market",r:["all","europe"],t:"Europe Vegetable Seed Market: $2.78B in 2026, 6.53% CAGR to 2031",s:"Netherlands is the innovation centre via Seed Valley. Protected cultivation expanding in NL, Spain, Italy. Hybrids hold 89.55% share. Russia fastest-growing at 10.74% CAGR.",src:"Mordor Intelligence",u:"https://www.mordorintelligence.com/industry-reports/vegetable-seed-market-europe",d:"Jan 2026",iso:"2026-01-16"},
-  {c:"market",r:["all","americas"],t:"US Vegetable Seed Market: $1.48B, Cucurbits Lead at 29.85% Share",s:"Hybrids hold 94.7% share. Solanaceae fastest-growing at 7.72% CAGR. California SGMA water regulations force acreage shifts, driving demand for drought-tolerant varieties.",src:"Mordor Intelligence",u:"https://www.mordorintelligence.com/industry-reports/united-states-vegetable-seed-market",d:"Jan 2026",iso:"2026-01-09"},
-  {c:"market",r:["all","apac"],t:"Asia-Pacific Vegetable Seed Market: $3B, Vietnam Fastest at 6.72% CAGR",s:"China commands 36% share. Hybrid penetration surpassed 80%. Solanaceae captures 26% revenue share. Top 5 players hold ~29% in a fragmented landscape.",src:"Mordor Intelligence",u:"https://www.mordorintelligence.com/industry-reports/asia-pacific-vegetable-seed-market",d:"Jan 2026",iso:"2026-01-08"},
-  {c:"market",r:["all","mena"],t:"Morocco's Seed Market to Reach $454M by 2031 at 6.6% CAGR",s:"Souss-Massa (Agadir) dominates vegetable seed consumption. Enza Zaden Morocco, Rijk Zwaan Maroc, and Greenport Morocco Centre of Excellence position region as innovation hub.",src:"Morocco World News",u:"https://www.moroccoworldnews.com/2026/03/283417/moroccos-seed-market-to-reach-454-million-by-2031/",d:"19 Mar 2026",iso:"2026-03-19"},
-  {c:"market",r:["all"],t:"Industry Consolidation Pressures Small & Mid-Size Seed Players",s:"Sakata's Frank Davis warns of accelerating consolidation in grower and breeder segments. Rising costs, tariffs, and upcoming retirements compound challenges, though AI offers competitive edge.",src:"Seed World",u:"https://www.seedworld.com/us/2026/02/16/why-vegetable-seed-companies-cant-afford-to-move-slow-anymore/",d:"16 Feb 2026",iso:"2026-02-16"},
-
-  // BREEDING
-  {c:"breeding",r:["all","europe"],t:"Syngenta X-Terra® Hybrid Wheat Approved in France for 2026 Sowing",s:"After 15+ years of R&D, first varieties SY Sphynx and SY Xanthis target yield stability and climate resilience. UK and Germany rollout planned.",src:"iGrow News",u:"https://igrownews.com/syngenta-latest-news/",d:"18 Feb 2026",iso:"2026-02-18"},
-  {c:"breeding",r:["all","apac"],t:"Enza Zaden & East-West Seed JV Develops Local Varieties in Indonesia",s:"ISF Board visit highlights Cap Panah Merah combining international breeding with tropical expertise, working with local universities and gene banks for resilient vegetable varieties.",src:"Eurasia Review / ISF",u:"https://www.eurasiareview.com/18032026-what-the-world-can-learn-from-asias-flourishing-seed-sector-oped/",d:"18 Mar 2026",iso:"2026-03-18"},
-  {c:"breeding",r:["all","americas"],t:"Johnny's Selected Seeds Launches 2026 Vegetable Lineup",s:"New introductions: early red beefsteak tomato, bolt-resistant short-day onion, extra-early habanero, heat-tolerant varieties. Two classical breeding additions and expanded organic lineup.",src:"Johnny's Seeds",u:"https://www.johnnyseeds.com/featured/new-for-2026/new-for-2026-vegetables/",d:"2026",iso:"2026-01-15"},
-  {c:"breeding",r:["all"],t:"AI & Genomic Tools Compress Vegetable Breeding Timelines",s:"Marker-assisted breeding, expanded genomic tools, and early-stage AI accelerate development cycles. Enables faster response to emerging diseases and consumer quality expectations.",src:"Seed World",u:"https://www.seedworld.com/us/2026/02/16/why-vegetable-seed-companies-cant-afford-to-move-slow-anymore/",d:"16 Feb 2026",iso:"2026-02-16"},
-  {c:"breeding",r:["all","europe"],t:"Known-You Seed Expands in Europe with Heat-Resistant Cucurbits & Solanaceae",s:"Taiwanese breeder targets Italy and EU with watermelons, melons, pumpkins, cherry tomatoes. New mini 'kabocha' concept in five colours launched.",src:"FreshPlaza",u:"https://www.freshplaza.com/north-america/article/9797223/next-year-we-will-strengthen-our-presence-in-europe-and-italy/",d:"5 Jan 2026",iso:"2026-01-05"},
-
-  // REGULATION
-  {c:"regulation",r:["all","europe"],t:"EU Microplastics Ban: May 2026 Mandatory ECHA Reporting Deadline",s:"REACH Annex XVII Entry 78 requires emission documentation by May 31. Seed coatings must be microplastic-free by Oct 2028, plant protection products by 2031.",src:"Certivo / REACH",u:"https://www.certivo.com/blog-details/eu-microplastics-ban-2026-mandatory-reporting-and-reformulation-requirements-under-reach-annex-xvii",d:"2026",iso:"2026-01-01"},
-  {c:"regulation",r:["all","apac"],t:"India's Draft Seed Bill 2025 Addresses Gene Editing & Precision Breeding",s:"Landmark legislation replacing outdated law with GM and gene-edited crop provisions. Aims to streamline approvals and ensure farmer access to cutting-edge seed technology.",src:"Eurasia Review / ISF",u:"https://www.eurasiareview.com/18032026-what-the-world-can-learn-from-asias-flourishing-seed-sector-oped/",d:"18 Mar 2026",iso:"2026-03-18"},
-  {c:"regulation",r:["all"],t:"ISF Calls for Industry Collaboration on Microplastic-Free Transition",s:"'Biobased' does not automatically mean microplastic-free — biodegradability under 48 months is key. Stakeholder collaboration essential for grower access to seed treatment products.",src:"ISF / World Seed",u:"https://worldseed.org/wp-content/uploads/2024/05/Statement-Microplastics-ISF-2024-03-12-final.pdf",d:"Mar 2024",iso:"2024-03-12"},
-  {c:"regulation",r:["all","apac"],t:"Asian Regulators Modernize Gene Editing Frameworks",s:"Japan and Philippines lead with product-based approaches. Vietnam, Thailand adopted similar. China's Nanfan Centre integrates AI. Malaysia, Laos, Cambodia progress toward UPOV 91.",src:"Eurasia Review / ISF",u:"https://www.eurasiareview.com/18032026-what-the-world-can-learn-from-asias-flourishing-seed-sector-oped/",d:"18 Mar 2026",iso:"2026-03-18"},
-  {c:"regulation",r:["all","mena"],t:"Morocco Subsidizes 1.1M Quintals of Certified Seeds for 2024-25",s:"Government subsidy lowers certified seed prices for wheat and barley, targeting smallholders spending 12%+ of seasonal budgets on seed. Drives shift to certified varieties.",src:"Morocco World News",u:"https://www.moroccoworldnews.com/2026/03/283417/moroccos-seed-market-to-reach-454-million-by-2031/",d:"Mar 2026",iso:"2026-03-01"},
-
-  // COMPETITORS
-  {c:"competitors",r:["all","europe"],t:"Bayer Opens Advanced Greenhouses in Latina, Italy for Vegetable R&D",s:"New facility at Borgo Sabotino Research Center enhances vegetable seed variety development through modern technologies and sustainable practices.",src:"Mordor Intelligence",u:"https://www.mordorintelligence.com/industry-reports/vegetable-seed-market-europe",d:"Oct 2025",iso:"2025-10-01"},
-  {c:"competitors",r:["all","europe"],t:"DENSO Acquires Axia Vegetable Seeds (Netherlands) for Data-Driven Growing",s:"Japanese automotive giant acquired the NL-based tomato seed breeder, combining industrial technologies with cultivation expertise for data-driven greenhouse methods.",src:"Mordor Intelligence",u:"https://www.mordorintelligence.com/industry-reports/vegetable-seed-market-europe",d:"Feb 2025",iso:"2025-02-01"},
-  {c:"competitors",r:["all","europe"],t:"Incotec/Croda Advance Global Microplastic-Free Coating Portfolio",s:"Microplastic-free coatings launched for sunflower and field crops, vegetable series in development. Growing global interest beyond Europe. Collaboration with Rijk Zwaan on Seed Connect Centre.",src:"Incotec",u:"https://www.incotec.com/en-gb",d:"Oct 2025",iso:"2025-10-02"},
-  {c:"competitors",r:["all"],t:"Sakata: Focused Veg & Flower Strategy Enables Competing with Giants",s:"'Seed is the smallest input but has the largest impact.' Dedicated focus — fewer sprays, reduced water use, labor efficiency — lets Sakata compete practically against larger players.",src:"Seed World",u:"https://www.seedworld.com/us/2026/02/16/why-vegetable-seed-companies-cant-afford-to-move-slow-anymore/",d:"16 Feb 2026",iso:"2026-02-16"},
-  {c:"competitors",r:["all","mena"],t:"Enza Zaden Morocco & Rijk Zwaan Maroc Drive Souss-Massa Innovation",s:"Both Dutch seed companies maintain strong Agadir presence. Greenport Morocco Centre of Excellence (2024) positions Souss-Massa as technology uptake and innovation hub.",src:"Morocco World News",u:"https://www.moroccoworldnews.com/2026/03/283417/moroccos-seed-market-to-reach-454-million-by-2031/",d:"19 Mar 2026",iso:"2026-03-19"},
-
-  // CROPS
-  {c:"crops",r:["all","americas"],t:"ASTA 65th Vegetable & Flower Seed Conference: Emerging Diseases Focus",s:"San Diego event (Feb 15-20) — sessions on emerging diseases, leadership, cutting-edge tech. Trade show: seed packaging, coating technology, supply chain, genomic tools.",src:"UC Davis / ASTA",u:"https://www.plantsciences.ucdavis.edu/news/asta-2026",d:"5 Mar 2026",iso:"2026-03-05"},
-  {c:"crops",r:["all","americas"],t:"Rhizomania Alert: Disease Management for Beet Growers",s:"Wisconsin crop update on rhizomania. Resistant varieties (Grenade, Redval, Manzu, Palau) recommended. Extremely difficult to eradicate — seed suppliers' role in tolerance is critical.",src:"UW-Madison Extension",u:"https://vegpath.plantpath.wisc.edu/2026/03/03/vegetable-crop-update-mar-2-2026/",d:"2 Mar 2026",iso:"2026-03-02"},
-  {c:"crops",r:["all","europe"],t:"Syngenta & Rijk Zwaan Supply Pepper Varieties for LED Lighting Trials",s:"Both seed majors providing pepper varieties responsive to LED lighting in controlled-environment trials exploring how light quality affects crop performance.",src:"iGrow News",u:"https://igrownews.com/syngenta-latest-news/",d:"2026",iso:"2026-01-15"},
-  {c:"crops",r:["all","europe"],t:"Europe Protected Cultivation Seed Demand Growing at 8.19% CAGR",s:"Netherlands, Spain, Italy, Turkey lead. Tomatoes, sweet peppers, cucumbers, leafy greens dominate. Seed suited to greenhouses and vertical farms drives premium demand.",src:"Mordor Intelligence",u:"https://www.mordorintelligence.com/industry-reports/vegetable-seed-market-europe",d:"Jan 2026",iso:"2026-01-16"},
-  {c:"crops",r:["all","mena"],t:"Morocco: 133K MT Citrus to EU; Tomato & Greenhouse Expansion Continues",s:"Export horticulture drives seed innovation. Souss-Massa remains the centre despite water stress. Dutch companies Agrocare and Van Oers invest directly in Moroccan production.",src:"HortiDaily / MWN",u:"https://www.hortidaily.com/article/9718924/examining-morocco-s-horticulture-sector/",d:"Mar 2025",iso:"2025-03-31"},
-  {c:"crops",r:["all","apac"],t:"Syngenta Opens $2.4M Seed Health Lab in Hyderabad, India",s:"Capacity for 12,000 virus and bacterial tests annually. Complies with global phytosanitary standards. Underpins Syngenta's expansion into India's horticulture markets.",src:"Mordor Intelligence",u:"https://www.mordorintelligence.com/industry-reports/asia-pacific-vegetable-seed-market",d:"Mar 2024",iso:"2024-03-15"}
-];
+// ── Article store (populated from RSS on load) ────────────────────────────────
+var A=[];
 
 // ── State ────────────────────────────────────────────────────────────────────
 var region="all", period="all", filter="", crop="all", emailOpen=false, expanded={};
 CATS.forEach(function(c){ expanded[c.id]=true; });
 var TODAY=new Date();
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function stripHtml(h){ return h.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(); }
+
+function parseIso(s){
+  try{ var d=new Date(s); return isNaN(d)?new Date():d; }catch(e){ return new Date(); }
+}
+
+function categorize(title,desc){
+  var txt=(title+' '+desc).toLowerCase();
+  var cats=Object.keys(CAT_KW);
+  // score each category by number of keyword hits
+  var best='crops', bestScore=0;
+  cats.forEach(function(cat){
+    var score=CAT_KW[cat].filter(function(k){ return txt.indexOf(k)>=0; }).length;
+    if(score>bestScore){ bestScore=score; best=cat; }
+  });
+  return best;
+}
+
+function regionalize(title,desc){
+  var txt=(title+' '+desc).toLowerCase();
+  var regs=['all'];
+  Object.keys(REG_KW).forEach(function(reg){
+    if(REG_KW[reg].some(function(k){ return txt.indexOf(k)>=0; })) regs.push(reg);
+  });
+  return regs;
+}
+
+function normalizeItem(item, srcName){
+  var title=(item.title||'').trim();
+  var raw=item.content||item.description||'';
+  var desc=stripHtml(raw).substring(0,280);
+  if(desc.length===280) desc+='…';
+  var pubDate=parseIso(item.pubDate||item.published||'');
+  return {
+    c: categorize(title,desc),
+    r: regionalize(title,desc),
+    t: title,
+    s: desc,
+    src: srcName,
+    u: item.link||item.url||'',
+    d: pubDate.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),
+    iso: pubDate.toISOString().split('T')[0]
+  };
+}
+
+// ── Feed fetching ─────────────────────────────────────────────────────────────
+function fetchFeed(feed){
+  var url=RSS2JSON+encodeURIComponent(feed.url);
+  return fetch(url,{cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.status!=='ok'||!Array.isArray(data.items)) return [];
+      return data.items.map(function(item){ return normalizeItem(item,feed.src); });
+    })
+    .catch(function(){ return []; });
+}
+
+function dedupe(articles){
+  var seen={};
+  return articles.filter(function(a){
+    var key=a.t.toLowerCase().replace(/\s+/g,'').substring(0,50);
+    if(seen[key]) return false;
+    seen[key]=true;
+    return true;
+  });
+}
+
+function loadArticles(){
+  // Show loading
+  document.getElementById('content').innerHTML=
+    '<div style="text-align:center;padding:60px 20px">'+
+    '<div style="width:38px;height:38px;border:3px solid var(--border);border-top-color:var(--hdr2);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px"></div>'+
+    '<p style="font-size:14px;color:var(--mute)">Fetching latest intelligence from '+FEEDS.length+' sources…</p>'+
+    '</div>';
+
+  Promise.all(FEEDS.map(fetchFeed)).then(function(results){
+    var fresh=[];
+    results.forEach(function(r){ fresh=fresh.concat(r); });
+    fresh=dedupe(fresh);
+
+    if(fresh.length>0){
+      A=fresh;
+      // Persist for offline fallback
+      try{ localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),items:A})); }catch(e){}
+    } else {
+      // Offline fallback
+      try{
+        var cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'{}');
+        if(cached.items&&cached.items.length){ A=cached.items; }
+      }catch(e){}
+    }
+    renderAll();
+  });
+}
 
 // ── PWA Install ──────────────────────────────────────────────────────────────
 var deferredInstallPrompt=null;
@@ -399,35 +492,31 @@ function buildReport(){
   return lines.join("\n");
 }
 
+// ── renderAll — called after articles load ────────────────────────────────────
+function renderAll(){
+  renderTabs();
+  renderPeriods();
+  render();
+}
+
 // ── Init ─────────────────────────────────────────────────────────────────────
-// Dynamic header date
 document.getElementById("hdrSub").textContent=
   "Vegetable seed & horticulture intelligence — "+
   TODAY.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
 
-renderTabs();
-renderPeriods();
-render();
-checkInstallPrompt();
-
-// Event delegation for region tabs
+// Wire up controls immediately (content arrives async)
 document.getElementById("tabs").addEventListener("click",function(e){
   var btn=e.target.closest("[data-region]");
   if(!btn) return;
   region=btn.getAttribute("data-region");
-  renderTabs();
-  render();
+  renderTabs(); render();
 });
-
-// Event delegation for period pills
 document.getElementById("periods").addEventListener("click",function(e){
   var btn=e.target.closest("[data-period]");
   if(!btn) return;
   period=btn.getAttribute("data-period");
-  renderPeriods();
-  render();
+  renderPeriods(); render();
 });
-
 document.getElementById("search").addEventListener("input",function(e){ filter=e.target.value; render(); });
 document.getElementById("cropSelect").addEventListener("change",function(e){ crop=e.target.value; render(); });
 document.getElementById("emailBtn").onclick=function(){ emailOpen=!emailOpen; document.getElementById("emailPanel").style.display=emailOpen?"block":"none"; };
@@ -442,6 +531,12 @@ document.getElementById("copyBtn").onclick=function(){
     setTimeout(function(){ document.getElementById("copyBtn").textContent="📋 Copy Report"; },2000);
   });
 };
+
+// Render static shells, then fetch fresh articles
+renderTabs();
+renderPeriods();
+checkInstallPrompt();
+loadArticles(); // always fetches fresh on every load
 
 // ── Service Worker ────────────────────────────────────────────────────────────
 if('serviceWorker' in navigator){
