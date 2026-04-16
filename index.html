@@ -88,8 +88,7 @@ footer{text-align:center;padding:16px 20px calc(16px + var(--safe-b));font:400 1
 .install-banner .close{flex-shrink:0;background:none;border:none;font-size:20px;color:var(--mute);cursor:pointer;padding:0;line-height:1}
 .install-banner .install-steps{margin-top:6px;font-size:12px;color:var(--mute);list-style:none;display:flex;flex-direction:column;gap:3px}
 .install-banner .install-steps li::before{content:"→ "}
-.crop-select{flex-shrink:0;padding:9px 12px;border-radius:8px;border:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font:500 13px var(--sans);outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.6)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
-.crop-select option{background:#1B3A2D;color:#fff}
+
 /* Android install button */
 .btn-install{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:8px 16px;border-radius:8px;background:var(--hdr2);color:#fff;font:600 12px var(--sans);border:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
@@ -111,15 +110,6 @@ footer{text-align:center;padding:16px 20px calc(16px + var(--safe-b));font:400 1
   <div class="period-row" id="periods"></div>
   <div class="search-row">
     <input class="search" id="search" type="text" placeholder="Filter... (Incotec, tomato, Syngenta)" autocomplete="off">
-    <select class="crop-select" id="cropSelect">
-      <option value="all">🥬 All Crops</option>
-      <option value="Carrot">Carrot</option>
-      <option value="Celery">Celery</option>
-      <option value="Fennel">Fennel</option>
-      <option value="Lettuce">Lettuce</option>
-      <option value="Onion">Onion</option>
-      <option value="Spinach">Spinach</option>
-    </select>
     <button class="btn-email" id="emailBtn">✉️ Email</button>
   </div>
   <div class="email-panel" id="emailPanel" style="display:none">
@@ -361,7 +351,7 @@ var A=FALLBACK.slice(); // always start with curated data; live RSS merges in on
 var liveLoaded=false;
 
 // ── State ────────────────────────────────────────────────────────────────────
-var region="all", period="all", filter="", crop="all", emailOpen=false, expanded={};
+var region="all", period="7d", filter="", emailOpen=false, expanded={};
 CATS.forEach(function(c){ expanded[c.id]=true; });
 var TODAY=new Date();
 
@@ -570,10 +560,6 @@ function getFiltered(){
   return A.filter(function(a){
     if(region!=="all"&&a.r.indexOf(region)<0) return false;
     if(!passesperiod(a.iso)) return false;
-    if(crop!=="all"){
-      var txt=(a.t+" "+a.s).toLowerCase();
-      if(txt.indexOf(crop.toLowerCase())<0) return false;
-    }
     if(!filter) return true;
     var txt2=(a.t+" "+a.s+" "+(a.src||"")).toLowerCase();
     return txt2.indexOf(filter.toLowerCase())>=0;
@@ -592,7 +578,6 @@ function render(){
     '<span>'+items.length+' articles</span><span class="sep">|</span>'+
     '<span>'+catCount+' categories</span>'+
     (period!=="all"?'<span class="sep">|</span><span>📅 '+perObj.label+'</span>':'')+
-    (crop!=="all"?'<span class="sep">|</span><span>🥬 '+crop+'</span>':'')+
     (filter?'<span class="sep">|</span><span>"'+filter+'"</span>':'');
 
   document.getElementById("emailCount").textContent="Export "+items.length+" articles as formatted report:";
@@ -723,7 +708,7 @@ document.getElementById("periods").addEventListener("click",function(e){
   renderPeriods(); render();
 });
 document.getElementById("search").addEventListener("input",function(e){ filter=e.target.value; render(); });
-document.getElementById("cropSelect").addEventListener("change",function(e){ crop=e.target.value; render(); });
+
 document.getElementById("emailBtn").onclick=function(){ emailOpen=!emailOpen; document.getElementById("emailPanel").style.display=emailOpen?"block":"none"; };
 document.getElementById("mailtoBtn").onclick=function(){
   var regObj=REGIONS.find(function(r){return r.id===region;});
