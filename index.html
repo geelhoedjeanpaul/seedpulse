@@ -142,41 +142,136 @@ footer{text-align:center;padding:16px 20px calc(16px + var(--safe-b));font:400 1
 
 <script>
 // ── Constants ────────────────────────────────────────────────────────────────
-var CACHE_KEY='seedpulse_v2';
+var CACHE_KEY='seedpulse_v3';
 var RSS2JSON='https://api.rss2json.com/v1/api.json?count=20&rss_url=';
 
-// RSS feeds covering seed tech, agri markets, breeding, regulation, controlled environment
+// ── RSS Feed list ─────────────────────────────────────────────────────────────
+// Note: Bloomberg Agriculture and PitchBook do not publish free RSS feeds.
+// ISTA, EU OJ, Agrow and some corporate newsrooms fall back silently if no feed exists.
 var FEEDS=[
+  // Seed trade press
+  {url:'https://www.european-seed.com/feed/',                  src:'European Seed'},
+  {url:'https://seedtoday.com/feed/',                          src:'Seed Today'},
   {url:'https://seedworld.com/feed/',                          src:'Seed World'},
-  {url:'https://www.hortidaily.com/rss/',                     src:'HortiDaily'},
-  {url:'https://agfundernews.com/feed',                        src:'AgFunder News'},
-  {url:'https://igrownews.com/feed/',                          src:'iGrow News'},
-  {url:'https://www.freshplaza.com/rss/',                      src:'FreshPlaza'},
-  {url:'https://www.growingproduce.com/feed/',                 src:'Growing Produce'},
+  {url:'https://vegetablegrowersnews.com/feed/',               src:'Vegetable Growers News'},
+
+  // ISF & seed associations
   {url:'https://worldseed.org/feed/',                          src:'ISF World Seed'},
-  {url:'https://www.greenhousegrower.com/rss/',               src:'Greenhouse Grower'},
-  {url:'https://www.thepacker.com/rss.xml',                   src:'The Packer'},
-  {url:'https://producegrower.com/feed',                       src:'Produce Grower'},
-  {url:'https://www.agweb.com/rss/news',                      src:'AgWeb'},
-  {url:'https://www.reuters.com/rssFeed/businessNews',         src:'Reuters Business'}
+  {url:'https://www.euroseeds.eu/feed/',                       src:'ESA'},
+  {url:'https://www.plantum.nl/feed/',                         src:'Plantum'},
+  {url:'https://www.seedtest.org/feed/',                       src:'ISTA'},
+
+  // Horticulture & fresh produce
+  {url:'https://www.hortidaily.com/rss/',                      src:'HortiDaily'},
+  {url:'https://www.hortibiz.com/rss/',                        src:'Hortibiz'},
+  {url:'https://www.freshplaza.com/rss/',                      src:'FreshPlaza'},
+  {url:'https://www.eurofresh-distribution.com/rss/',          src:'Eurofresh Distribution'},
+  {url:'https://freshfel.org/feed/',                           src:'Freshfel Europe'},
+  {url:'https://www.hortweek.com/rss/',                        src:'Horticulture Week'},
+  {url:'https://igrownews.com/feed/',                          src:'iGrow News'},
+  {url:'https://www.growingproduce.com/feed/',                 src:'Growing Produce'},
+  {url:'https://www.interempresas.net/Horticultura/rss/',      src:'Interempresas Horticultura'},
+  {url:'https://www.infoagro.com/rss/',                        src:'InfoAgro'},
+
+  // AgTech, biotech & biologicals
+  {url:'https://agfundernews.com/feed',                        src:'AgFunder News'},
+  {url:'https://allianceforscience.org/feed/',                 src:'Alliance for Science'},
+  {url:'https://www.biobasedpress.eu/feed/',                   src:'Biobased Press'},
+  {url:'https://biologicalsinternational.org/feed/',           src:'Biologicals International'},
+  {url:'https://www.newaginternational.com/feed/',             src:'New AG International'},
+
+  // Regulation & policy
+  {url:'https://gd.eppo.int/rss/news',                         src:'EPPO'},
+  {url:'https://fas.usda.gov/data/rss',                        src:'USDA FAS'},
+  {url:'https://eur-lex.europa.eu/rss/OJ_L.xml',              src:'EU Official Journal'},
+
+  // Regional & market intelligence
+  {url:'https://www.mapnews.ma/en/rss',                        src:'Maghreb Arab Press'},
+  {url:'https://news.crunchbase.com/feed/',                    src:'Crunchbase News'},
+  {url:'https://www.agweb.com/rss/news',                       src:'AgWeb'},
+
+  // Corporate newsrooms
+  {url:'https://www.syngenta.com/en/news-and-media/news-releases/rss', src:'Syngenta Newsroom'},
+  {url:'https://agronews.basf.com/rss',                        src:'BASF Ag Solutions'},
+
+  // General horticulture
+  {url:'https://www.greenhousegrower.com/rss/',                src:'Greenhouse Grower'},
+  {url:'https://www.thepacker.com/rss.xml',                    src:'The Packer'},
+  {url:'https://producegrower.com/feed',                       src:'Produce Grower'}
 ];
 
-// Keyword maps for auto-categorisation
+// ── Keyword maps for auto-categorisation ─────────────────────────────────────
 var CAT_KW={
-  seed_tech:['seed treatment','seed coating','seed priming','pelleting','seed enhancement','seed technology','seed quality','germination','dormancy','incotec','croda','film coat','microplastic','encrust','pellet'],
-  market:['market','trade','export','import','price','revenue','cagr','growth','forecast','billion','million','acquisition','merger','consolidation','supply chain','tariff','commodity'],
-  breeding:['breeding','genetics','variety','hybrid','gmo','gene edit','crispr','genomic','phenotyp','trait','cultivar','cross','marker','precision breed','genotype','allel'],
-  regulation:['regulat','policy','legislation','reach','approval','ban','compliance','directive','pesticide','microplastic','phytosanitary','permit','law','bill','subsid','certif'],
-  competitors:['syngenta','bayer','basf','rijk zwaan','enza zaden','sakata','limagrain','incotec','east-west seed','nunhems','monsanto','corteva','advanta','vilmorin','seminis','known-you','tokita','takii'],
-  crops:['tomato','pepper','cucumber','lettuce','onion','carrot','spinach','fennel','celery','vegetable','wheat','corn','maize','beet','broccoli','kale','leek','courgette','aubergine','eggplant','watermelon','melon','pumpkin','greenhouse','vertical farm','open field','controlled environment','hydropon','aeroponic']
+  seed_tech:[
+    'seed treatment','seed coating','seed priming','pelleting','seed enhancement',
+    'seed technology','seed quality','germination','dormancy','incotec','croda',
+    'film coat','microplastic','encrust','pellet','biological seed','biostimulant',
+    'seed dressing','seed applied','seed protection','imbibition','osmopriming',
+    'hydropriming','thermotherapy','seed health','vigor test','ista','tetrazolium'
+  ],
+  market:[
+    'market','trade','export','import','price','revenue','cagr','growth',
+    'forecast','billion','million','acquisition','merger','consolidation',
+    'supply chain','tariff','commodity','investment','funding','venture',
+    'deal','joint venture','partnership','startup','agtech'
+  ],
+  breeding:[
+    'breeding','genetics','variety','hybrid','gmo','gene edit','crispr',
+    'genomic','phenotyp','trait','cultivar','cross','marker','precision breed',
+    'genotype','allel','qtl','gwas','plant breeding','new genomic technique',
+    'ngt','mutagenesis','cisgenesis','transgenesis','doubled haploid',
+    'f1 hybrid','open pollinated','landrace','gene bank','germplasm'
+  ],
+  regulation:[
+    'regulat','policy','legislation','reach','approval','ban','compliance',
+    'directive','pesticide','microplastic','phytosanitary','permit','law',
+    'bill','subsid','certif','eu official journal','eppo','plant variety',
+    'plant health','upov','trips','convention','standard','maximum residue',
+    'mrl','eu green deal','farm to fork','esa','isf position','worldseed'
+  ],
+  competitors:[
+    'syngenta','bayer','basf','rijk zwaan','enza zaden','sakata','limagrain',
+    'incotec','east-west seed','nunhems','monsanto','corteva','advanta',
+    'vilmorin','seminis','known-you','tokita','takii','agbiome','plantum',
+    'hazera','clause','nickerson','floranova','pan am seed','HM.clause',
+    'eisai','roam','innokareen','barenbrug','ragt','deutsche saatveredelung'
+  ],
+  crops:[
+    'tomato','pepper','cucumber','lettuce','onion','carrot','spinach','fennel',
+    'celery','vegetable','wheat','corn','maize','beet','broccoli','kale','leek',
+    'courgette','zucchini','aubergine','eggplant','watermelon','melon','pumpkin',
+    'greenhouse','vertical farm','open field','controlled environment',
+    'hydropon','aeroponic','aquaponic','indoor grow','glasshouse',
+    'protected cultivation','precision agriculture','smart farm','soilless'
+  ]
 };
 
-// Keyword maps for region detection
+// ── Keyword maps for region detection ────────────────────────────────────────
 var REG_KW={
-  europe:['europe','european','netherlands','dutch','holland','spain','spain','italy','italian','france','french','germany','german','uk ','u.k','united kingdom','belgium','poland','scandinavia','scandinav','eu ','e.u.','seed valley','wageningen'],
-  mena:['morocco','morocc','agadir','souss','mena','middle east','africa','african','egypt','egyptian','israel','turkey','turkish','tunisia','jordan','saudi'],
-  apac:['asia','asian','china','chinese','india','indian','japan','japanese','indonesia','vietnam','philippines','thailand','apac','pacific','australia','south korea','taiwan','bangladesh'],
-  americas:['usa','united states','american','canada','canadian','brazil','brazilian','mexico','mexican','latin america','california','florida','arizona','ohio','midwest']
+  europe:[
+    'europe','european','netherlands','dutch','holland','spain','italy',
+    'italian','france','french','germany','german','uk ','u.k.','united kingdom',
+    'belgium','poland','scandinavia','eu ','e.u.','seed valley','wageningen',
+    'portugal','greece','turkey','bulgaria','hungary','czechia','austria',
+    'switzerland','sweden','denmark','finland','norway'
+  ],
+  mena:[
+    'morocco','morocc','agadir','souss','mena','middle east','africa',
+    'african','egypt','egyptian','israel','turkish','tunisia','jordan',
+    'saudi','uae','iran','iraq','algeria','libya','sub-saharan','west africa',
+    'east africa','south africa','kenya','ethiopia','nigeria','maghreb'
+  ],
+  apac:[
+    'asia','asian','china','chinese','india','indian','japan','japanese',
+    'indonesia','vietnam','philippines','thailand','apac','pacific',
+    'australia','south korea','taiwan','bangladesh','myanmar','cambodia',
+    'malaysia','singapore','new zealand','sri lanka','pakistan'
+  ],
+  americas:[
+    'usa','united states','american','canada','canadian','brazil','brazilian',
+    'mexico','mexican','latin america','california','florida','arizona',
+    'ohio','midwest','chile','argentina','colombia','peru','ecuador'
+  ]
 };
 
 // ── Config ────────────────────────────────────────────────────────────────────
