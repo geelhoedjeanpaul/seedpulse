@@ -93,6 +93,10 @@ footer{text-align:center;padding:16px 20px calc(16px + var(--safe-b));font:400 1
 .btn-install{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:8px 16px;border-radius:8px;background:var(--hdr2);color:#fff;font:600 12px var(--sans);border:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 @keyframes spin{to{transform:rotate(360deg)}}
+/* Filter loading overlay */
+.content-spinner{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:14px}
+.content-spinner .ring{width:42px;height:42px;border:3px solid var(--border);border-top-color:var(--hdr2);border-radius:50%;animation:spin .7s linear infinite}
+.content-spinner p{font:500 13px var(--sans);color:var(--mute)}
 @media(hover:hover){.card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.10)}}
 </style>
 </head>
@@ -726,6 +730,16 @@ function renderAll(){
   render();
 }
 
+// ── renderWithSpinner — shows spinner briefly, then renders filtered content ──
+function renderWithSpinner(){
+  var el=document.getElementById("content");
+  el.innerHTML='<div class="content-spinner"><div class="ring"></div><p>Loading…</p></div>';
+  // Use rAF + setTimeout so the spinner frame actually paints before render() blocks
+  requestAnimationFrame(function(){
+    setTimeout(function(){ render(); }, 120);
+  });
+}
+
 // ── Init ─────────────────────────────────────────────────────────────────────
 document.getElementById("hdrSub").textContent=
   "Vegetable seed & horticulture intelligence — "+
@@ -736,15 +750,15 @@ document.getElementById("tabs").addEventListener("click",function(e){
   var btn=e.target.closest("[data-region]");
   if(!btn) return;
   region=btn.getAttribute("data-region");
-  renderTabs(); render();
+  renderTabs(); renderWithSpinner();
 });
 document.getElementById("periods").addEventListener("click",function(e){
   var btn=e.target.closest("[data-period]");
   if(!btn) return;
   period=btn.getAttribute("data-period");
-  renderPeriods(); render();
+  renderPeriods(); renderWithSpinner();
 });
-document.getElementById("search").addEventListener("input",function(e){ filter=e.target.value; render(); });
+document.getElementById("search").addEventListener("input",function(e){ filter=e.target.value; renderWithSpinner(); });
 
 document.getElementById("emailBtn").onclick=function(){ emailOpen=!emailOpen; document.getElementById("emailPanel").style.display=emailOpen?"block":"none"; };
 document.getElementById("mailtoBtn").onclick=function(){
