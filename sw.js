@@ -1,6 +1,6 @@
-// SeedPulse service worker v4 — stale-while-revalidate + separate API cache
-const SHELL_CACHE = 'seedpulse-shell-v4';
-const API_CACHE   = 'seedpulse-api-v4';
+// SeedPulse service worker v5 — stale-while-revalidate + API cache + notifications
+const SHELL_CACHE = 'seedpulse-shell-v5';
+const API_CACHE   = 'seedpulse-api-v5';
 const SHELL = [
   '/seedpulse/',
   '/seedpulse/index.html',
@@ -78,6 +78,26 @@ async function handleApi(req) {
     return cached || new Response(JSON.stringify({status:'error',items:[]}), {headers:{'content-type':'application/json'}});
   }
 }
+
+// Notification click → open the article URL (or focus an existing tab)
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || '/seedpulse/';
+  event.waitUntil((async () => {
+    const allClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    // Focus an existing SeedPulse tab if open, then navigate it
+    for (const c of allClients) {
+      if (c.url.includes('/seedpulse/')) {
+        await c.focus();
+        if ('navigate' in c && url && !c.url.includes(url)) {
+          try { await c.navigate(url); } catch {}
+        }
+        return;
+      }
+    }
+    await self.clients.openWindow(url);
+  })());
+});
 
 function putWithTimestamp(cache, req, res) {
   // Wrap the response with a custom header so we can read its age later

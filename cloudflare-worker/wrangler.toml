@@ -1,0 +1,9 @@
+name = "seedpulse-rss"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+# Free plan: 100k requests/day, no credit card required.
+# After `wrangler deploy`, your Worker URL will be:
+#   https://seedpulse-rss.<your-subdomain>.workers.dev
+#
+# Optional: bind a custom domain via `routes = [...]` after deployment.

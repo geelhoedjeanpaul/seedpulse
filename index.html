@@ -93,6 +93,8 @@
     <symbol id="icon-empty" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M20 20l-3.5-3.5M8 11h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
     <symbol id="icon-calendar" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4 10h16M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
     <symbol id="icon-logo" viewBox="0 0 24 24"><path d="M12 4c-2 2-3 4-3 6a3 3 0 006 0c0-2-1-4-3-6z" fill="currentColor"/><path d="M12 10v10M9 17c1-.5 2-.6 3-.6s2 .1 3 .6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="icon-bell" viewBox="0 0 24 24"><path d="M6 16h12l-1.5-2.5V10a4.5 4.5 0 00-9 0v3.5L6 16z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 19a2 2 0 004 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="icon-bell-off" viewBox="0 0 24 24"><path d="M6 16h12l-1.5-2.5V10a4.5 4.5 0 00-9 0v3.5L6 16z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 19a2 2 0 004 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M4 4l16 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
   </defs>
 </svg>
 
@@ -326,6 +328,41 @@ main{max-width:760px;margin:0 auto;padding:18px 16px calc(24px + var(--safe-b))}
   font:700 11px var(--sans);color:#fff;padding:3px 10px;border-radius:999px;
   background:var(--cat-c);letter-spacing:.2px;
 }
+.cat-pip{
+  font:700 10px var(--sans);color:#fff;padding:2px 7px;border-radius:999px;
+  background:#D9523A;letter-spacing:.3px;text-transform:uppercase;
+  box-shadow:0 0 0 3px color-mix(in srgb, #D9523A 20%, transparent);
+  animation:pip-pulse 2.4s ease-in-out infinite;
+}
+@keyframes pip-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+
+/* Germains priority score badges (card-level) */
+.score-badge{
+  font:700 10px var(--sans);padding:2px 7px;border-radius:4px;letter-spacing:.3px;
+  text-transform:uppercase;
+}
+.score-badge.high{background:#0A4A2A;color:#C5F2D6}
+.score-badge.med{background:#E8F5EC;color:#0A4A2A;box-shadow:inset 0 0 0 1px #BDDFC9}
+.score-badge.low{background:var(--chip-bg);color:var(--mute)}
+@media (prefers-color-scheme: dark){
+  .score-badge.med{background:#163827;color:#A9E6BF;box-shadow:inset 0 0 0 1px #2A5240}
+}
+
+/* Notifications toggle (bell) */
+.btn-bell{
+  flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;
+  width:40px;height:40px;border-radius:10px;
+  border:1.5px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);color:#fff;
+  cursor:pointer;position:relative;
+}
+.btn-bell:hover{background:rgba(255,255,255,.16)}
+.btn-bell .icon{font-size:17px}
+.btn-bell.on{background:rgba(255,255,255,.22);border-color:#fff}
+.btn-bell .badge{
+  position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:#FF5A3C;
+  box-shadow:0 0 0 2px var(--hdr-2);display:none;
+}
+.btn-bell.has-new .badge{display:block}
 .cat-arrow{color:var(--mute);transition:transform .2s ease}
 .cat-arrow.open{transform:rotate(180deg)}
 .cat-cards{display:grid;gap:10px;margin:10px 0 6px 48px}
@@ -474,6 +511,10 @@ footer{
         <svg class="icon" aria-hidden="true"><use href="#icon-search"/></svg>
         <input class="search" id="search" type="search" placeholder="Filter by keyword (Incotec, tomato, Syngenta…)" autocomplete="off" aria-label="Search articles">
       </div>
+      <button class="btn-bell" id="bellBtn" aria-label="Germains alerts" title="Alert me when new high-priority Germains articles arrive">
+        <svg class="icon" aria-hidden="true"><use href="#icon-bell-off" id="bellIconUse"/></svg>
+        <span class="badge" aria-hidden="true"></span>
+      </button>
       <button class="btn-email" id="emailBtn" aria-expanded="false" aria-controls="emailPanel">
         <svg class="icon" aria-hidden="true"><use href="#icon-mail"/></svg> Email
       </button>
@@ -506,11 +547,25 @@ footer{
 'use strict';
 
 /* ═══════════════════════ Constants ═══════════════════════ */
-var CACHE_KEY='seedpulse_v6';
+var CACHE_KEY='seedpulse_v7';
 var CACHE_TTL_MS=2*60*60*1000; // 2 hours — reuse cached feed below this age
+var SEEN_KEY='seedpulse_seen_v1';      // stored set of article IDs we've already notified about
+var NOTIF_PREF_KEY='seedpulse_notify'; // 'on' | 'off' | undefined (never asked)
+
+// ─── Self-hosted RSS proxy (optional) ───────────────────────────────────────
+// Deploy cloudflare-worker/ and paste your Worker URL here (keep the `?url=`).
+// When set, feeds go through the Worker — no 10-item cap, no rate limits.
+// When blank (default), falls back to rss2json free tier.
+var PROXY_URL=''; // e.g. 'https://seedpulse-rss.your-subdomain.workers.dev/?url='
 
 var RSS2JSON='https://api.rss2json.com/v1/api.json?rss_url=';
-var GN='https://news.google.com/rss/search?hl=en&gl=US&ceid=US:en&q=';
+// Google News RSS — `num=100` asks for up to 100 items per query (honoured with a
+// self-hosted proxy; rss2json still caps at 10). `when:30d` keeps results fresh.
+var GN='https://news.google.com/rss/search?hl=en&gl=US&ceid=US:en&num=100&q=';
+// Germains priority scoring: core tech/brand keywords carry 3× the weight
+// of secondary (crop-name) matches. Articles with gs>=3 trigger notifications.
+var GERMAINS_CORE=['priming','pelleting','film coat','filmcoat','film-coat','germains','seed hygiene','seed sanitation','abiotic stress','biotic stress','stress tolerance','stress resistance','germination uniformity','seedling vigour','seed vigour','seed performance','stand establishment','emergence rate','encrust','biopriming','matrix priming','osmopriming','hydropriming','hydro priming','osmo priming','drum priming','solid matrix priming'];
+var GERMAINS_NOTIFY_MIN=3; // minimum score that warrants a push notification
 
 /* ═══════════════════════ Feed list ═══════════════════════ */
 var FEEDS=[
@@ -544,9 +599,12 @@ var FEEDS=[
   {url:GN+'site:gd.eppo.int',              src:'EPPO'},
   {url:GN+'site:infoagro.com',             src:'InfoAgro'},
   {url:GN+'site:agweb.com',               src:'AgWeb'},
-  {url:GN+'seed+technology+treatment+coating+agriculture',     src:'News: Seed Technology'},
-  {url:GN+'vegetable+seed+market+trade+supply+chain',          src:'News: Seed Market'},
-  {url:GN+'plant+breeding+genetics+hybrid+variety+seed',       src:'News: Breeding & Genetics'},
+  // Narrow, orthogonal queries return more relevant items per feed
+  {url:GN+'%22seed+treatment%22+OR+%22seed+coating%22+when:30d', src:'News: Seed Treatment & Coating'},
+  {url:GN+'%22seed+priming%22+OR+%22seed+pelleting%22+OR+%22film+coating%22+when:30d', src:'News: Priming & Pelleting'},
+  {url:GN+'%22seed+enhancement%22+OR+%22seed+vigour%22+OR+%22seed+vigor%22+when:30d', src:'News: Seed Enhancement'},
+  {url:GN+'vegetable+seed+market+trade+supply+chain+when:30d', src:'News: Seed Market'},
+  {url:GN+'%22plant+breeding%22+hybrid+variety+when:30d',     src:'News: Breeding & Genetics'},
   {url:GN+'CRISPR+%22gene+editing%22+crop+plant+breeding',     src:'News: CRISPR & NGT'},
   {url:GN+'seed+regulation+policy+EU+phytosanitary',           src:'News: Regulation'},
   {url:GN+'seed+company+acquisition+merger+investment+agtech', src:'News: M&A & AgTech'},
@@ -675,9 +733,22 @@ function categorize(title,desc){
   });
   return best;
 }
+// Legacy boolean — still used by the render filter fallback
 function isGermains(title,desc){
+  return germainsScore(title,desc)>0;
+}
+// Weighted relevance score. Core Germains tech / brand mentions count 3×.
+// Secondary matches (crop names like "onion seed") count 1×.
+// Higher = more directly relevant to Germains' commercial technologies.
+function germainsScore(title,desc){
   var txt=(title+' '+desc).toLowerCase();
-  return CAT_KW.germains.some(function(k){return txt.indexOf(k)>=0;});
+  var score=0;
+  CAT_KW.germains.forEach(function(k){
+    if(txt.indexOf(k)>=0){
+      score += GERMAINS_CORE.indexOf(k)>=0 ? 3 : 1;
+    }
+  });
+  return score;
 }
 function regionalize(title,desc){
   var txt=(title+' '+desc).toLowerCase();
@@ -687,14 +758,22 @@ function regionalize(title,desc){
   });
   return regs;
 }
+function articleId(title,link){
+  // Stable fingerprint — link if present, else a slug of the title
+  var base=(link||title||'').toLowerCase().replace(/[^a-z0-9]+/g,'').substring(0,64);
+  return base || String(Date.now());
+}
 function normalizeItem(item,srcName){
   var title=(item.title||'').trim();
   var desc=stripHtml(item.content||item.description||'').substring(0,280);
   if(desc.length===280) desc+='…';
   var pubDate=parseIso(item.pubDate||item.published||'');
+  var link=item.link||item.url||'';
+  var gs=germainsScore(title,desc);
   return {
-    c:categorize(title,desc), g:isGermains(title,desc), r:regionalize(title,desc),
-    t:title, s:desc, src:srcName, u:item.link||item.url||'',
+    id:articleId(title,link),
+    c:categorize(title,desc), g:gs>0, gs:gs, r:regionalize(title,desc),
+    t:title, s:desc, src:srcName, u:link,
     d:pubDate.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),
     iso:pubDate.toISOString().split('T')[0]
   };
@@ -702,12 +781,14 @@ function normalizeItem(item,srcName){
 
 /* ═══════════════════════ Feed fetching ═══════════════════════ */
 function fetchFeed(feed){
-  return fetch(RSS2JSON+encodeURIComponent(feed.url),{cache:'no-store'})
+  // Use self-hosted proxy if configured; otherwise rss2json free tier.
+  var base = PROXY_URL ? PROXY_URL : RSS2JSON;
+  return fetch(base+encodeURIComponent(feed.url),{cache:'no-store'})
     .then(function(r){return r.json();})
     .then(function(data){
       if(data.status!=='ok'||!Array.isArray(data.items)) return [];
       return data.items.map(function(it){return normalizeItem(it,feed.src);});
-    }).catch(function(){return [];});
+    }).catch(function(){return []; });
 }
 function fetchFeedWithTimeout(feed){
   var timeout=new Promise(function(resolve){setTimeout(function(){resolve([]);},8000);});
@@ -732,6 +813,131 @@ function dedupe(arr){
     if(seen[key]) return false;
     seen[key]=true; return true;
   });
+}
+
+/* ═══════════════════════ Seen-set + notifications ═══════════════════════ */
+function loadSeen(){
+  try{var s=localStorage.getItem(SEEN_KEY);return s?JSON.parse(s):{};}catch(e){return {};}
+}
+function saveSeen(seen){
+  // Cap stored IDs at 2000 to keep localStorage reasonable
+  var keys=Object.keys(seen);
+  if(keys.length>2000){
+    // Drop the oldest half by insertion order
+    var half=keys.slice(0,keys.length-2000);
+    half.forEach(function(k){delete seen[k];});
+  }
+  try{localStorage.setItem(SEEN_KEY,JSON.stringify(seen));}catch(e){}
+}
+function getNotifyPref(){
+  try{return localStorage.getItem(NOTIF_PREF_KEY);}catch(e){return null;}
+}
+function setNotifyPref(v){
+  try{localStorage.setItem(NOTIF_PREF_KEY,v);}catch(e){}
+}
+
+/* Fire local notifications for new high-priority Germains articles.
+   Pure client-side: runs whenever the app is opened. When the PWA is
+   installed to the home screen and the service worker has permission,
+   notifications appear even when the app tab isn't in the foreground.
+   For server-driven push (alerts without user opening the app), a
+   lightweight backend + VAPID keys would be required — follow-up. */
+function checkAndNotify(){
+  if(getNotifyPref()!=='on') return;
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+
+  var seen=loadSeen();
+  var candidates=A
+    .filter(function(a){return a.gs>=GERMAINS_NOTIFY_MIN && !seen[a.id];})
+    .sort(function(x,y){return y.gs-x.gs;})
+    .slice(0,3); // never fire more than 3 at once — don't spam
+
+  if(!candidates.length) return;
+
+  var useSw=('serviceWorker' in navigator) && navigator.serviceWorker.ready;
+  var fire=function(reg){
+    candidates.forEach(function(a){
+      var opts={
+        body:a.s.substring(0,140),
+        icon:'icon-192.svg',
+        badge:'icon-192.svg',
+        tag:'seedpulse-'+a.id, // dedupe re-notifications for same article
+        data:{url:a.u||location.href},
+        renotify:false
+      };
+      try{
+        if(reg && reg.showNotification){ reg.showNotification('SeedPulse: '+a.t, opts); }
+        else { new Notification('SeedPulse: '+a.t, opts); }
+      }catch(e){}
+      seen[a.id]=Date.now();
+    });
+    saveSeen(seen);
+  };
+  if(useSw){ navigator.serviceWorker.ready.then(fire).catch(function(){fire(null);}); }
+  else { fire(null); }
+}
+
+/* Mark every currently-seen Germains article as seen WITHOUT notifying —
+   used on first-time enable so we don't blast the user with a backlog. */
+function primeSeen(){
+  var seen=loadSeen();
+  A.forEach(function(a){ if(a.gs>=GERMAINS_NOTIFY_MIN) seen[a.id]=Date.now(); });
+  saveSeen(seen);
+}
+
+function updateBellUI(){
+  var btn=document.getElementById('bellBtn');
+  if(!btn) return;
+  var iconUse=document.getElementById('bellIconUse');
+  var pref=getNotifyPref();
+  var granted=('Notification' in window) && Notification.permission==='granted';
+  var on=pref==='on' && granted;
+  btn.classList.toggle('on',on);
+  if(iconUse) iconUse.setAttribute('href', on ? '#icon-bell' : '#icon-bell-off');
+  // Badge shows unseen high-priority count
+  var seen=loadSeen();
+  var unseenHigh=A.filter(function(a){return a.gs>=GERMAINS_NOTIFY_MIN && !seen[a.id];}).length;
+  btn.classList.toggle('has-new', on && unseenHigh>0);
+  btn.title=on
+    ? (unseenHigh>0 ? unseenHigh+' new high-priority Germains items' : 'Germains alerts on')
+    : 'Enable alerts for new high-priority Germains articles';
+}
+
+async function toggleNotifyPref(){
+  var pref=getNotifyPref();
+  if(pref==='on'){
+    setNotifyPref('off');
+    updateBellUI();
+    return;
+  }
+  if(!('Notification' in window)){
+    alert('Your browser does not support notifications.');
+    return;
+  }
+  if(Notification.permission==='denied'){
+    alert('Notifications are blocked. Enable them in your browser settings for this site, then tap the bell again.');
+    return;
+  }
+  var perm = Notification.permission==='granted'
+    ? 'granted'
+    : await Notification.requestPermission();
+  if(perm!=='granted'){
+    updateBellUI();
+    return;
+  }
+  setNotifyPref('on');
+  // Prime the seen-set so the initial backlog of high-priority items doesn't
+  // trigger a notification storm. From this point forward, only NEW ones fire.
+  primeSeen();
+  updateBellUI();
+  // A welcome confirmation so the user knows it worked
+  try{
+    var reg = await navigator.serviceWorker.ready;
+    reg.showNotification('SeedPulse alerts on', {
+      body:'You\'ll be notified when new high-priority Germains articles are detected on next launch.',
+      icon:'icon-192.svg', badge:'icon-192.svg', tag:'seedpulse-welcome'
+    });
+  }catch(e){}
 }
 
 /* ═══════════════════════ Filtering ═══════════════════════ */
@@ -799,10 +1005,18 @@ function renderStats(items){
 
 function renderCatSection(cat,ci){
   var isOpen=expanded[cat.id];
+  // Germains "new high-priority" pip — number of unseen gs>=3 items
+  var pipHtml='';
+  if(cat.id==='germains'){
+    var seen=loadSeen();
+    var newHigh=ci.filter(function(a){return a.gs>=GERMAINS_NOTIFY_MIN && !seen[a.id];}).length;
+    if(newHigh>0) pipHtml='<span class="cat-pip" title="'+newHigh+' new high-priority">'+newHigh+' new</span>';
+  }
   var h='<section class="cat-section" style="--cat-c:var('+cat.cvar+')">'+
     '<button class="cat-btn" data-cat="'+cat.id+'" aria-expanded="'+isOpen+'">'+
       '<span class="cat-icon-wrap">'+icon(cat.icon)+'</span>'+
       '<span class="cat-label">'+esc(cat.label)+'</span>'+
+      pipHtml+
       '<span class="cat-count">'+ci.length+'</span>'+
       '<span class="cat-arrow '+(isOpen?'open':'')+'">'+icon('icon-chevron')+'</span>'+
     '</button>';
@@ -813,12 +1027,20 @@ function renderCatSection(cat,ci){
         var rr=REGIONS.find(function(x){return x.id===rid;});
         return rr?'<span class="tag-region">'+icon(rr.icon)+' '+esc(rr.label)+'</span>':'';
       }).join('');
+      // Germains score badge (High / Med / Low) — only in the Germains section
+      var scoreBadge='';
+      if(cat.id==='germains' && a.gs){
+        var tier=a.gs>=6?'high':(a.gs>=3?'med':'low');
+        var label=a.gs>=6?'High':(a.gs>=3?'Medium':'Low');
+        scoreBadge='<span class="score-badge '+tier+'" title="Germains relevance score: '+a.gs+'">'+label+'</span>';
+      }
       h+='<article class="card">'+
            '<div class="card-top"><h4>'+esc(a.t)+'</h4>'+
            (a.u?'<a class="card-link" href="'+esc(a.u)+'" target="_blank" rel="noopener">Source '+icon('icon-external')+'</a>':'')+
            '</div>'+
            (a.s?'<p>'+esc(a.s)+'</p>':'')+
            '<div class="card-meta">'+
+             scoreBadge+
              (a.src?'<span class="tag">'+esc(a.src)+'</span>':'')+
              (a.d?'<span class="tag-date">'+icon('icon-calendar')+' '+esc(a.d)+'</span>':'')+
              rtags+
@@ -851,7 +1073,15 @@ function render(){
   var html='';
   CATS.forEach(function(cat){
     var ci = cat.id==='germains'
-      ? items.filter(function(a){return a.g||isGermains(a.t,a.s);})
+      ? items.filter(function(a){
+          // Ensure score exists on fallback items (which don't have it pre-computed)
+          if(a.gs==null) a.gs=germainsScore(a.t,a.s);
+          return a.gs>0;
+        }).sort(function(x,y){
+          // Highest relevance first; break ties by recency
+          if(y.gs!==x.gs) return y.gs-x.gs;
+          return (y.iso||'').localeCompare(x.iso||'');
+        })
       : items.filter(function(a){return a.c===cat.id;});
     if(!ci.length) return;
     html+=renderCatSection(cat,ci);
@@ -897,7 +1127,15 @@ function buildReport(){
   ];
   CATS.forEach(function(cat){
     var ci = cat.id==='germains'
-      ? items.filter(function(a){return a.g||isGermains(a.t,a.s);})
+      ? items.filter(function(a){
+          // Ensure score exists on fallback items (which don't have it pre-computed)
+          if(a.gs==null) a.gs=germainsScore(a.t,a.s);
+          return a.gs>0;
+        }).sort(function(x,y){
+          // Highest relevance first; break ties by recency
+          if(y.gs!==x.gs) return y.gs-x.gs;
+          return (y.iso||'').localeCompare(x.iso||'');
+        })
       : items.filter(function(a){return a.c===cat.id;});
     if(!ci.length) return;
     lines.push("",cat.label.toUpperCase()+" ("+ci.length+")","──────────────────────────────────────");
@@ -926,17 +1164,23 @@ function loadCached(){
 function loadArticles(){
   var usedCache=loadCached();
   renderAll();
+  updateBellUI();
 
-  // If cache is fresh, skip the network fetch on this launch
-  if(usedCache){ return; }
+  // If cache is fresh, skip the network fetch on this launch — still check notifications
+  if(usedCache){ checkAndNotify(); updateBellUI(); return; }
 
   batchedFetch(FEEDS,4).then(function(fresh){
     fresh=dedupe(fresh.filter(function(a){return a.t;}));
     if(fresh.length>0){
-      var seen={};
-      fresh.forEach(function(a){seen[a.t]=true;});
-      var merged=fresh.concat(FALLBACK.filter(function(a){return !seen[a.t];}));
+      var titleMap={};
+      fresh.forEach(function(a){titleMap[a.t]=true;});
+      var merged=fresh.concat(FALLBACK.filter(function(a){return !titleMap[a.t];}));
       A=dedupe(merged);
+      // Ensure fallback items have ids + scores (they're authored without them)
+      A.forEach(function(a){
+        if(a.id==null) a.id=articleId(a.t,a.u);
+        if(a.gs==null) a.gs=germainsScore(a.t,a.s);
+      });
       liveLoaded=true;
       try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),items:A}));}catch(e){}
     } else {
@@ -944,6 +1188,8 @@ function loadArticles(){
     }
     render();
     renderStats(getFiltered());
+    checkAndNotify();
+    updateBellUI();
   });
 }
 
@@ -1027,6 +1273,8 @@ document.getElementById("content").addEventListener("click",function(e){
   var reset=e.target.closest("#resetPeriod");
   if(reset){ period="all"; renderPeriods(); renderWithSpinner(); }
 });
+
+document.getElementById("bellBtn").addEventListener("click",toggleNotifyPref);
 
 document.getElementById("emailBtn").addEventListener("click",function(){
   emailOpen=!emailOpen;
