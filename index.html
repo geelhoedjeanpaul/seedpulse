@@ -1230,6 +1230,129 @@ function buildReport(){
   return lines.join("\n");
 }
 
+/* ═══════════════════════ HTML report (email + clipboard) ═══════════════════════ */
+// Returns a full, self-contained HTML document that mirrors the app's look:
+// gradient header, category sections with accent bars, numbered article cards,
+// priority badges. Uses inline styles so it survives pasting into Gmail,
+// Apple Mail, Outlook, Slack — all of which strip <style> blocks.
+function esc(s){
+  return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+// Category accent colors — plain hex so email clients don't need CSS vars
+var CAT_COLORS={
+  germains:'#0A4A2A', seed_tech:'#1B6B4A', market:'#2E7D5B',
+  breeding:'#4A9E72', regulation:'#5A8A7A', competitors:'#2B5C8A', crops:'#8A6B2E'
+};
+function buildHtmlReport(){
+  var items=getFiltered();
+  var regObj=REGIONS.find(function(r){return r.id===region;});
+  var perObj=PERIODS.find(function(p){return p.id===period;});
+  var today=new Date().toLocaleDateString("en-GB",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+  var subLine=regObj.label+(period!=="all"?" · "+perObj.label:"")+(filter?" · Filter: "+esc(filter):"");
+  var totalCount=0;
+
+  var sections='';
+  CATS.forEach(function(cat){
+    var ci = cat.id==='germains'
+      ? items.filter(function(a){
+          if(a.gs==null) a.gs=germainsScore(a.t,a.s);
+          return a.gs>0;
+        }).sort(function(x,y){
+          if(y.gs!==x.gs) return y.gs-x.gs;
+          return (y.iso||'').localeCompare(x.iso||'');
+        })
+      : items.filter(function(a){return a.c===cat.id;});
+    if(!ci.length) return;
+    totalCount += ci.length;
+    var color=CAT_COLORS[cat.id]||'#1B6B4A';
+
+    var cards = ci.map(function(a,i){
+      var badge='';
+      if(cat.id==='germains' && a.gs){
+        var tier = a.gs>=6?'High':a.gs>=3?'Medium':'Low';
+        var bgTier = a.gs>=6?'#0A4A2A':a.gs>=3?'#2E7D5B':'#6E867C';
+        badge = '<span style="display:inline-block;font:600 10px/1 -apple-system,Helvetica,Arial,sans-serif;color:#fff;background:'+bgTier+';padding:4px 8px;border-radius:4px;letter-spacing:.3px;text-transform:uppercase;vertical-align:middle;margin-left:8px">'+tier+' · '+a.gs+'</span>';
+      }
+      var meta = '<span style="color:#6E867C">'+esc(a.src||'Source')+'</span>'+
+                 (a.d?' <span style="color:#C6D6CD">·</span> <span style="color:#6E867C">'+esc(a.d)+'</span>':'');
+      var readMore = a.u
+        ? '<div style="margin-top:10px"><a href="'+esc(a.u)+'" style="display:inline-block;font:600 12px -apple-system,Helvetica,Arial,sans-serif;color:'+color+';text-decoration:none;border-bottom:1px solid '+color+'33;padding-bottom:1px">Read article →</a></div>'
+        : '';
+      return ''+
+        '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#FFFFFF;border:1px solid #E0EAE4;border-left:3px solid '+color+';border-radius:8px;margin:0 0 12px 0">'+
+          '<tr><td style="padding:16px 18px">'+
+            '<div style="font:700 11px -apple-system,Helvetica,Arial,sans-serif;color:'+color+';letter-spacing:.5px">#'+(i+1)+'</div>'+
+            '<h3 style="margin:4px 0 0 0;font:700 15.5px/1.4 Georgia,\'Times New Roman\',serif;color:#112A20;letter-spacing:-.1px">'+esc(a.t)+badge+'</h3>'+
+            '<p style="margin:8px 0 0 0;font:400 13.5px/1.6 -apple-system,Helvetica,Arial,sans-serif;color:#35524A">'+esc(a.s||'')+'</p>'+
+            '<div style="margin-top:10px;font:500 11.5px -apple-system,Helvetica,Arial,sans-serif">'+meta+'</div>'+
+            readMore+
+          '</td></tr>'+
+        '</table>';
+    }).join('');
+
+    sections += ''+
+      '<div style="margin:28px 0 14px 0">'+
+        '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>'+
+          '<td style="background:'+color+';width:4px;border-radius:2px"></td>'+
+          '<td style="padding-left:12px">'+
+            '<div style="font:700 17px/1.2 Georgia,\'Times New Roman\',serif;color:#112A20;letter-spacing:-.2px">'+esc(cat.label)+'</div>'+
+            '<div style="font:500 11px -apple-system,Helvetica,Arial,sans-serif;color:#6E867C;margin-top:3px;letter-spacing:.3px;text-transform:uppercase">'+ci.length+' '+(ci.length===1?'article':'articles')+'</div>'+
+          '</td>'+
+        '</tr></table>'+
+      '</div>'+
+      cards;
+  });
+
+  if(!sections){
+    sections = '<div style="padding:40px 20px;text-align:center;color:#6E867C;font:400 14px -apple-system,Helvetica,Arial,sans-serif;background:#FFFFFF;border:1px solid #E0EAE4;border-radius:8px">No articles match the current filters.</div>';
+  }
+
+  var html=''+
+'<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">'+
+'<meta name="viewport" content="width=device-width,initial-scale=1">'+
+'<title>SeedPulse Brief — '+esc(regObj.label)+' — '+esc(today)+'</title>'+
+'</head>'+
+'<body style="margin:0;padding:0;background:#F4F8F5;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;color:#112A20;-webkit-font-smoothing:antialiased">'+
+  '<center style="width:100%;background:#F4F8F5">'+
+  '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:720px;margin:0 auto;background:linear-gradient(175deg,#E7F0EA 0%,#F4F8F5 35%,#FBFDFC 100%)">'+
+    '<tr><td style="padding:32px 28px 8px 28px">'+
+      // Header
+      '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">'+
+        '<tr><td>'+
+          '<div style="display:inline-block;vertical-align:middle;width:44px;height:44px;background:linear-gradient(135deg,#2D8A5B,#1B6B4A);border-radius:10px;text-align:center;line-height:44px;color:#fff;font:800 18px Georgia,serif;letter-spacing:.5px">SP</div>'+
+          '<div style="display:inline-block;vertical-align:middle;margin-left:14px">'+
+            '<div style="font:800 22px/1.1 Georgia,\'Times New Roman\',serif;color:#112A20;letter-spacing:-.4px">SeedPulse</div>'+
+            '<div style="font:500 12px -apple-system,Helvetica,Arial,sans-serif;color:#35524A;margin-top:3px">Vegetable seed & horticulture intelligence</div>'+
+          '</div>'+
+        '</td></tr>'+
+      '</table>'+
+      // Meta strip
+      '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:24px">'+
+        '<tr><td style="padding:12px 16px;background:#FFFFFF;border:1px solid #E0EAE4;border-radius:8px">'+
+          '<div style="font:700 13px -apple-system,Helvetica,Arial,sans-serif;color:#112A20">'+esc(today)+'</div>'+
+          '<div style="font:500 12px -apple-system,Helvetica,Arial,sans-serif;color:#6E867C;margin-top:3px">'+esc(subLine)+' <span style="color:#C6D6CD">·</span> '+totalCount+' articles</div>'+
+        '</td></tr>'+
+      '</table>'+
+    '</td></tr>'+
+    // Body
+    '<tr><td style="padding:8px 28px 28px 28px">'+
+      sections+
+    '</td></tr>'+
+    // Footer
+    '<tr><td style="padding:24px 28px 40px 28px;border-top:1px solid #E0EAE4;margin-top:20px">'+
+      '<div style="font:500 11px -apple-system,Helvetica,Arial,sans-serif;color:#6E867C;text-align:center;line-height:1.6">'+
+        '<div style="font:700 12px Georgia,serif;color:#35524A;margin-bottom:4px">SeedPulse — Germains Seed Technology</div>'+
+        'Curated from '+(items.length||0)+' tracked sources · Generated '+esc(today)+
+      '</div>'+
+    '</td></tr>'+
+  '</table>'+
+  '</center>'+
+'</body></html>';
+  return html;
+}
+
 /* ═══════════════════════ Cache (read) ═══════════════════════ */
 function loadCached(){
   try{
@@ -1363,21 +1486,97 @@ document.getElementById("emailBtn").addEventListener("click",function(){
   document.getElementById("emailPanel").style.display=emailOpen?"block":"none";
   this.setAttribute("aria-expanded",emailOpen);
 });
+// ─── Open in Mail: render HTML report in a new window with a toolbar ───
+// mailto: URLs cannot carry HTML bodies (RFC 6068 is text-only), so we open
+// a styled preview window with "Copy to Clipboard" and "Open Mail App" actions.
+// Copying writes both HTML and plain text to the clipboard, so pasting into
+// Gmail/Outlook/Apple Mail yields the formatted report.
 document.getElementById("mailtoBtn").addEventListener("click",function(){
   var regObj=REGIONS.find(function(r){return r.id===region;});
   var subj="SeedPulse Daily Brief — "+regObj.label+" — "+new Date().toLocaleDateString("en-GB");
-  window.location.href="mailto:?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(buildReport());
+  var html=buildHtmlReport();
+  var text=buildReport();
+
+  // Build the preview page (report + sticky toolbar) as a blob URL
+  var toolbar=''+
+    '<div id="spToolbar" style="position:sticky;top:0;z-index:9999;background:rgba(255,255,255,.96);backdrop-filter:saturate(140%) blur(8px);-webkit-backdrop-filter:saturate(140%) blur(8px);border-bottom:1px solid #E0EAE4;padding:10px 16px;display:flex;gap:8px;align-items:center;font-family:-apple-system,Helvetica,Arial,sans-serif">'+
+      '<div style="font:700 13px Georgia,serif;color:#112A20;margin-right:auto">SeedPulse · Email preview</div>'+
+      '<button id="spCopy" style="font:600 12px -apple-system,Helvetica,Arial,sans-serif;padding:8px 14px;background:#2D8A5B;color:#fff;border:0;border-radius:6px;cursor:pointer">Copy to Clipboard</button>'+
+      '<button id="spMail" style="font:600 12px -apple-system,Helvetica,Arial,sans-serif;padding:8px 14px;background:#FFFFFF;color:#112A20;border:1px solid #C6D6CD;border-radius:6px;cursor:pointer">Open Mail App</button>'+
+      '<button id="spPrint" style="font:600 12px -apple-system,Helvetica,Arial,sans-serif;padding:8px 14px;background:#FFFFFF;color:#112A20;border:1px solid #C6D6CD;border-radius:6px;cursor:pointer">Print / Save PDF</button>'+
+    '</div>';
+  // Inject toolbar + copy/mail glue script into the rendered HTML
+  var injectedScript=''+
+    '<script>(function(){'+
+      'var SUBJ='+JSON.stringify(subj)+';'+
+      'var TEXT='+JSON.stringify(text)+';'+
+      'function getHtml(){ var clone=document.cloneNode(true); var tb=clone.querySelector("#spToolbar"); if(tb) tb.remove(); var scr=clone.querySelector("script"); if(scr) scr.remove(); return "<!DOCTYPE html>"+clone.documentElement.outerHTML; }'+
+      'var c=document.getElementById("spCopy");'+
+      'if(c) c.addEventListener("click",async function(){'+
+        'try{'+
+          'if(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){'+
+            'await navigator.clipboard.write([new ClipboardItem({'+
+              '"text/html": new Blob([getHtml()],{type:"text/html"}),'+
+              '"text/plain": new Blob([TEXT],{type:"text/plain"})'+
+            '})]);'+
+          '} else { await navigator.clipboard.writeText(TEXT); }'+
+          'c.textContent="Copied! Paste into your mail app";'+
+          'c.style.background="#1B6B4A";'+
+          'setTimeout(function(){c.textContent="Copy to Clipboard";c.style.background="#2D8A5B";},2200);'+
+        '}catch(e){ alert("Copy failed: "+e.message); }'+
+      '});'+
+      'var m=document.getElementById("spMail");'+
+      'if(m) m.addEventListener("click",async function(){'+
+        'try{ if(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){ await navigator.clipboard.write([new ClipboardItem({"text/html": new Blob([getHtml()],{type:"text/html"}),"text/plain": new Blob([TEXT],{type:"text/plain"})})]); } else { await navigator.clipboard.writeText(TEXT); } }catch(e){}'+
+        'window.location.href="mailto:?subject="+encodeURIComponent(SUBJ)+"&body="+encodeURIComponent("The formatted report is on your clipboard — paste it here (Cmd/Ctrl+V). Plain-text fallback below.%0A%0A"+TEXT);'+
+      '});'+
+      'var p=document.getElementById("spPrint");'+
+      'if(p) p.addEventListener("click",function(){ window.print(); });'+
+    '})();<\/script>';
+  var pageHtml=html.replace('<body','<body').replace(/<body([^>]*)>/, '<body$1>'+toolbar);
+  pageHtml=pageHtml.replace('</body>', injectedScript+'</body>');
+
+  var blob=new Blob([pageHtml],{type:'text/html'});
+  var url=URL.createObjectURL(blob);
+  var w=window.open(url,'_blank');
+  if(!w){
+    // Popup blocked — fall back to plain mailto:
+    window.location.href="mailto:?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(text);
+  }
+  // Revoke the URL after the window has had time to load
+  setTimeout(function(){ try{URL.revokeObjectURL(url);}catch(e){} },60000);
 });
-document.getElementById("copyBtn").addEventListener("click",function(){
-  var btn=this, span=btn.querySelector('span');
-  navigator.clipboard.writeText(buildReport()).then(function(){
+
+// ─── Copy Report: write both HTML and plain text to clipboard ───
+// Pasting into Gmail/Outlook/Apple Mail/Word picks up the HTML (formatted).
+// Pasting into plain-text targets (Slack, Notes) picks up the text fallback.
+document.getElementById("copyBtn").addEventListener("click",async function(){
+  var btn=this, span=btn.querySelector('span'), useEl=btn.querySelector('use');
+  var ok=function(){
     if(span) span.textContent="Copied!";
-    btn.querySelector('use').setAttribute('href','#icon-check');
+    if(useEl) useEl.setAttribute('href','#icon-check');
     setTimeout(function(){
       if(span) span.textContent="Copy Report";
-      btn.querySelector('use').setAttribute('href','#icon-copy');
+      if(useEl) useEl.setAttribute('href','#icon-copy');
     },1800);
-  });
+  };
+  var text=buildReport();
+  try{
+    if(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
+      var html=buildHtmlReport();
+      await navigator.clipboard.write([new ClipboardItem({
+        'text/html':  new Blob([html], {type:'text/html'}),
+        'text/plain': new Blob([text], {type:'text/plain'})
+      })]);
+      ok();
+    } else {
+      await navigator.clipboard.writeText(text);
+      ok();
+    }
+  }catch(e){
+    try{ await navigator.clipboard.writeText(text); ok(); }
+    catch(e2){ alert('Copy failed: '+e2.message); }
+  }
 });
 
 // Scroll-to-top
