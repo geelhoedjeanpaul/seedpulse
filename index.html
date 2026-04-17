@@ -1486,65 +1486,69 @@ document.getElementById("emailBtn").addEventListener("click",function(){
   document.getElementById("emailPanel").style.display=emailOpen?"block":"none";
   this.setAttribute("aria-expanded",emailOpen);
 });
-// ─── Open in Mail: render HTML report in a new window with a toolbar ───
-// mailto: URLs cannot carry HTML bodies (RFC 6068 is text-only), so we open
-// a styled preview window with "Copy to Clipboard" and "Open Mail App" actions.
-// Copying writes both HTML and plain text to the clipboard, so pasting into
-// Gmail/Outlook/Apple Mail yields the formatted report.
-document.getElementById("mailtoBtn").addEventListener("click",function(){
+// ─── Shared: write HTML + plain-text to clipboard with Safari-safe Promise wrapping ───
+// Safari (desktop + iOS) silently rejects ClipboardItem when Blobs are passed
+// directly — it requires Promise-wrapped Blobs. Chrome accepts both. Wrapping
+// in Promise.resolve() works everywhere.
+async function writeRichClipboard(html, text){
+  if(!window.ClipboardItem || !navigator.clipboard || !navigator.clipboard.write){
+    await navigator.clipboard.writeText(text);
+    return 'text';
+  }
+  var htmlBlob=new Blob([html],{type:'text/html'});
+  var textBlob=new Blob([text],{type:'text/plain'});
+  // Safari needs Promise-wrapped blobs — pass them via Promise.resolve()
+  var item=new ClipboardItem({
+    'text/html':  Promise.resolve(htmlBlob),
+    'text/plain': Promise.resolve(textBlob)
+  });
+  await navigator.clipboard.write([item]);
+  return 'html';
+}
+
+// Small toast for feedback (the toolbar/preview approach was too heavy)
+function showToast(msg){
+  var t=document.getElementById('spToast');
+  if(!t){
+    t=document.createElement('div');
+    t.id='spToast';
+    t.style.cssText='position:fixed;bottom:28px;left:50%;transform:translateX(-50%);z-index:10000;background:#112A20;color:#F4F8F5;padding:12px 18px;border-radius:10px;font:600 13px -apple-system,Helvetica,Arial,sans-serif;box-shadow:0 12px 36px rgba(0,0,0,.3);opacity:0;transition:opacity .2s ease,transform .2s ease;pointer-events:none;max-width:90vw;text-align:center';
+    document.body.appendChild(t);
+  }
+  t.textContent=msg;
+  requestAnimationFrame(function(){
+    t.style.opacity='1';
+    t.style.transform='translateX(-50%) translateY(-4px)';
+  });
+  clearTimeout(showToast._h);
+  showToast._h=setTimeout(function(){
+    t.style.opacity='0';
+    t.style.transform='translateX(-50%) translateY(0)';
+  },2800);
+}
+
+// ─── Open in Mail: copy HTML to clipboard, then launch the mail composer ───
+// mailto: URLs cannot carry HTML bodies (RFC 6068 is text-only). The only
+// reliable way to get a formatted email is: stash the HTML on the clipboard,
+// open the compose window, and have the user paste (⌘V). Every major mail
+// client — Apple Mail, Gmail web, Outlook — renders pasted HTML correctly.
+document.getElementById("mailtoBtn").addEventListener("click",async function(){
   var regObj=REGIONS.find(function(r){return r.id===region;});
   var subj="SeedPulse Daily Brief — "+regObj.label+" — "+new Date().toLocaleDateString("en-GB");
   var html=buildHtmlReport();
   var text=buildReport();
+  var copied=false;
+  try{ await writeRichClipboard(html,text); copied=true; }catch(e){ /* fall through */ }
 
-  // Build the preview page (report + sticky toolbar) as a blob URL
-  var toolbar=''+
-    '<div id="spToolbar" style="position:sticky;top:0;z-index:9999;background:rgba(255,255,255,.96);backdrop-filter:saturate(140%) blur(8px);-webkit-backdrop-filter:saturate(140%) blur(8px);border-bottom:1px solid #E0EAE4;padding:10px 16px;display:flex;gap:8px;align-items:center;font-family:-apple-system,Helvetica,Arial,sans-serif">'+
-      '<div style="font:700 13px Georgia,serif;color:#112A20;margin-right:auto">SeedPulse · Email preview</div>'+
-      '<button id="spCopy" style="font:600 12px -apple-system,Helvetica,Arial,sans-serif;padding:8px 14px;background:#2D8A5B;color:#fff;border:0;border-radius:6px;cursor:pointer">Copy to Clipboard</button>'+
-      '<button id="spMail" style="font:600 12px -apple-system,Helvetica,Arial,sans-serif;padding:8px 14px;background:#FFFFFF;color:#112A20;border:1px solid #C6D6CD;border-radius:6px;cursor:pointer">Open Mail App</button>'+
-      '<button id="spPrint" style="font:600 12px -apple-system,Helvetica,Arial,sans-serif;padding:8px 14px;background:#FFFFFF;color:#112A20;border:1px solid #C6D6CD;border-radius:6px;cursor:pointer">Print / Save PDF</button>'+
-    '</div>';
-  // Inject toolbar + copy/mail glue script into the rendered HTML
-  var injectedScript=''+
-    '<script>(function(){'+
-      'var SUBJ='+JSON.stringify(subj)+';'+
-      'var TEXT='+JSON.stringify(text)+';'+
-      'function getHtml(){ var clone=document.cloneNode(true); var tb=clone.querySelector("#spToolbar"); if(tb) tb.remove(); var scr=clone.querySelector("script"); if(scr) scr.remove(); return "<!DOCTYPE html>"+clone.documentElement.outerHTML; }'+
-      'var c=document.getElementById("spCopy");'+
-      'if(c) c.addEventListener("click",async function(){'+
-        'try{'+
-          'if(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){'+
-            'await navigator.clipboard.write([new ClipboardItem({'+
-              '"text/html": new Blob([getHtml()],{type:"text/html"}),'+
-              '"text/plain": new Blob([TEXT],{type:"text/plain"})'+
-            '})]);'+
-          '} else { await navigator.clipboard.writeText(TEXT); }'+
-          'c.textContent="Copied! Paste into your mail app";'+
-          'c.style.background="#1B6B4A";'+
-          'setTimeout(function(){c.textContent="Copy to Clipboard";c.style.background="#2D8A5B";},2200);'+
-        '}catch(e){ alert("Copy failed: "+e.message); }'+
-      '});'+
-      'var m=document.getElementById("spMail");'+
-      'if(m) m.addEventListener("click",async function(){'+
-        'try{ if(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){ await navigator.clipboard.write([new ClipboardItem({"text/html": new Blob([getHtml()],{type:"text/html"}),"text/plain": new Blob([TEXT],{type:"text/plain"})})]); } else { await navigator.clipboard.writeText(TEXT); } }catch(e){}'+
-        'window.location.href="mailto:?subject="+encodeURIComponent(SUBJ)+"&body="+encodeURIComponent("The formatted report is on your clipboard — paste it here (Cmd/Ctrl+V). Plain-text fallback below.%0A%0A"+TEXT);'+
-      '});'+
-      'var p=document.getElementById("spPrint");'+
-      'if(p) p.addEventListener("click",function(){ window.print(); });'+
-    '})();<\/script>';
-  var pageHtml=html.replace('<body','<body').replace(/<body([^>]*)>/, '<body$1>'+toolbar);
-  pageHtml=pageHtml.replace('</body>', injectedScript+'</body>');
-
-  var blob=new Blob([pageHtml],{type:'text/html'});
-  var url=URL.createObjectURL(blob);
-  var w=window.open(url,'_blank');
-  if(!w){
-    // Popup blocked — fall back to plain mailto:
-    window.location.href="mailto:?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(text);
-  }
-  // Revoke the URL after the window has had time to load
-  setTimeout(function(){ try{URL.revokeObjectURL(url);}catch(e){} },60000);
+  // Compose a short text body with a pointer to paste — if the user's mail
+  // client has a rich text mode (most do by default), their ⌘V will paste the
+  // formatted HTML over this placeholder.
+  var bodyHint = copied
+    ? "The fully formatted SeedPulse brief is on your clipboard.\n\nPress ⌘V (Mac) or Ctrl+V (Windows) to paste the HTML version here.\n\n— plain-text fallback follows —\n\n"
+    : "";
+  window.location.href="mailto:?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(bodyHint+text);
+  if(copied) showToast("HTML report copied — paste (⌘V) into the mail window");
+  else showToast("Opened Mail (clipboard copy failed — pasted as text only)");
 });
 
 // ─── Copy Report: write both HTML and plain text to clipboard ───
@@ -1552,30 +1556,29 @@ document.getElementById("mailtoBtn").addEventListener("click",function(){
 // Pasting into plain-text targets (Slack, Notes) picks up the text fallback.
 document.getElementById("copyBtn").addEventListener("click",async function(){
   var btn=this, span=btn.querySelector('span'), useEl=btn.querySelector('use');
-  var ok=function(){
-    if(span) span.textContent="Copied!";
+  var flash=function(label){
+    if(span) span.textContent=label;
     if(useEl) useEl.setAttribute('href','#icon-check');
     setTimeout(function(){
       if(span) span.textContent="Copy Report";
       if(useEl) useEl.setAttribute('href','#icon-copy');
     },1800);
   };
+  var html=buildHtmlReport();
   var text=buildReport();
   try{
-    if(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
-      var html=buildHtmlReport();
-      await navigator.clipboard.write([new ClipboardItem({
-        'text/html':  new Blob([html], {type:'text/html'}),
-        'text/plain': new Blob([text], {type:'text/plain'})
-      })]);
-      ok();
-    } else {
-      await navigator.clipboard.writeText(text);
-      ok();
-    }
+    var mode=await writeRichClipboard(html,text);
+    flash(mode==='html'?"Copied as HTML!":"Copied!");
+    if(mode==='html') showToast("Report copied as HTML — paste into mail, Word, or Google Docs");
+    else showToast("Report copied as plain text (rich clipboard unavailable)");
   }catch(e){
-    try{ await navigator.clipboard.writeText(text); ok(); }
-    catch(e2){ alert('Copy failed: '+e2.message); }
+    try{
+      await navigator.clipboard.writeText(text);
+      flash("Copied!");
+      showToast("Report copied as plain text");
+    }catch(e2){
+      alert('Copy failed: '+e2.message);
+    }
   }
 });
 
