@@ -1,6 +1,18 @@
-// SeedPulse service worker v5 — stale-while-revalidate + API cache + notifications
-const SHELL_CACHE = 'seedpulse-shell-v5';
-const API_CACHE   = 'seedpulse-api-v5';
+// SeedPulse service worker v6 — SWR caches + notifications + Web Push
+const SHELL_CACHE = 'seedpulse-shell-v6';
+const API_CACHE   = 'seedpulse-api-v6';
+
+// Push Worker URL — set at build/deploy time; empty means push disabled.
+// The index.html writes this into a property on the SW registration after
+// registration so we don't have to hardcode it here. Fallback: read from
+// a /seedpulse/push-config.json if present.
+let PUSH_WORKER_URL = '';
+
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SET_PUSH_URL') {
+    PUSH_WORKER_URL = event.data.url || '';
+  }
+});
 const SHELL = [
   '/seedpulse/',
   '/seedpulse/index.html',
@@ -78,6 +90,68 @@ async function handleApi(req) {
     return cached || new Response(JSON.stringify({status:'error',items:[]}), {headers:{'content-type':'application/json'}});
   }
 }
+
+// ═══════════ Web Push: body-less ping → fetch /latest → show notifications ═══════════
+// The push worker sends an empty push. We fetch the actual items from its
+// /latest endpoint and show one native notification per new article.
+self.addEventListener('push', event => {
+  event.waitUntil((async () => {
+    try {
+      // Fall back to reading push URL from a config file if the page hasn't
+      // postMessage'd it yet (e.g. push arrived before any page is open).
+      if (!PUSH_WORKER_URL) {
+        try {
+          const cfg = await fetch('/seedpulse/push-config.json', { cache: 'no-store' });
+          if (cfg.ok) PUSH_WORKER_URL = (await cfg.json()).pushWorkerUrl || '';
+        } catch {}
+      }
+      if (!PUSH_WORKER_URL) {
+        // No URL configured — show a generic notification so the user isn't left guessing
+        await self.registration.showNotification('SeedPulse', {
+          body: 'New Germains-priority article. Open the app to see it.',
+          icon: '/seedpulse/icon-192.svg',
+          badge: '/seedpulse/icon-192.svg',
+          tag: 'seedpulse-generic'
+        });
+        return;
+      }
+
+      const res = await fetch(PUSH_WORKER_URL.replace(/\/$/, '') + '/latest', { cache: 'no-store' });
+      if (!res.ok) throw new Error('latest fetch failed');
+      const { items = [] } = await res.json();
+      if (!items.length) return;
+
+      // Show up to 3 — avoid spamming the user's notification shade
+      const shown = await self.registration.getNotifications();
+      const shownTags = new Set(shown.map(n => n.tag));
+      let count = 0;
+      for (const a of items.slice(0, 3)) {
+        const tag = 'seedpulse-' + a.id;
+        if (shownTags.has(tag)) continue;
+        await self.registration.showNotification('SeedPulse: ' + a.t, {
+          body: (a.s || '').substring(0, 140),
+          icon: '/seedpulse/icon-192.svg',
+          badge: '/seedpulse/icon-192.svg',
+          tag,
+          data: { url: a.u || '/seedpulse/' },
+          renotify: false
+        });
+        count++;
+      }
+      if (count === 0) {
+        // All already in the shade — skip, don't spam
+      }
+    } catch (e) {
+      // Last-resort generic notification so the push isn't silently dropped
+      await self.registration.showNotification('SeedPulse', {
+        body: 'New Germains-priority article detected.',
+        icon: '/seedpulse/icon-192.svg',
+        badge: '/seedpulse/icon-192.svg',
+        tag: 'seedpulse-fallback'
+      });
+    }
+  })());
+});
 
 // Notification click → open the article URL (or focus an existing tab)
 self.addEventListener('notificationclick', event => {

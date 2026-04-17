@@ -1,0 +1,26 @@
+name = "seedpulse-push"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+# ─── Secrets (set via `wrangler secret put ...`) ──────────────────────────
+# VAPID_PRIVATE_JWK   — full private JWK JSON string (from generate-vapid.mjs)
+# TRIGGER_KEY         — random string to protect the /trigger-test endpoint
+
+# ─── Public vars (plain-text in this file is fine) ────────────────────────
+[vars]
+VAPID_PUBLIC_KEY = "REPLACE_WITH_YOUR_VAPID_PUBLIC_KEY"   # base64url, 88 chars
+VAPID_SUBJECT    = "mailto:geelhoedjeanpaul@gmail.com"
+
+# ─── KV namespace for subscriptions + seen-set + latest items ─────────────
+# Create it first with:
+#   wrangler kv namespace create SUBS
+# Then paste the returned id below.
+[[kv_namespaces]]
+binding = "SUBS"
+id      = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# ─── Cron: every 30 minutes ───────────────────────────────────────────────
+# Free plan supports cron triggers. Every-minute is allowed too; 30 min is
+# plenty for industry news and keeps you well below the 100k req/day budget.
+[triggers]
+crons = ["*/30 * * * *"]

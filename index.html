@@ -558,6 +558,13 @@ var NOTIF_PREF_KEY='seedpulse_notify'; // 'on' | 'off' | undefined (never asked)
 // When blank (default), falls back to rss2json free tier.
 var PROXY_URL=''; // e.g. 'https://seedpulse-rss.your-subdomain.workers.dev/?url='
 
+// ─── Self-hosted Push worker (optional) ─────────────────────────────────────
+// Deploy cloudflare-worker-push/ and paste the URL here (no trailing slash).
+// When set, enabling the bell subscribes the user to server-initiated push —
+// notifications fire even when the app isn't open. When blank, the bell falls
+// back to client-only "check-on-launch" notifications.
+var PUSH_WORKER_URL=''; // e.g. 'https://seedpulse-push.your-subdomain.workers.dev'
+
 var RSS2JSON='https://api.rss2json.com/v1/api.json?rss_url=';
 // Google News RSS — `num=100` asks for up to 100 items per query (honoured with a
 // self-hosted proxy; rss2json still caps at 10). `when:30d` keeps results fresh.
@@ -903,10 +910,73 @@ function updateBellUI(){
     : 'Enable alerts for new high-priority Germains articles';
 }
 
+/* ═══════════ Server push (optional) ═══════════
+   Subscribes the browser to the Push API and registers the subscription
+   with the SeedPulse Push Worker. When PUSH_WORKER_URL is blank, we fall
+   back to client-only notifications (fire on app launch only). */
+
+function urlBase64ToUint8Array(b64){
+  var pad='='.repeat((4-b64.length%4)%4);
+  var s=(b64+pad).replace(/-/g,'+').replace(/_/g,'/');
+  var raw=atob(s); var out=new Uint8Array(raw.length);
+  for(var i=0;i<raw.length;i++) out[i]=raw.charCodeAt(i);
+  return out;
+}
+
+async function subscribeToPush(){
+  if(!PUSH_WORKER_URL) return { mode: 'local' };
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)){
+    return { mode: 'local', reason: 'no push support' };
+  }
+  var reg = await navigator.serviceWorker.ready;
+
+  // Tell the SW what the push worker URL is so its push handler can fetch /latest
+  try{ reg.active && reg.active.postMessage({ type:'SET_PUSH_URL', url: PUSH_WORKER_URL }); }catch(e){}
+
+  // Fetch the server's VAPID public key
+  var keyRes = await fetch(PUSH_WORKER_URL.replace(/\/$/,'')+'/vapid-key',{cache:'no-store'});
+  if(!keyRes.ok) throw new Error('VAPID key fetch failed');
+  var publicKey = (await keyRes.json()).publicKey;
+
+  // Reuse existing subscription if possible (avoids duplicate server rows)
+  var existing = await reg.pushManager.getSubscription();
+  var sub = existing || await reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(publicKey)
+  });
+
+  // Register with the push worker
+  var postRes = await fetch(PUSH_WORKER_URL.replace(/\/$/,'')+'/subscribe',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ subscription: sub.toJSON() })
+  });
+  if(!postRes.ok) throw new Error('subscribe failed ('+postRes.status+')');
+
+  return { mode: 'server', subscription: sub };
+}
+
+async function unsubscribeFromPush(){
+  if(!PUSH_WORKER_URL) return;
+  if(!('serviceWorker' in navigator)) return;
+  var reg = await navigator.serviceWorker.ready;
+  var sub = await reg.pushManager.getSubscription();
+  if(!sub) return;
+  try{
+    await fetch(PUSH_WORKER_URL.replace(/\/$/,'')+'/unsubscribe',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ endpoint: sub.endpoint })
+    });
+  }catch(e){}
+  try{ await sub.unsubscribe(); }catch(e){}
+}
+
 async function toggleNotifyPref(){
   var pref=getNotifyPref();
   if(pref==='on'){
     setNotifyPref('off');
+    await unsubscribeFromPush();
     updateBellUI();
     return;
   }
@@ -921,20 +991,32 @@ async function toggleNotifyPref(){
   var perm = Notification.permission==='granted'
     ? 'granted'
     : await Notification.requestPermission();
-  if(perm!=='granted'){
-    updateBellUI();
-    return;
+  if(perm!=='granted'){ updateBellUI(); return; }
+
+  // Subscribe to server push if a worker is configured; otherwise fall through
+  // to client-only "check-on-launch" mode. Any error falls back to local mode.
+  var mode='local';
+  try{
+    var r = await subscribeToPush();
+    mode = r.mode;
+  }catch(e){
+    console.warn('Server push subscription failed, falling back to local:', e);
+    mode='local';
   }
+
   setNotifyPref('on');
   // Prime the seen-set so the initial backlog of high-priority items doesn't
   // trigger a notification storm. From this point forward, only NEW ones fire.
   primeSeen();
   updateBellUI();
-  // A welcome confirmation so the user knows it worked
+
+  // Welcome confirmation
   try{
     var reg = await navigator.serviceWorker.ready;
     reg.showNotification('SeedPulse alerts on', {
-      body:'You\'ll be notified when new high-priority Germains articles are detected on next launch.',
+      body: mode==='server'
+        ? 'You\'ll be notified when new high-priority Germains articles arrive, even when the app is closed.'
+        : 'You\'ll be notified when new high-priority Germains articles are detected on next launch.',
       icon:'icon-192.svg', badge:'icon-192.svg', tag:'seedpulse-welcome'
     });
   }catch(e){}
