@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0F3D2A"/>
+      <stop offset="55%" stop-color="#1F6B4A"/>
+      <stop offset="100%" stop-color="#3EA06E"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="0.2" y1="0" x2="0.9" y2="1">
+      <stop offset="0%" stop-color="#B7F0C8"/>
+      <stop offset="100%" stop-color="#5CC98A"/>
+    </linearGradient>
+  </defs>
+  <!-- Full-bleed background for safe-zone mask -->
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <!-- Art scaled down and centered in 40% safe zone -->
+  <g transform="translate(256 300) scale(1.8)">
+    <ellipse cx="0" cy="14" rx="14" ry="20" fill="#6B3E1F"/>
+    <rect x="-2.2" y="-12" width="4.4" height="22" rx="2" fill="#2F8857"/>
+    <path d="M-2 -8 C -28 -20 -32 -48 -4 -40 C 2 -22 -2 -8 -2 -8 Z" fill="url(#leaf)"/>
+    <path d="M2 -14 C 30 -32 40 -62 10 -58 C 0 -38 2 -14 2 -14 Z" fill="url(#leaf)"/>
+  </g>
+  <path d="M120 388 L 180 388 L 200 360 L 226 420 L 252 372 L 272 388 L 392 388"
+        stroke="rgba(255,255,255,0.55)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>

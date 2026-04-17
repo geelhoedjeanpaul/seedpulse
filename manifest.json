@@ -5,23 +5,16 @@
   "start_url": "/seedpulse/index.html",
   "scope": "/seedpulse/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
-  "background_color": "#1B3A2D",
-  "theme_color": "#1B3A2D",
+  "background_color": "#0F3D2A",
+  "theme_color": "#0F3D2A",
   "icons": [
-    {
-      "src": "icon-192.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-512.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
+    { "src": "icon-192.svg",      "sizes": "192x192", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-512.svg",      "sizes": "512x512", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-maskable.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "maskable" }
   ],
-  "categories": ["business", "news"],
-  "lang": "en"
+  "categories": ["business", "news", "productivity"],
+  "lang": "en",
+  "dir": "ltr"
 }

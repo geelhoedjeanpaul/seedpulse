@@ -1,10 +1,30 @@
-<svg xmlns='http://www.w3.org/2000/svg' width='512' height='512'>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
-      <stop offset='0%' stop-color='#1B6B4A'/>
-      <stop offset='100%' stop-color='#40916C'/>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0F3D2A"/>
+      <stop offset="55%" stop-color="#1F6B4A"/>
+      <stop offset="100%" stop-color="#3EA06E"/>
     </linearGradient>
+    <linearGradient id="leaf" x1="0.2" y1="0" x2="0.9" y2="1">
+      <stop offset="0%" stop-color="#B7F0C8"/>
+      <stop offset="100%" stop-color="#5CC98A"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.3" cy="0.25" r="0.9">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.25)"/>
+      <stop offset="60%" stop-color="rgba(255,255,255,0)"/>
+    </radialGradient>
   </defs>
-  <rect width='512' height='512' rx='112.64' fill='url(#g)'/>
-  <text x='256' y='368.64' font-size='256' text-anchor='middle' font-family='Apple Color Emoji,Segoe UI Emoji,sans-serif'>🌱</text>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="112" fill="url(#glow)"/>
+  <g transform="translate(256 314) scale(2.667)">
+    <ellipse cx="0" cy="14" rx="14" ry="20" fill="#6B3E1F"/>
+    <ellipse cx="-3" cy="8" rx="4" ry="7" fill="rgba(255,255,255,0.18)"/>
+    <rect x="-2.2" y="-12" width="4.4" height="22" rx="2" fill="#2F8857"/>
+    <path d="M-2 -8 C -28 -20 -32 -48 -4 -40 C 2 -22 -2 -8 -2 -8 Z" fill="url(#leaf)"/>
+    <path d="M2 -14 C 30 -32 40 -62 10 -58 C 0 -38 2 -14 2 -14 Z" fill="url(#leaf)"/>
+    <path d="M-4 -12 L -18 -32" stroke="rgba(15,61,42,0.35)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+    <path d="M4 -18 L 18 -46" stroke="rgba(15,61,42,0.35)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+  </g>
+  <path d="M64 400 L 144 400 L 170 358 L 208 444 L 240 378 L 266 400 L 448 400"
+        stroke="rgba(255,255,255,0.55)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
 </svg>

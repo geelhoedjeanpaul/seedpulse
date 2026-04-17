@@ -12,147 +12,508 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SeedPulse">
-<meta name="theme-color" content="#1B3A2D">
+<meta name="theme-color" content="#0F3D2A" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#07201A" media="(prefers-color-scheme: dark)">
 
-<!-- Apple touch icon (180×180 inline SVG → PNG-like rendering) -->
-<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxODAiIGhlaWdodD0iMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjMUI2QjRBIi8+PHRleHQgeD0iOTAiIHk9IjExNSIgZm9udC1zaXplPSI5MCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+8J+MsTwvdGV4dD48L3N2Zz4=">
-
-<!-- iOS Splash Screens -->
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<!-- iPhone 14 Pro Max -->
-<link rel="apple-touch-startup-image" media="screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjkwIiBoZWlnaHQ9IjI3OTYiPjxyZWN0IHdpZHRoPSIxMjkwIiBoZWlnaHQ9IjI3OTYiIGZpbGw9IiMxQjNBMkQiLz48dGV4dCB4PSI2NDUiIHk9IjEzNTAiIGZvbnQtc2l6ZT0iMTgwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjZmZmIj7wn4yxPC90ZXh0Pjx0ZXh0IHg9IjY0NSIgeT0iMTU4MCIgZm9udC1zaXplPSI3MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjcpIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiI+U2VlZFB1bHNlPC90ZXh0Pjwvc3ZnPg==">
-<!-- iPhone 14 Pro -->
-<link rel="apple-touch-startup-image" media="screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMTc5IiBoZWlnaHQ9IjI1NTYiPjxyZWN0IHdpZHRoPSIxMTc5IiBoZWlnaHQ9IjI1NTYiIGZpbGw9IiMxQjNBMkQiLz48dGV4dCB4PSI1OTAiIHk9IjEyMzAiIGZvbnQtc2l6ZT0iMTYwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjZmZmIj7wn4yxPC90ZXh0Pjx0ZXh0IHg9IjU5MCIgeT0iMTQzMCIgZm9udC1zaXplPSI2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjcpIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiI+U2VlZFB1bHNlPC90ZXh0Pjwvc3ZnPg==">
+<!-- Apple touch icon -->
+<link rel="apple-touch-icon" href="icon-192.svg">
+<link rel="icon" type="image/svg+xml" href="icon-192.svg">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#F5F8F6;--hdr:#1B3A2D;--hdr2:#2D6A4F;--hdr3:#40916C;--card:#fff;--text:#1B3A2D;--sub:#4A635A;--mute:#7A948A;--light:#9AB0A4;--tag:#F0F5F2;--border:#E0EAE4;--serif:'Source Serif 4',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;--safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px)}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{-webkit-text-size-adjust:100%}
-body{font-family:var(--sans);background:linear-gradient(175deg,#E8F0EB 0%,var(--bg) 35%,#FAFCFB 100%);color:var(--text);min-height:100dvh;-webkit-font-smoothing:antialiased}
-.hdr{background:linear-gradient(135deg,var(--hdr) 0%,var(--hdr2) 60%,var(--hdr3) 100%);padding:calc(16px + var(--safe-t)) 20px 20px;color:#fff;position:sticky;top:0;z-index:100}
-.hdr::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 20% 50%,rgba(255,255,255,.04) 0%,transparent 50%),radial-gradient(circle at 80% 20%,rgba(255,255,255,.06) 0%,transparent 40%);pointer-events:none}
-.hdr-inner{position:relative;max-width:720px;margin:0 auto}
-.hdr-top{display:flex;align-items:center;gap:10px;margin-bottom:3px}
-.hdr-top h1{font:900 24px/1 var(--serif);letter-spacing:-.5px}
-.hdr-badge{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;background:rgba(255,255,255,.15);padding:3px 8px;border-radius:4px}
-.hdr-sub{font-size:12px;opacity:.65;margin-bottom:14px}
-.tabs{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;margin-bottom:10px}
-.tabs::-webkit-scrollbar{display:none}
-.tab{flex-shrink:0;display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;border:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.05);color:#fff;font:600 13px var(--sans);cursor:pointer;transition:all .15s;white-space:nowrap;-webkit-tap-highlight-color:transparent}
-.tab.on{border-color:#fff;background:rgba(255,255,255,.18);font-weight:700}
-.period-row{display:flex;gap:5px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-bottom:12px}
-.period-row::-webkit-scrollbar{display:none}
-.pill{flex-shrink:0;padding:5px 12px;border-radius:20px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.05);color:rgba(255,255,255,.75);font:500 12px var(--sans);cursor:pointer;transition:all .15s;white-space:nowrap;-webkit-tap-highlight-color:transparent}
-.pill.on{border-color:#fff;background:rgba(255,255,255,.2);color:#fff;font-weight:700}
-.search-row{display:flex;gap:8px;flex-wrap:wrap}
-.search{flex:1 1 200px;padding:9px 14px;border-radius:8px;border:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font:500 13px var(--sans);outline:none}
-.search::placeholder{color:rgba(255,255,255,.45)}
-.btn-email{flex-shrink:0;padding:9px 16px;border-radius:8px;border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;font:600 13px var(--sans);cursor:pointer;-webkit-tap-highlight-color:transparent}
-.email-panel{margin-top:10px;background:rgba(0,0,0,.2);border-radius:10px;padding:12px 16px;animation:fadeIn .2s}
-.email-panel p{font-size:12px;opacity:.8;margin-bottom:10px}
-.email-btns{display:flex;gap:8px;flex-wrap:wrap}
-.email-btns button{padding:8px 16px;border-radius:6px;font:600 13px var(--sans);cursor:pointer;-webkit-tap-highlight-color:transparent}
-.btn-primary{border:none;background:#fff;color:var(--hdr)}
-.btn-secondary{border:2px solid rgba(255,255,255,.3);background:transparent;color:#fff}
-.stats{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 16px;background:var(--card);border-radius:10px;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,.05);font-size:12px;color:var(--sub);max-width:720px;margin-left:auto;margin-right:auto}
-.stats b{color:var(--text)}
-.stats .sep{color:#ddd}
-main{max-width:720px;margin:0 auto;padding:20px 16px calc(20px + var(--safe-b))}
-.cat-btn{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;cursor:pointer;padding:8px 0;text-align:left;-webkit-tap-highlight-color:transparent}
-.cat-icon{font-size:22px}
-.cat-label{flex:1;font:700 16px var(--serif);color:var(--text)}
-.cat-count{font:600 12px var(--sans);color:#fff;padding:2px 10px;border-radius:12px}
-.cat-arrow{font-size:13px;color:var(--mute);transition:transform .2s}
-.cat-arrow.open{transform:rotate(180deg)}
-.cat-cards{display:grid;gap:10px;margin:8px 0 24px 32px}
-.card{background:var(--card);border-radius:10px;padding:16px 18px;border-left:4px solid var(--hdr2);box-shadow:0 1px 4px rgba(0,0,0,.06);transition:transform .12s,box-shadow .12s}
-.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.card h4{font:700 14.5px/1.35 var(--serif);color:var(--text);flex:1}
-.card a{font:600 10.5px var(--sans);letter-spacing:.4px;text-transform:uppercase;text-decoration:none;white-space:nowrap;flex-shrink:0;margin-top:2px}
-.card p{margin-top:7px;font:400 13px/1.55 var(--sans);color:var(--sub)}
-.card-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px;align-items:center}
-.tag{font:500 10.5px var(--sans);color:var(--mute);background:var(--tag);padding:2px 7px;border-radius:4px}
-.tag-date{font:400 10.5px var(--sans);color:var(--light)}
-.tag-region{font-size:10px;color:#8A9E94;background:#E8F0EB;padding:2px 5px;border-radius:3px}
-.empty{text-align:center;padding:40px 20px}
-.empty-icon{font-size:48px;margin-bottom:12px}
-.empty p{font-size:14px;color:var(--mute)}
-footer{text-align:center;padding:16px 20px calc(16px + var(--safe-b));font:400 10.5px var(--sans);color:var(--light);border-top:1px solid var(--border)}
-/* Install banner */
-.install-banner{max-width:720px;margin:0 auto 16px;background:var(--card);border-radius:12px;padding:14px 18px;box-shadow:0 1px 4px rgba(0,0,0,.05);display:flex;align-items:center;gap:12px;font-size:13px;color:var(--sub);line-height:1.5;border:1.5px solid var(--border)}
-.install-banner .install-icon{font-size:28px;flex-shrink:0}
-.install-banner .install-text{flex:1}
-.install-banner .install-text b{color:var(--text);display:block;margin-bottom:2px}
-.install-banner .close{flex-shrink:0;background:none;border:none;font-size:20px;color:var(--mute);cursor:pointer;padding:0;line-height:1}
-.install-banner .install-steps{margin-top:6px;font-size:12px;color:var(--mute);list-style:none;display:flex;flex-direction:column;gap:3px}
-.install-banner .install-steps li::before{content:"→ "}
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700;8..60,900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-/* Android install button */
-.btn-install{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:8px 16px;border-radius:8px;background:var(--hdr2);color:#fff;font:600 12px var(--sans);border:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     Inline SVG icon sprite — referenced via <svg><use href="#icon-xxx"/></svg>
+     Vector-perfect rendering on any DPI, independent of OS emoji fonts.
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+  <defs>
+    <!-- Category icons (24×24 viewBox, stroke-based line icons) -->
+    <symbol id="icon-germains" viewBox="0 0 24 24">
+      <path d="M12 3c-3 3-5 6-5 9a5 5 0 0010 0c0-3-2-6-5-9z" fill="currentColor" opacity=".2"/>
+      <path d="M12 3c-3 3-5 6-5 9a5 5 0 0010 0c0-3-2-6-5-9z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M12 12v9M8.5 18.5c1.2-.8 2.5-1 3.5-1s2.3.2 3.5 1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-seed-tech" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2.1 2.1M16.9 16.9L19 19M5 19l2.1-2.1M16.9 7.1L19 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-market" viewBox="0 0 24 24">
+      <path d="M3 20h18M6 20V10M11 20V4M16 20v-7M21 20V7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-breeding" viewBox="0 0 24 24">
+      <path d="M7 3c0 4 10 6 10 10M17 21c0-4-10-6-10-10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M7 3h10M7 8h6M11 16h6M7 21h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-regulation" viewBox="0 0 24 24">
+      <path d="M8 3h8l2 3v14a1 1 0 01-1 1H7a1 1 0 01-1-1V6l2-3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M9 12h6M9 16h6M10 8h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-competitors" viewBox="0 0 24 24">
+      <path d="M4 21V7l6-3 6 3v14M14 21V11h6v10M4 21h16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M7 10h0M7 13h0M7 16h0M10 10h0M10 13h0M10 16h0M17 14h0M17 17h0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-crops" viewBox="0 0 24 24">
+      <path d="M12 22V9M12 9c-2-3-6-3-6-3s0 4 3 5M12 9c2-3 6-3 6-3s0 4-3 5M12 14c-2-2-5-2-5-2s0 3 2 4M12 14c2-2 5-2 5-2s0 3-2 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+
+    <!-- Region icons -->
+    <symbol id="icon-globe" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18" fill="none" stroke="currentColor" stroke-width="1.6"/>
+    </symbol>
+    <symbol id="icon-europe" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <g fill="currentColor"><circle cx="12" cy="6" r="1"/><circle cx="16" cy="8" r="1"/><circle cx="18" cy="12" r="1"/><circle cx="16" cy="16" r="1"/><circle cx="12" cy="18" r="1"/><circle cx="8" cy="16" r="1"/><circle cx="6" cy="12" r="1"/><circle cx="8" cy="8" r="1"/></g>
+    </symbol>
+    <symbol id="icon-mena" viewBox="0 0 24 24">
+      <path d="M17 12a5 5 0 11-4-4.9A4 4 0 0017 12z" fill="currentColor"/>
+      <path d="M18 7l.5 1.5L20 9l-1.5.5L18 11l-.5-1.5L16 9l1.5-.5z" fill="currentColor"/>
+    </symbol>
+    <symbol id="icon-apac" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M8 4c-1 2-1 4 0 6M16 20c1-2 1-4 0-6M4 8c2 1 4 1 6 0M20 16c-2-1-4-1-6 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-americas" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M9 4c-1 2 0 4 1 5s2 2 1 4-3 3-4 5M14 5c1 1 2 3 3 3M15 15c-1 1 0 3 1 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </symbol>
+
+    <!-- UI icons -->
+    <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="icon-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3 7l9 6 9-6" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="icon-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="icon-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="icon-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M19 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1h5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="icon-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="icon-install" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="icon-share-ios" viewBox="0 0 24 24"><path d="M12 3v13M7 8l5-5 5 5M5 13v7a1 1 0 001 1h12a1 1 0 001-1v-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="icon-empty" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M20 20l-3.5-3.5M8 11h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="icon-calendar" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4 10h16M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="icon-logo" viewBox="0 0 24 24"><path d="M12 4c-2 2-3 4-3 6a3 3 0 006 0c0-2-1-4-3-6z" fill="currentColor"/><path d="M12 10v10M9 17c1-.5 2-.6 3-.6s2 .1 3 .6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  </defs>
+</svg>
+
+<style>
+/* ═══════════════ Design tokens ═══════════════ */
+:root{
+  --bg:#F4F8F5;
+  --bg-grad-1:#E7F0EA;
+  --bg-grad-2:#F4F8F5;
+  --bg-grad-3:#FBFDFC;
+  --surface:#FFFFFF;
+  --surface-2:#F7FAF8;
+  --hdr-1:#0F3D2A;
+  --hdr-2:#1F6B4A;
+  --hdr-3:#3EA06E;
+  --accent:#2D8A5B;
+  --text:#112A20;
+  --text-2:#35524A;
+  --mute:#6E867C;
+  --light:#9AB0A4;
+  --border:#E0EAE4;
+  --border-strong:#C6D6CD;
+  --tag-bg:#EEF5F0;
+  --chip-bg:#F0F5F2;
+  --danger:#B8462E;
+  --shadow-sm:0 1px 2px rgba(15,61,42,.04), 0 1px 3px rgba(15,61,42,.06);
+  --shadow-md:0 2px 6px rgba(15,61,42,.06), 0 8px 24px rgba(15,61,42,.08);
+  --shadow-lg:0 6px 20px rgba(15,61,42,.10), 0 20px 48px rgba(15,61,42,.12);
+  --radius-sm:6px;
+  --radius-md:10px;
+  --radius-lg:14px;
+  --radius-xl:20px;
+  --serif:'Source Serif 4',Georgia,'Times New Roman',serif;
+  --sans:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px);
+  --safe-r:env(safe-area-inset-right,0px);
+
+  /* Category palette — carefully tuned, not auto-generated */
+  --c-germains:#0A4A2A;
+  --c-seed-tech:#1B6B4A;
+  --c-market:#2E7D5B;
+  --c-breeding:#4A9E72;
+  --c-regulation:#5A8A7A;
+  --c-competitors:#2B5C8A;
+  --c-crops:#8A6B2E;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0A1A14;
+    --bg-grad-1:#0A1A14;
+    --bg-grad-2:#0E2219;
+    --bg-grad-3:#132A20;
+    --surface:#12251C;
+    --surface-2:#0F1F18;
+    --hdr-1:#07201A;
+    --hdr-2:#0F3D2A;
+    --hdr-3:#1F6B4A;
+    --accent:#5ED69B;
+    --text:#E8F2EC;
+    --text-2:#B6C9BF;
+    --mute:#89A197;
+    --light:#607A70;
+    --border:#1F3A2F;
+    --border-strong:#2E5244;
+    --tag-bg:#1A3528;
+    --chip-bg:#162D22;
+    --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+    --shadow-md:0 4px 12px rgba(0,0,0,.4);
+    --shadow-lg:0 12px 36px rgba(0,0,0,.5);
+  }
+}
+
+/* ═══════════════ Reset & base ═══════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{
+  font-family:var(--sans);
+  font-feature-settings:"ss01","cv11","tnum";
+  color:var(--text);
+  background:
+    radial-gradient(ellipse 80% 60% at 20% -10%, rgba(62,160,110,.10), transparent 60%),
+    linear-gradient(175deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 35%, var(--bg-grad-3) 100%);
+  background-attachment:fixed;
+  min-height:100dvh;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;
+  overflow-x:hidden;
+}
+button{font-family:inherit;color:inherit;-webkit-tap-highlight-color:transparent}
+svg.icon{width:1em;height:1em;display:inline-block;vertical-align:-.125em;flex-shrink:0}
+a{color:var(--accent);text-decoration:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+/* ═══════════════ Header ═══════════════ */
+.hdr{
+  position:sticky;top:0;z-index:100;
+  padding:calc(14px + var(--safe-t)) calc(16px + var(--safe-r)) 16px calc(16px + var(--safe-l));
+  color:#fff;
+  background:
+    linear-gradient(180deg, rgba(15,61,42,0) 0%, rgba(15,61,42,.1) 100%),
+    linear-gradient(135deg, var(--hdr-1) 0%, var(--hdr-2) 55%, var(--hdr-3) 120%);
+  box-shadow:0 1px 0 rgba(0,0,0,.06), 0 6px 20px rgba(15,61,42,.18);
+  -webkit-backdrop-filter:saturate(140%);backdrop-filter:saturate(140%);
+}
+.hdr::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255,255,255,.10) 0%, transparent 40%),
+    radial-gradient(circle at 85% 10%, rgba(255,255,255,.06) 0%, transparent 40%);
+}
+.hdr-inner{position:relative;max-width:760px;margin:0 auto}
+.hdr-top{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.hdr-mark{
+  width:30px;height:30px;border-radius:8px;
+  background:rgba(255,255,255,.12);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.2);
+  font-size:18px;color:#fff;
+}
+.hdr h1{font:900 24px/1.05 var(--serif);letter-spacing:-.5px;flex:1}
+.hdr-badge{
+  font:700 9.5px var(--sans);letter-spacing:1.4px;text-transform:uppercase;
+  background:rgba(255,255,255,.14);
+  color:rgba(255,255,255,.95);
+  padding:4px 9px;border-radius:5px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);
+}
+.hdr-sub{font:500 12px var(--sans);opacity:.75;margin-bottom:14px}
+
+/* Tabs (regions) */
+.tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;margin-bottom:10px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  flex-shrink:0;display:inline-flex;align-items:center;gap:6px;
+  padding:8px 13px;border-radius:9px;
+  border:1.5px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.06);
+  color:rgba(255,255,255,.88);
+  font:600 13px var(--sans);cursor:pointer;white-space:nowrap;
+  transition:background .15s, border-color .15s, transform .08s;
+}
+.tab .icon{font-size:15px}
+.tab:active{transform:scale(.97)}
+.tab.on{border-color:rgba(255,255,255,.95);background:rgba(255,255,255,.22);color:#fff;font-weight:700;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)}
+
+/* Period pills */
+.period-row{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;margin-bottom:12px}
+.period-row::-webkit-scrollbar{display:none}
+.pill{
+  flex-shrink:0;padding:6px 13px;border-radius:999px;
+  border:1.5px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.05);color:rgba(255,255,255,.72);
+  font:500 12px var(--sans);cursor:pointer;white-space:nowrap;
+  transition:background .15s, color .15s, border-color .15s, transform .08s;
+}
+.pill:active{transform:scale(.96)}
+.pill.on{border-color:#fff;background:rgba(255,255,255,.22);color:#fff;font-weight:700}
+
+/* Search + email row */
+.search-row{display:flex;gap:8px;flex-wrap:wrap}
+.search-wrap{flex:1 1 200px;position:relative;display:flex;align-items:center}
+.search-wrap .icon{
+  position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  width:16px;height:16px;color:rgba(255,255,255,.55);pointer-events:none;
+}
+.search{
+  width:100%;padding:10px 14px 10px 36px;border-radius:10px;
+  border:1.5px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.10);color:#fff;
+  font:500 13px var(--sans);outline:none;
+  transition:border-color .15s, background .15s;
+}
+.search::placeholder{color:rgba(255,255,255,.48)}
+.search:focus{border-color:rgba(255,255,255,.6);background:rgba(255,255,255,.14)}
+.btn-email{
+  flex-shrink:0;display:inline-flex;align-items:center;gap:6px;
+  padding:10px 14px;border-radius:10px;
+  border:1.5px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);color:#fff;
+  font:600 13px var(--sans);cursor:pointer;transition:background .15s;
+}
+.btn-email:hover{background:rgba(255,255,255,.16)}
+.btn-email .icon{font-size:16px}
+
+.email-panel{
+  margin-top:12px;background:rgba(0,0,0,.2);border-radius:12px;padding:14px 16px;
+  animation:fadeIn .2s ease-out;
+}
+.email-panel p{font:500 12px var(--sans);opacity:.85;margin-bottom:10px}
+.email-btns{display:flex;gap:8px;flex-wrap:wrap}
+.email-btns button{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;font:600 13px var(--sans);cursor:pointer}
+.btn-primary{border:none;background:#fff;color:var(--hdr-1)}
+.btn-secondary{border:1.5px solid rgba(255,255,255,.3);background:transparent;color:#fff}
+
+/* ═══════════════ Main layout ═══════════════ */
+main{max-width:760px;margin:0 auto;padding:18px 16px calc(24px + var(--safe-b))}
+
+/* Stats bar */
+.stats{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:11px 16px;background:var(--surface);border-radius:var(--radius-md);
+  margin-bottom:20px;box-shadow:var(--shadow-sm);
+  font:500 12px var(--sans);color:var(--text-2);
+  border:1px solid var(--border);
+}
+.stats b{color:var(--text);font-weight:700}
+.stats .sep{color:var(--border-strong)}
+.live-dot{display:inline-flex;align-items:center;gap:5px;margin-left:auto;font-size:11px;color:var(--mute)}
+.live-dot::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 1.8s ease-in-out infinite}
+.live-dot.done::before{background:var(--mute);animation:none}
+
+/* Category section */
+.cat-section{margin-bottom:22px}
+.cat-btn{
+  display:flex;align-items:center;gap:12px;width:100%;background:none;border:none;
+  padding:10px 4px;text-align:left;cursor:pointer;border-radius:8px;
+}
+.cat-icon-wrap{
+  width:36px;height:36px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  background:color-mix(in srgb, var(--cat-c) 14%, transparent);
+  color:var(--cat-c);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--cat-c) 20%, transparent);
+}
+.cat-icon-wrap .icon{width:20px;height:20px}
+.cat-label{flex:1;font:700 16.5px var(--serif);color:var(--text);letter-spacing:-.2px}
+.cat-count{
+  font:700 11px var(--sans);color:#fff;padding:3px 10px;border-radius:999px;
+  background:var(--cat-c);letter-spacing:.2px;
+}
+.cat-arrow{color:var(--mute);transition:transform .2s ease}
+.cat-arrow.open{transform:rotate(180deg)}
+.cat-cards{display:grid;gap:10px;margin:10px 0 6px 48px}
+@media (max-width:480px){.cat-cards{margin-left:8px}}
+
+/* Article card */
+.card{
+  position:relative;background:var(--surface);border-radius:var(--radius-md);
+  padding:14px 16px 13px;box-shadow:var(--shadow-sm);
+  border:1px solid var(--border);
+  transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.card::before{
+  content:'';position:absolute;left:0;top:10px;bottom:10px;width:3px;
+  background:var(--cat-c);border-radius:0 3px 3px 0;
+}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.card h4{font:700 14.5px/1.4 var(--serif);color:var(--text);flex:1;letter-spacing:-.1px}
+.card-link{
+  display:inline-flex;align-items:center;gap:4px;
+  font:600 10.5px var(--sans);letter-spacing:.4px;text-transform:uppercase;
+  color:var(--cat-c);white-space:nowrap;flex-shrink:0;margin-top:2px;padding:2px 0;
+}
+.card-link .icon{font-size:11px}
+.card p{margin-top:7px;font:400 13px/1.55 var(--sans);color:var(--text-2)}
+.card-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.tag{font:500 10.5px var(--sans);color:var(--mute);background:var(--tag-bg);padding:3px 8px;border-radius:5px}
+.tag-date{display:inline-flex;align-items:center;gap:3px;font:400 10.5px var(--sans);color:var(--light)}
+.tag-date .icon{font-size:11px}
+.tag-region{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:var(--text-2);background:var(--chip-bg);padding:3px 7px;border-radius:4px}
+.tag-region .icon{font-size:11px}
+@media(hover:hover){
+  .card:hover{transform:translateY(-1px);box-shadow:var(--shadow-md);border-color:var(--border-strong)}
+}
+
+/* Skeleton */
+.skeleton-card{
+  background:var(--surface);border-radius:var(--radius-md);padding:14px 16px;
+  border:1px solid var(--border);box-shadow:var(--shadow-sm);
+  position:relative;overflow:hidden;
+}
+.skeleton-card::before{
+  content:'';position:absolute;left:0;top:10px;bottom:10px;width:3px;background:var(--border-strong);border-radius:0 3px 3px 0;
+}
+.skeleton-line{
+  height:10px;background:linear-gradient(90deg, var(--border) 0%, var(--border-strong) 50%, var(--border) 100%);
+  background-size:200% 100%;animation:shimmer 1.4s ease-in-out infinite;border-radius:4px;margin-bottom:8px;
+}
+.skeleton-line.w80{width:80%;height:14px}
+.skeleton-line.w60{width:60%}
+.skeleton-line.w90{width:90%}
+.skeleton-line.last{width:40%;height:9px;margin-top:12px}
+
+/* Loading spinner (filter change) */
+.content-spinner{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:70px 20px;gap:14px}
+.content-spinner .ring{
+  width:42px;height:42px;border:3px solid var(--border);border-top-color:var(--accent);
+  border-radius:50%;animation:spin .7s linear infinite;
+}
+.content-spinner p{font:500 13px var(--sans);color:var(--mute)}
+
+/* Empty state */
+.empty{text-align:center;padding:48px 20px;color:var(--mute)}
+.empty-icon{
+  width:64px;height:64px;margin:0 auto 14px;border-radius:16px;
+  background:var(--chip-bg);display:flex;align-items:center;justify-content:center;color:var(--light);
+}
+.empty-icon .icon{font-size:28px}
+.empty h3{font:700 16px var(--serif);color:var(--text);margin-bottom:6px}
+.empty p{font:400 13.5px/1.5 var(--sans);color:var(--mute);max-width:280px;margin:0 auto 16px}
+.empty button{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:9px 18px;border-radius:8px;border:none;
+  background:var(--accent);color:#fff;font:600 13px var(--sans);cursor:pointer;
+}
+
+/* Install banner */
+.install-banner{
+  max-width:760px;margin:0 auto 16px;background:var(--surface);border-radius:var(--radius-lg);
+  padding:14px 16px;box-shadow:var(--shadow-sm);border:1px solid var(--border);
+  display:flex;align-items:flex-start;gap:12px;
+}
+.install-banner .install-icon{
+  width:36px;height:36px;border-radius:10px;background:var(--chip-bg);
+  display:flex;align-items:center;justify-content:center;color:var(--accent);flex-shrink:0;
+}
+.install-banner .install-icon .icon{font-size:18px}
+.install-banner .install-text{flex:1;font:500 13px/1.5 var(--sans);color:var(--text-2)}
+.install-banner .install-text b{color:var(--text);display:block;margin-bottom:3px;font-weight:700}
+.install-banner .close{
+  flex-shrink:0;background:none;border:none;color:var(--mute);cursor:pointer;padding:2px;
+  border-radius:6px;display:flex;align-items:center;justify-content:center;
+}
+.install-banner .close .icon{font-size:16px}
+.install-banner .close:hover{background:var(--chip-bg);color:var(--text)}
+.install-steps{margin-top:6px;font-size:12px;color:var(--mute);list-style:none;display:flex;flex-direction:column;gap:3px}
+.install-steps li{display:flex;gap:6px;align-items:baseline}
+.install-steps li::before{content:"→";color:var(--accent);font-weight:700}
+.btn-install{
+  display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:8px 16px;border-radius:8px;
+  background:var(--accent);color:#fff;font:600 12px var(--sans);border:none;cursor:pointer;
+}
+
+/* Footer */
+footer{
+  text-align:center;padding:20px 20px calc(20px + var(--safe-b));
+  font:400 11px/1.6 var(--sans);color:var(--light);border-top:1px solid var(--border);
+  max-width:760px;margin:12px auto 0;
+}
+
+/* Scroll-to-top */
+.scroll-top{
+  position:fixed;right:calc(16px + var(--safe-r));bottom:calc(16px + var(--safe-b));
+  width:44px;height:44px;border-radius:50%;border:none;cursor:pointer;
+  background:var(--accent);color:#fff;box-shadow:var(--shadow-md);
+  display:flex;align-items:center;justify-content:center;z-index:50;
+  opacity:0;transform:translateY(8px);pointer-events:none;transition:all .2s ease;
+}
+.scroll-top.show{opacity:1;transform:translateY(0);pointer-events:auto}
+.scroll-top .icon{font-size:20px;transform:rotate(180deg)}
+
+/* ═══════════════ Animations ═══════════════ */
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 @keyframes spin{to{transform:rotate(360deg)}}
-/* Filter loading overlay */
-.content-spinner{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:14px}
-.content-spinner .ring{width:42px;height:42px;border:3px solid var(--border);border-top-color:var(--hdr2);border-radius:50%;animation:spin .7s linear infinite}
-.content-spinner p{font:500 13px var(--sans);color:var(--mute)}
-@media(hover:hover){.card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.10)}}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:.6}}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
 </style>
 </head>
 <body>
 
-<header class="hdr">
-<div class="hdr-inner">
-  <div class="hdr-top">
-    <span style="font-size:28px">🌱</span>
-    <h1>SeedPulse</h1>
-    <span class="hdr-badge">Daily Brief</span>
-  </div>
-  <div class="hdr-sub" id="hdrSub">Vegetable seed &amp; horticulture intelligence</div>
-  <div class="tabs" id="tabs"></div>
-  <div class="period-row" id="periods"></div>
-  <div class="search-row">
-    <input class="search" id="search" type="text" placeholder="Filter... (Incotec, tomato, Syngenta)" autocomplete="off">
-    <button class="btn-email" id="emailBtn">✉️ Email</button>
-  </div>
-  <div class="email-panel" id="emailPanel" style="display:none">
-    <p id="emailCount"></p>
-    <div class="email-btns">
-      <button class="btn-primary" id="mailtoBtn">📧 Open in Mail</button>
-      <button class="btn-secondary" id="copyBtn">📋 Copy Report</button>
+<header class="hdr" role="banner">
+  <div class="hdr-inner">
+    <div class="hdr-top">
+      <span class="hdr-mark" aria-hidden="true"><svg class="icon"><use href="#icon-logo"/></svg></span>
+      <h1>SeedPulse</h1>
+      <span class="hdr-badge">Daily Brief</span>
+    </div>
+    <div class="hdr-sub" id="hdrSub">Vegetable seed &amp; horticulture intelligence</div>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Region filter"></nav>
+    <div class="period-row" id="periods" role="tablist" aria-label="Time period filter"></div>
+    <div class="search-row">
+      <div class="search-wrap">
+        <svg class="icon" aria-hidden="true"><use href="#icon-search"/></svg>
+        <input class="search" id="search" type="search" placeholder="Filter by keyword (Incotec, tomato, Syngenta…)" autocomplete="off" aria-label="Search articles">
+      </div>
+      <button class="btn-email" id="emailBtn" aria-expanded="false" aria-controls="emailPanel">
+        <svg class="icon" aria-hidden="true"><use href="#icon-mail"/></svg> Email
+      </button>
+    </div>
+    <div class="email-panel" id="emailPanel" style="display:none" role="region" aria-label="Email export">
+      <p id="emailCount"></p>
+      <div class="email-btns">
+        <button class="btn-primary" id="mailtoBtn"><svg class="icon" aria-hidden="true"><use href="#icon-mail"/></svg> Open in Mail</button>
+        <button class="btn-secondary" id="copyBtn"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> <span>Copy Report</span></button>
+      </div>
     </div>
   </div>
-</div>
 </header>
 
-<main id="main">
-  <div class="stats" id="stats"></div>
+<main id="main" role="main">
+  <div class="stats" id="stats" aria-live="polite"></div>
   <div id="installPrompt"></div>
   <div id="content"></div>
 </main>
 
-<footer>SeedPulse · Sources: Direct RSS (Seed World, HortiDaily, FreshPlaza, ISF, EPPO, AgFunder + more) · Google News web-wide search · LinkedIn articles via Google News · Note: LinkedIn direct API requires user authentication and is not available in static apps</footer>
+<button class="scroll-top" id="scrollTop" aria-label="Back to top"><svg class="icon"><use href="#icon-chevron"/></svg></button>
+
+<footer>
+  SeedPulse · Live sources: 46 RSS & Google News feeds (trade press, industry, LinkedIn articles, topic searches) ·
+  Built for Germains seed-tech intelligence · Cached offline for on-the-go reading
+</footer>
 
 <script>
-// ── Constants ────────────────────────────────────────────────────────────────
-var CACHE_KEY='seedpulse_v5';
-// IMPORTANT: do NOT include count= parameter — it requires a paid rss2json API key
-// and silently breaks every feed call on the free tier.
-var RSS2JSON='https://api.rss2json.com/v1/api.json?rss_url=';
+(function(){
+'use strict';
 
-// Google News RSS — indexes the full public web including LinkedIn articles/posts.
-// Used both for topic-based queries AND as a proxy for sites whose direct RSS
-// is blocked by rss2json's server (Cloudflare-protected sites return 500).
+/* ═══════════════════════ Constants ═══════════════════════ */
+var CACHE_KEY='seedpulse_v6';
+var CACHE_TTL_MS=2*60*60*1000; // 2 hours — reuse cached feed below this age
+
+var RSS2JSON='https://api.rss2json.com/v1/api.json?rss_url=';
 var GN='https://news.google.com/rss/search?hl=en&gl=US&ceid=US:en&q=';
 
-// ── Feed list ─────────────────────────────────────────────────────────────────
-// Verified working: rss2json can fetch these without error (tested Apr 2026)
-// Sites that block server-side crawlers (HortiDaily, FreshPlaza etc.) are covered
-// via Google News site: queries instead, which bypass the blocking.
+/* ═══════════════════════ Feed list ═══════════════════════ */
 var FEEDS=[
-
-  // ── Verified direct RSS (rss2json can parse these) ────────────────────────────
   {url:'https://www.european-seed.com/feed/',         src:'European Seed'},
   {url:'https://worldseed.org/feed/',                 src:'ISF World Seed'},
   {url:'https://agfundernews.com/feed',               src:'AgFunder News'},
@@ -161,9 +522,6 @@ var FEEDS=[
   {url:'https://www.sciencedaily.com/rss/plants_animals/seeds.xml', src:'ScienceDaily Seeds'},
   {url:'https://phys.org/rss-feed/biology-news/plants/',            src:'Phys.org Plants'},
   {url:'https://www.wur.nl/en/newsarticle.rss.xml',                 src:'Wageningen University'},
-
-  // ── Google News site: queries — covers blocked trade sites ───────────────────
-  // Each surfaces the latest indexed articles from that specific domain
   {url:GN+'site:hortidaily.com',             src:'HortiDaily'},
   {url:GN+'site:freshplaza.com',             src:'FreshPlaza'},
   {url:GN+'site:seedworld.com',              src:'Seed World'},
@@ -186,8 +544,6 @@ var FEEDS=[
   {url:GN+'site:gd.eppo.int',              src:'EPPO'},
   {url:GN+'site:infoagro.com',             src:'InfoAgro'},
   {url:GN+'site:agweb.com',               src:'AgWeb'},
-
-  // ── Google News topic queries — broad web coverage ────────────────────────────
   {url:GN+'seed+technology+treatment+coating+agriculture',     src:'News: Seed Technology'},
   {url:GN+'vegetable+seed+market+trade+supply+chain',          src:'News: Seed Market'},
   {url:GN+'plant+breeding+genetics+hybrid+variety+seed',       src:'News: Breeding & Genetics'},
@@ -206,119 +562,35 @@ var FEEDS=[
   {url:GN+'vertical+farming+indoor+growing+seed+horticulture', src:'News: Vertical Farming'},
   {url:GN+'%22plant+variety%22+protection+UPOV+OR+IP+seed',    src:'News: Plant IP & UPOV'},
   {url:GN+'agri+funding+investment+seed+OR+horticulture+startup', src:'News: Agri Investment'},
-
-  // ── LinkedIn via Google News ──────────────────────────────────────────────────
-  // Google News indexes publicly visible LinkedIn articles and company posts.
-  // LinkedIn direct API requires OAuth — not possible in a static app.
   {url:GN+'site:linkedin.com+seed+horticulture+breeding',      src:'LinkedIn: Seed Industry'},
   {url:GN+'site:linkedin.com+%22seed+technology%22+OR+%22vegetable+seed%22', src:'LinkedIn: Seed Tech'}
 ];
 
-// ── Keyword maps for auto-categorisation ─────────────────────────────────────
+/* ═══════════════════════ Keyword maps ═══════════════════════ */
 var CAT_KW={
-  seed_tech:[
-    'seed treatment','seed coating','seed priming','pelleting','seed enhancement',
-    'seed technology','seed quality','germination','dormancy','incotec','croda',
-    'film coat','microplastic','encrust','pellet','biological seed','biostimulant',
-    'seed dressing','seed applied','seed protection','imbibition','osmopriming',
-    'hydropriming','thermotherapy','seed health','vigor test','ista','tetrazolium'
-  ],
-  market:[
-    'market','trade','export','import','price','revenue','cagr','growth',
-    'forecast','billion','million','acquisition','merger','consolidation',
-    'supply chain','tariff','commodity','investment','funding','venture',
-    'deal','joint venture','partnership','startup','agtech'
-  ],
-  breeding:[
-    'breeding','genetics','variety','hybrid','gmo','gene edit','crispr',
-    'genomic','phenotyp','trait','cultivar','cross','marker','precision breed',
-    'genotype','allel','qtl','gwas','plant breeding','new genomic technique',
-    'ngt','mutagenesis','cisgenesis','transgenesis','doubled haploid',
-    'f1 hybrid','open pollinated','landrace','gene bank','germplasm'
-  ],
-  regulation:[
-    'regulat','policy','legislation','reach','approval','ban','compliance',
-    'directive','pesticide','microplastic','phytosanitary','permit','law',
-    'bill','subsid','certif','eu official journal','eppo','plant variety',
-    'plant health','upov','trips','convention','standard','maximum residue',
-    'mrl','eu green deal','farm to fork','esa','isf position','worldseed'
-  ],
-  competitors:[
-    'syngenta','bayer','basf','rijk zwaan','enza zaden','sakata','limagrain',
-    'incotec','east-west seed','nunhems','monsanto','corteva','advanta',
-    'vilmorin','seminis','known-you','tokita','takii','agbiome','plantum',
-    'hazera','clause','nickerson','floranova','pan am seed','HM.clause',
-    'eisai','roam','innokareen','barenbrug','ragt','deutsche saatveredelung'
-  ],
-  crops:[
-    'tomato','pepper','cucumber','lettuce','onion','carrot','spinach','fennel',
-    'celery','vegetable','wheat','corn','maize','beet','broccoli','kale','leek',
-    'courgette','zucchini','aubergine','eggplant','watermelon','melon','pumpkin',
-    'greenhouse','vertical farm','open field','controlled environment',
-    'hydropon','aeroponic','aquaponic','indoor grow','glasshouse',
-    'protected cultivation','precision agriculture','smart farm','soilless'
-  ],
-  // Germains Relevant: seed enhancement techniques + abiotic/biotic stress +
-  // crops with commercial Germains products (field crops & horticulture)
-  germains:[
-    // Core Germains technologies
-    'priming','pelleting','film coat','filmcoat','film-coat',
-    'seed hygiene','seed sanitation','hydro priming','osmo priming',
-    'drum priming','solid matrix priming','biopriming','matrix priming',
-    'abiotic stress','biotic stress','stress tolerance','stress resistance',
-    'germination uniformity','stand establishment','seedling vigour',
-    'emergence rate','seed vigour','seed performance',
-    // Germains field crops
-    'sugar beet','sugarbeet','beet seed','fodder beet',
-    'wheat seed','winter wheat','spring wheat','barley seed',
-    'winter barley','spring barley','oilseed rape','osr','canola seed',
-    'sorghum seed','sunflower seed','maize seed','corn seed',
-    // Germains horticulture crops
-    'carrot seed','onion seed','leek seed','spinach seed',
-    'lettuce seed','celery seed','fennel seed','parsnip seed',
-    'parsley seed','beetroot seed','swiss chard','beet seedling',
-    // Germains brand / company mentions
-    'germains'
-  ]
+  seed_tech:['seed treatment','seed coating','seed priming','pelleting','seed enhancement','seed technology','seed quality','germination','dormancy','incotec','croda','film coat','microplastic','encrust','pellet','biological seed','biostimulant','seed dressing','seed applied','seed protection','imbibition','osmopriming','hydropriming','thermotherapy','seed health','vigor test','ista','tetrazolium'],
+  market:['market','trade','export','import','price','revenue','cagr','growth','forecast','billion','million','acquisition','merger','consolidation','supply chain','tariff','commodity','investment','funding','venture','deal','joint venture','partnership','startup','agtech'],
+  breeding:['breeding','genetics','variety','hybrid','gmo','gene edit','crispr','genomic','phenotyp','trait','cultivar','cross','marker','precision breed','genotype','allel','qtl','gwas','plant breeding','new genomic technique','ngt','mutagenesis','cisgenesis','transgenesis','doubled haploid','f1 hybrid','open pollinated','landrace','gene bank','germplasm'],
+  regulation:['regulat','policy','legislation','reach','approval','ban','compliance','directive','pesticide','microplastic','phytosanitary','permit','law','bill','subsid','certif','eu official journal','eppo','plant variety','plant health','upov','trips','convention','standard','maximum residue','mrl','eu green deal','farm to fork','esa','isf position','worldseed'],
+  competitors:['syngenta','bayer','basf','rijk zwaan','enza zaden','sakata','limagrain','incotec','east-west seed','nunhems','monsanto','corteva','advanta','vilmorin','seminis','known-you','tokita','takii','agbiome','plantum','hazera','clause','nickerson','floranova','pan am seed','hm.clause','barenbrug','ragt','deutsche saatveredelung'],
+  crops:['tomato','pepper','cucumber','lettuce','onion','carrot','spinach','fennel','celery','vegetable','wheat','corn','maize','beet','broccoli','kale','leek','courgette','zucchini','aubergine','eggplant','watermelon','melon','pumpkin','greenhouse','vertical farm','open field','controlled environment','hydropon','aeroponic','aquaponic','indoor grow','glasshouse','protected cultivation','precision agriculture','smart farm','soilless'],
+  germains:['priming','pelleting','film coat','filmcoat','film-coat','seed hygiene','seed sanitation','hydro priming','osmo priming','drum priming','solid matrix priming','biopriming','matrix priming','abiotic stress','biotic stress','stress tolerance','stress resistance','germination uniformity','stand establishment','seedling vigour','emergence rate','seed vigour','seed performance','sugar beet','sugarbeet','beet seed','fodder beet','wheat seed','winter wheat','spring wheat','barley seed','winter barley','spring barley','oilseed rape','osr','canola seed','sorghum seed','sunflower seed','maize seed','corn seed','carrot seed','onion seed','leek seed','spinach seed','lettuce seed','celery seed','fennel seed','parsnip seed','parsley seed','beetroot seed','swiss chard','beet seedling','germains']
 };
-
-// ── Keyword maps for region detection ────────────────────────────────────────
 var REG_KW={
-  europe:[
-    'europe','european','netherlands','dutch','holland','spain','italy',
-    'italian','france','french','germany','german','uk ','u.k.','united kingdom',
-    'belgium','poland','scandinavia','eu ','e.u.','seed valley','wageningen',
-    'portugal','greece','turkey','bulgaria','hungary','czechia','austria',
-    'switzerland','sweden','denmark','finland','norway'
-  ],
-  mena:[
-    'morocco','morocc','agadir','souss','mena','middle east','africa',
-    'african','egypt','egyptian','israel','turkish','tunisia','jordan',
-    'saudi','uae','iran','iraq','algeria','libya','sub-saharan','west africa',
-    'east africa','south africa','kenya','ethiopia','nigeria','maghreb'
-  ],
-  apac:[
-    'asia','asian','china','chinese','india','indian','japan','japanese',
-    'indonesia','vietnam','philippines','thailand','apac','pacific',
-    'australia','south korea','taiwan','bangladesh','myanmar','cambodia',
-    'malaysia','singapore','new zealand','sri lanka','pakistan'
-  ],
-  americas:[
-    'usa','united states','american','canada','canadian','brazil','brazilian',
-    'mexico','mexican','latin america','california','florida','arizona',
-    'ohio','midwest','chile','argentina','colombia','peru','ecuador'
-  ]
+  europe:['europe','european','netherlands','dutch','holland','spain','italy','italian','france','french','germany','german','uk ','u.k.','united kingdom','belgium','poland','scandinavia','eu ','e.u.','seed valley','wageningen','portugal','greece','turkey','bulgaria','hungary','czechia','austria','switzerland','sweden','denmark','finland','norway'],
+  mena:['morocco','morocc','agadir','souss','mena','middle east','africa','african','egypt','egyptian','israel','turkish','tunisia','jordan','saudi','uae','iran','iraq','algeria','libya','sub-saharan','west africa','east africa','south africa','kenya','ethiopia','nigeria','maghreb'],
+  apac:['asia','asian','china','chinese','india','indian','japan','japanese','indonesia','vietnam','philippines','thailand','apac','pacific','australia','south korea','taiwan','bangladesh','myanmar','cambodia','malaysia','singapore','new zealand','sri lanka','pakistan'],
+  americas:['usa','united states','american','canada','canadian','brazil','brazilian','mexico','mexican','latin america','california','florida','arizona','ohio','midwest','chile','argentina','colombia','peru','ecuador']
 };
 
-// ── Config ────────────────────────────────────────────────────────────────────
+/* ═══════════════════════ Config ═══════════════════════ */
 var REGIONS=[
-  {id:"all",label:"All Regions",flag:"🌐"},
-  {id:"europe",label:"Europe",flag:"🇪🇺"},
-  {id:"mena",label:"MENA",flag:"🇲🇦"},
-  {id:"apac",label:"Asia-Pacific",flag:"🌏"},
-  {id:"americas",label:"Americas",flag:"🌎"}
+  {id:"all",     label:"All Regions",  icon:"icon-globe"},
+  {id:"europe",  label:"Europe",       icon:"icon-europe"},
+  {id:"mena",    label:"MENA",         icon:"icon-mena"},
+  {id:"apac",    label:"Asia-Pacific", icon:"icon-apac"},
+  {id:"americas",label:"Americas",     icon:"icon-americas"}
 ];
-
 var PERIODS=[
   {id:"all",  label:"All Time"},
   {id:"7d",   label:"Past 7 Days"},
@@ -328,18 +600,17 @@ var PERIODS=[
   {id:"2026", label:"2026"},
   {id:"2025", label:"2025"}
 ];
-
 var CATS=[
-  {id:"germains",label:"Germains Relevant",icon:"🌿",color:"#0A4A2A"},
-  {id:"seed_tech",label:"Seed Technology",icon:"⚙️",color:"#1B6B4A"},
-  {id:"market",label:"Market & Trade",icon:"📊",color:"#2E7D5B"},
-  {id:"breeding",label:"Breeding & Genetics",icon:"🧬",color:"#3D9B6E"},
-  {id:"regulation",label:"Regulation & Policy",icon:"📋",color:"#56AD82"},
-  {id:"competitors",label:"Industry Players",icon:"🏢",color:"#2E7D5B"},
-  {id:"crops",label:"Crop Intelligence",icon:"🥬",color:"#3D9B6E"}
+  {id:"germains",   label:"Germains Relevant",  icon:"icon-germains",    cvar:"--c-germains"},
+  {id:"seed_tech",  label:"Seed Technology",    icon:"icon-seed-tech",   cvar:"--c-seed-tech"},
+  {id:"market",     label:"Market & Trade",     icon:"icon-market",      cvar:"--c-market"},
+  {id:"breeding",   label:"Breeding & Genetics",icon:"icon-breeding",    cvar:"--c-breeding"},
+  {id:"regulation", label:"Regulation & Policy",icon:"icon-regulation",  cvar:"--c-regulation"},
+  {id:"competitors",label:"Industry Players",   icon:"icon-competitors", cvar:"--c-competitors"},
+  {id:"crops",      label:"Crop Intelligence",  icon:"icon-crops",       cvar:"--c-crops"}
 ];
 
-// ── Curated fallback articles (always shown; live RSS augments these) ─────────
+/* ═══════════════════════ Curated fallback articles ═══════════════════════ */
 var FALLBACK=[
   {c:"seed_tech",r:["all","europe"],t:"Mother Plants 'Pre-Programme' Seeds: Breakthrough Reshapes Breeding",s:"PNAS research reveals plants use abscisic acid as intergenerational signalling to prime developing seeds for climate conditions — a new lever for climate-resilient variety development.",src:"AgTech Navigator",u:"https://www.agtechnavigator.com/Article/2026/02/05/mother-plants-preprogramme-their-seeds-new-discovery-could-reshape-crop-breeding-and-resilience/",d:"5 Feb 2026",iso:"2026-02-05"},
   {c:"seed_tech",r:["all","europe"],t:"Incotec Appoints Key Account Manager for Vegetable Seeds in Europe",s:"Jord Blokker joined Incotec Europe on Feb 1 for vegetable seed key accounts and business development. Incotec continues expanding microplastic-free coatings and AI-driven seed treatment.",src:"Incotec",u:"https://www.incotec.com/en-gb",d:"28 Jan 2026",iso:"2026-01-28"},
@@ -373,210 +644,97 @@ var FALLBACK=[
   {c:"crops",r:["all","apac"],t:"Syngenta Opens $2.4M Seed Health Lab in Hyderabad, India",s:"Capacity for 12,000 virus and bacterial tests annually. Complies with global phytosanitary standards. Underpins Syngenta's expansion into India's horticulture markets.",src:"Mordor Intelligence",u:"https://www.mordorintelligence.com/industry-reports/asia-pacific-vegetable-seed-market",d:"Mar 2024",iso:"2024-03-15"}
 ];
 
-// ── Article store ─────────────────────────────────────────────────────────────
-var A=FALLBACK.slice(); // always start with curated data; live RSS merges in on top
+/* ═══════════════════════ State ═══════════════════════ */
+var A=FALLBACK.slice();
 var liveLoaded=false;
-
-// ── State ────────────────────────────────────────────────────────────────────
-var region="all", period="7d", filter="", emailOpen=false, expanded={};
+var region="all", period="7d", filter="", emailOpen=false;
+var expanded={};
 CATS.forEach(function(c){ expanded[c.id]=true; });
 var TODAY=new Date();
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function stripHtml(h){ return h.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(); }
-
-function parseIso(s){
-  try{ var d=new Date(s); return isNaN(d)?new Date():d; }catch(e){ return new Date(); }
+/* ═══════════════════════ Helpers ═══════════════════════ */
+function esc(s){return (s==null?'':String(s)).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});}
+function stripHtml(h){return h.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();}
+function parseIso(s){try{var d=new Date(s);return isNaN(d)?new Date():d;}catch(e){return new Date();}}
+function parseLocalDate(isoStr){
+  if(!isoStr) return new Date();
+  var parts=String(isoStr).split('-');
+  if(parts.length===3) return new Date(+parts[0], +parts[1]-1, +parts[2]);
+  var d=new Date(isoStr); return isNaN(d)?new Date():d;
 }
+function daysAgo(n){var d=new Date(TODAY);d.setDate(d.getDate()-n);d.setHours(0,0,0,0);return d;}
+function debounce(fn,ms){var t;return function(){var a=arguments,c=this;clearTimeout(t);t=setTimeout(function(){fn.apply(c,a);},ms);};}
 
 function categorize(title,desc){
   var txt=(title+' '+desc).toLowerCase();
-  // Score all categories except germains (handled separately as an overlay)
   var primary=['seed_tech','market','breeding','regulation','competitors','crops'];
-  var best='crops', bestScore=0;
+  var best='crops',bestScore=0;
   primary.forEach(function(cat){
-    var score=CAT_KW[cat].filter(function(k){ return txt.indexOf(k)>=0; }).length;
-    if(score>bestScore){ bestScore=score; best=cat; }
+    var score=CAT_KW[cat].filter(function(k){return txt.indexOf(k)>=0;}).length;
+    if(score>bestScore){bestScore=score;best=cat;}
   });
   return best;
 }
-
 function isGermains(title,desc){
   var txt=(title+' '+desc).toLowerCase();
-  return CAT_KW.germains.some(function(k){ return txt.indexOf(k)>=0; });
+  return CAT_KW.germains.some(function(k){return txt.indexOf(k)>=0;});
 }
-
 function regionalize(title,desc){
   var txt=(title+' '+desc).toLowerCase();
   var regs=['all'];
   Object.keys(REG_KW).forEach(function(reg){
-    if(REG_KW[reg].some(function(k){ return txt.indexOf(k)>=0; })) regs.push(reg);
+    if(REG_KW[reg].some(function(k){return txt.indexOf(k)>=0;})) regs.push(reg);
   });
   return regs;
 }
-
-function normalizeItem(item, srcName){
+function normalizeItem(item,srcName){
   var title=(item.title||'').trim();
-  var raw=item.content||item.description||'';
-  var desc=stripHtml(raw).substring(0,280);
+  var desc=stripHtml(item.content||item.description||'').substring(0,280);
   if(desc.length===280) desc+='…';
   var pubDate=parseIso(item.pubDate||item.published||'');
   return {
-    c: categorize(title,desc),
-    g: isGermains(title,desc),
-    r: regionalize(title,desc),
-    t: title,
-    s: desc,
-    src: srcName,
-    u: item.link||item.url||'',
-    d: pubDate.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),
-    iso: pubDate.toISOString().split('T')[0]
+    c:categorize(title,desc), g:isGermains(title,desc), r:regionalize(title,desc),
+    t:title, s:desc, src:srcName, u:item.link||item.url||'',
+    d:pubDate.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),
+    iso:pubDate.toISOString().split('T')[0]
   };
 }
 
-// ── Feed fetching ─────────────────────────────────────────────────────────────
+/* ═══════════════════════ Feed fetching ═══════════════════════ */
 function fetchFeed(feed){
-  var url=RSS2JSON+encodeURIComponent(feed.url);
-  return fetch(url,{cache:'no-store'})
-    .then(function(r){ return r.json(); })
+  return fetch(RSS2JSON+encodeURIComponent(feed.url),{cache:'no-store'})
+    .then(function(r){return r.json();})
     .then(function(data){
       if(data.status!=='ok'||!Array.isArray(data.items)) return [];
-      return data.items.map(function(item){ return normalizeItem(item,feed.src); });
-    })
-    .catch(function(){ return []; });
+      return data.items.map(function(it){return normalizeItem(it,feed.src);});
+    }).catch(function(){return [];});
 }
-
-function dedupe(articles){
-  var seen={};
-  return articles.filter(function(a){
-    var key=a.t.toLowerCase().replace(/\s+/g,'').substring(0,50);
-    if(seen[key]) return false;
-    seen[key]=true;
-    return true;
-  });
-}
-
-// Fetch with a hard timeout so slow feeds don't block everything
 function fetchFeedWithTimeout(feed){
-  var timeout=new Promise(function(resolve){ setTimeout(function(){ resolve([]); },8000); });
+  var timeout=new Promise(function(resolve){setTimeout(function(){resolve([]);},8000);});
   return Promise.race([fetchFeed(feed),timeout]);
 }
-
-// Run an array of promises in batches of `size`, sequentially
 function batchedFetch(feeds,size){
   var results=[];
   function next(i){
     if(i>=feeds.length) return Promise.resolve(results);
     var batch=feeds.slice(i,i+size);
-    return Promise.all(batch.map(fetchFeedWithTimeout)).then(function(batchResults){
-      batchResults.forEach(function(r){ results=results.concat(r); });
+    return Promise.all(batch.map(fetchFeedWithTimeout)).then(function(br){
+      br.forEach(function(r){results=results.concat(r);});
       return next(i+size);
     });
   }
   return next(0);
 }
-
-function loadArticles(){
-  // Render curated articles immediately — no blank screen
-  renderAll();
-
-  // Show a subtle live-fetch indicator in stats bar
-  var indicator=document.createElement('span');
-  indicator.id='liveIndicator';
-  indicator.style.cssText='font-size:11px;color:var(--mute);margin-left:auto';
-  indicator.textContent='⟳ fetching live…';
-  var statsEl=document.getElementById('stats');
-  if(statsEl) statsEl.appendChild(indicator);
-
-  // Fetch in batches of 4 — rss2json free tier rate-limits at ~5 concurrent requests
-  batchedFetch(FEEDS,4).then(function(fresh){
-    fresh=dedupe(fresh.filter(function(a){ return a.t; }));
-    if(fresh.length>0){
-      // Merge live articles in front, keep fallback for any gaps
-      var fallbackTitles={};
-      FALLBACK.forEach(function(a){ fallbackTitles[a.t]=true; });
-      var merged=fresh.concat(FALLBACK.filter(function(a){ return !fallbackTitles[a.t]; }));
-      A=dedupe(merged);
-      liveLoaded=true;
-      try{ localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),items:A})); }catch(e){}
-    }
-    // Remove indicator and re-render with live data (or keep fallback if all feeds failed)
-    var ind=document.getElementById('liveIndicator');
-    if(ind) ind.remove();
-    renderAll();
+function dedupe(arr){
+  var seen={};
+  return arr.filter(function(a){
+    var key=a.t.toLowerCase().replace(/\s+/g,'').substring(0,50);
+    if(seen[key]) return false;
+    seen[key]=true; return true;
   });
 }
 
-// ── PWA Install ──────────────────────────────────────────────────────────────
-var deferredInstallPrompt=null;
-
-window.addEventListener('beforeinstallprompt', function(e){
-  e.preventDefault();
-  deferredInstallPrompt=e;
-  showInstallBanner('android');
-});
-
-function showInstallBanner(platform){
-  var el=document.getElementById("installPrompt");
-  if(!el || el.innerHTML) return;
-
-  if(platform==='ios'){
-    el.innerHTML=
-      '<div class="install-banner" id="installBannerEl">'+
-      '<span class="install-icon">📱</span>'+
-      '<div class="install-text">'+
-        '<b>Install SeedPulse on iPhone</b>'+
-        '<ul class="install-steps">'+
-          '<li>Tap the <strong>Share</strong> button <span style="font-size:15px">⎙</span> in Safari</li>'+
-          '<li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>'+
-          '<li>Tap <strong>Add</strong> — done!</li>'+
-        '</ul>'+
-      '</div>'+
-      '<button class="close" id="closeBanner">✕</button>'+
-      '</div>';
-  } else {
-    el.innerHTML=
-      '<div class="install-banner" id="installBannerEl">'+
-      '<span class="install-icon">📲</span>'+
-      '<div class="install-text">'+
-        '<b>Install SeedPulse</b>'+
-        '<div style="font-size:12px;color:var(--mute);margin-top:2px">Add to your home screen for offline access</div>'+
-        '<button class="btn-install" id="installBtn">Install App</button>'+
-      '</div>'+
-      '<button class="close" id="closeBanner">✕</button>'+
-      '</div>';
-    document.getElementById("installBtn").onclick=function(){
-      if(deferredInstallPrompt){
-        deferredInstallPrompt.prompt();
-        deferredInstallPrompt.userChoice.then(function(){ deferredInstallPrompt=null; el.innerHTML=''; });
-      }
-    };
-  }
-
-  document.getElementById("closeBanner").onclick=function(){ el.innerHTML=''; };
-}
-
-function checkInstallPrompt(){
-  var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
-  var isStandalone=window.navigator.standalone===true||window.matchMedia('(display-mode: standalone)').matches;
-  if(isIOS && !isStandalone) showInstallBanner('ios');
-}
-
-// ── Filtering ────────────────────────────────────────────────────────────────
-// Parse ISO date strings as local midnight to avoid UTC-offset day-shift issues
-function parseLocalDate(isoStr){
-  if(!isoStr) return new Date();
-  // "2026-03-19" → treat as local midnight, not UTC midnight
-  var parts=isoStr.split('-');
-  if(parts.length===3) return new Date(+parts[0], +parts[1]-1, +parts[2]);
-  var d=new Date(isoStr);
-  return isNaN(d)?new Date():d;
-}
-
-function daysAgo(n){
-  var d=new Date(TODAY); d.setDate(d.getDate()-n); d.setHours(0,0,0,0); return d;
-}
-
+/* ═══════════════════════ Filtering ═══════════════════════ */
 function passesperiod(isoStr){
   if(period==="all") return true;
   var d=parseLocalDate(isoStr);
@@ -588,116 +746,144 @@ function passesperiod(isoStr){
   if(period==="2025") return d.getFullYear()===2025;
   return true;
 }
-
 function getFiltered(){
   return A.filter(function(a){
     if(region!=="all"&&a.r.indexOf(region)<0) return false;
     if(!passesperiod(a.iso)) return false;
     if(!filter) return true;
-    var txt2=(a.t+" "+a.s+" "+(a.src||"")).toLowerCase();
-    return txt2.indexOf(filter.toLowerCase())>=0;
+    var txt=(a.t+" "+a.s+" "+(a.src||"")).toLowerCase();
+    return txt.indexOf(filter.toLowerCase())>=0;
   });
 }
 
-// ── Render ───────────────────────────────────────────────────────────────────
-function render(){
-  var items=getFiltered();
-  var regObj=REGIONS.find(function(r){return r.id===region;});
-  var perObj=PERIODS.find(function(p){return p.id===period;});
-  var catCount=CATS.filter(function(c){return items.some(function(a){return a.c===c.id;});}).length;
-
-  document.getElementById("stats").innerHTML=
-    '<b>'+regObj.flag+' '+regObj.label+'</b><span class="sep">|</span>'+
-    '<span>'+items.length+' articles</span><span class="sep">|</span>'+
-    '<span>'+catCount+' categories</span>'+
-    (period!=="all"?'<span class="sep">|</span><span>📅 '+perObj.label+'</span>':'')+
-    (filter?'<span class="sep">|</span><span>"'+filter+'"</span>':'');
-
-  document.getElementById("emailCount").textContent="Export "+items.length+" articles as formatted report:";
-
-  function renderCards(cat, ci){
-    var isOpen=expanded[cat.id];
-    var h='<div style="margin-bottom:24px">';
-    h+='<button class="cat-btn" data-cat="'+cat.id+'">';
-    h+='<span class="cat-icon">'+cat.icon+'</span>';
-    h+='<span class="cat-label">'+cat.label+'</span>';
-    h+='<span class="cat-count" style="background:'+cat.color+'">'+ci.length+'</span>';
-    h+='<span class="cat-arrow '+(isOpen?'open':'')+'">▼</span>';
-    h+='</button>';
-    if(isOpen){
-      h+='<div class="cat-cards">';
-      ci.forEach(function(a){
-        var rtags=a.r.filter(function(r){return r!=="all";}).map(function(r){
-          var rr=REGIONS.find(function(x){return x.id===r;});
-          return rr?'<span class="tag-region">'+rr.flag+'</span>':'';
-        }).join('');
-        h+='<div class="card" style="border-left-color:'+cat.color+'">';
-        h+='<div class="card-top"><h4>'+a.t+'</h4>';
-        if(a.u) h+='<a href="'+a.u+'" target="_blank" rel="noopener" style="color:'+cat.color+'">Source ↗</a>';
-        h+='</div><p>'+a.s+'</p>';
-        h+='<div class="card-meta">';
-        if(a.src) h+='<span class="tag">'+a.src+'</span>';
-        if(a.d) h+='<span class="tag-date">'+a.d+'</span>';
-        h+=rtags+'</div></div>';
-      });
-      h+='</div>';
-    }
-    h+='</div>';
-    return h;
-  }
-
-  var html='';
-  CATS.forEach(function(cat){
-    // Germains Relevant is an overlay — collect by g flag, not primary category
-    var ci = cat.id==='germains'
-      ? items.filter(function(a){ return a.g||isGermains(a.t,a.s); })
-      : items.filter(function(a){ return a.c===cat.id; });
-    if(!ci.length) return;
-    html+=renderCards(cat, ci);
-  });
-
-  if(!items.length){
-    var emptyHtml='<div class="empty"><div class="empty-icon">🔍</div>';
-    if(A.length===0){
-      emptyHtml+='<p>Loading articles… please wait a moment.</p>';
-    } else if(period!=='all'){
-      // Show what window was searched so the user understands why it's empty
-      var fromDate=period==='7d'?daysAgo(7):period==='30d'?daysAgo(30):period==='3m'?daysAgo(90):period==='6m'?daysAgo(180):null;
-      var rangeLabel=fromDate
-        ? fromDate.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+' – today'
-        : period;
-      emptyHtml+='<p style="margin-bottom:10px">No articles found between <b>'+rangeLabel+'</b>.<br>'+
-        'Live feeds refresh in the background — try again shortly.</p>'+
-        '<button onclick="period=\'all\';renderPeriods();render();" style="'+
-        'padding:8px 18px;border-radius:8px;border:none;background:var(--hdr2);color:#fff;'+
-        'font:600 13px var(--sans);cursor:pointer">Show All Time</button>';
-    } else {
-      emptyHtml+='<p>No articles match your current filters. Try adjusting the region or search term.</p>';
-    }
-    emptyHtml+='</div>';
-    html=emptyHtml;
-  }
-
-  document.getElementById("content").innerHTML=html;
-  document.querySelectorAll(".cat-btn").forEach(function(btn){
-    btn.onclick=function(){ expanded[btn.getAttribute("data-cat")]=!expanded[btn.getAttribute("data-cat")]; render(); };
-  });
+/* ═══════════════════════ Icon helper ═══════════════════════ */
+function icon(id,size){
+  return '<svg class="icon" aria-hidden="true"'+(size?' style="width:'+size+'px;height:'+size+'px"':'')+'><use href="#'+id+'"/></svg>';
 }
 
+/* ═══════════════════════ Render ═══════════════════════ */
 function renderTabs(){
   var h='';
   REGIONS.forEach(function(r){
-    h+='<button class="tab '+(region===r.id?'on':'')+'" data-region="'+r.id+'">'+r.flag+' '+r.label+'</button>';
+    h+='<button class="tab '+(region===r.id?'on':'')+'" data-region="'+r.id+'" role="tab" aria-selected="'+(region===r.id)+'">'+
+       icon(r.icon)+' '+esc(r.label)+'</button>';
   });
   document.getElementById("tabs").innerHTML=h;
 }
-
 function renderPeriods(){
   var h='';
   PERIODS.forEach(function(p){
-    h+='<button class="pill '+(period===p.id?'on':'')+'" data-period="'+p.id+'">'+p.label+'</button>';
+    h+='<button class="pill '+(period===p.id?'on':'')+'" data-period="'+p.id+'" role="tab" aria-selected="'+(period===p.id)+'">'+esc(p.label)+'</button>';
   });
   document.getElementById("periods").innerHTML=h;
+}
+
+function renderStats(items){
+  var regObj=REGIONS.find(function(r){return r.id===region;});
+  var perObj=PERIODS.find(function(p){return p.id===period;});
+  var catCount=CATS.filter(function(c){return items.some(function(a){
+    return c.id==='germains' ? (a.g||isGermains(a.t,a.s)) : a.c===c.id;
+  });}).length;
+  var liveHtml=liveLoaded
+    ? '<span class="live-dot done" title="Feeds loaded">' + icon('icon-check') + ' live</span>'
+    : '<span class="live-dot" title="Fetching live feeds">fetching…</span>';
+  document.getElementById("stats").innerHTML=
+    icon(regObj.icon)+' <b>'+esc(regObj.label)+'</b>'+
+    '<span class="sep">·</span><span><b>'+items.length+'</b> articles</span>'+
+    '<span class="sep">·</span><span><b>'+catCount+'</b> categories</span>'+
+    (period!=="all"?'<span class="sep">·</span><span>'+icon('icon-calendar')+' '+esc(perObj.label)+'</span>':'')+
+    (filter?'<span class="sep">·</span><span>"'+esc(filter)+'"</span>':'')+
+    liveHtml;
+  document.getElementById("emailCount").textContent="Export "+items.length+" articles as formatted report:";
+}
+
+function renderCatSection(cat,ci){
+  var isOpen=expanded[cat.id];
+  var h='<section class="cat-section" style="--cat-c:var('+cat.cvar+')">'+
+    '<button class="cat-btn" data-cat="'+cat.id+'" aria-expanded="'+isOpen+'">'+
+      '<span class="cat-icon-wrap">'+icon(cat.icon)+'</span>'+
+      '<span class="cat-label">'+esc(cat.label)+'</span>'+
+      '<span class="cat-count">'+ci.length+'</span>'+
+      '<span class="cat-arrow '+(isOpen?'open':'')+'">'+icon('icon-chevron')+'</span>'+
+    '</button>';
+  if(isOpen){
+    h+='<div class="cat-cards">';
+    ci.forEach(function(a){
+      var rtags=a.r.filter(function(r){return r!=="all";}).map(function(rid){
+        var rr=REGIONS.find(function(x){return x.id===rid;});
+        return rr?'<span class="tag-region">'+icon(rr.icon)+' '+esc(rr.label)+'</span>':'';
+      }).join('');
+      h+='<article class="card">'+
+           '<div class="card-top"><h4>'+esc(a.t)+'</h4>'+
+           (a.u?'<a class="card-link" href="'+esc(a.u)+'" target="_blank" rel="noopener">Source '+icon('icon-external')+'</a>':'')+
+           '</div>'+
+           (a.s?'<p>'+esc(a.s)+'</p>':'')+
+           '<div class="card-meta">'+
+             (a.src?'<span class="tag">'+esc(a.src)+'</span>':'')+
+             (a.d?'<span class="tag-date">'+icon('icon-calendar')+' '+esc(a.d)+'</span>':'')+
+             rtags+
+           '</div>'+
+         '</article>';
+    });
+    h+='</div>';
+  }
+  h+='</section>';
+  return h;
+}
+
+function renderSkeletons(){
+  var h='';
+  for(var i=0;i<3;i++){
+    h+='<article class="skeleton-card">'+
+         '<div class="skeleton-line w80"></div>'+
+         '<div class="skeleton-line w90"></div>'+
+         '<div class="skeleton-line w60"></div>'+
+         '<div class="skeleton-line last"></div>'+
+       '</article>';
+  }
+  return '<div class="cat-cards" style="margin-left:8px">'+h+'</div>';
+}
+
+function render(){
+  var items=getFiltered();
+  renderStats(items);
+
+  var html='';
+  CATS.forEach(function(cat){
+    var ci = cat.id==='germains'
+      ? items.filter(function(a){return a.g||isGermains(a.t,a.s);})
+      : items.filter(function(a){return a.c===cat.id;});
+    if(!ci.length) return;
+    html+=renderCatSection(cat,ci);
+  });
+
+  if(!items.length){
+    var empty='<div class="empty"><div class="empty-icon">'+icon('icon-empty')+'</div>';
+    if(A.length===0){
+      empty+='<h3>Loading articles…</h3><p>Fetching the latest from 46 sources.</p>'+renderSkeletons();
+    } else if(!liveLoaded){
+      empty+='<h3>Still loading live feeds</h3><p>You\'re viewing the curated fallback set. Give it a moment and try again.</p>'+renderSkeletons();
+    } else if(period!=='all'){
+      var fromDate=period==='7d'?daysAgo(7):period==='30d'?daysAgo(30):period==='3m'?daysAgo(90):period==='6m'?daysAgo(180):null;
+      var rangeLabel=fromDate?fromDate.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+' – today':period;
+      empty+='<h3>No articles in this window</h3>'+
+             '<p>Nothing found between <b>'+esc(rangeLabel)+'</b>. Try a wider period or clear your filters.</p>'+
+             '<button id="resetPeriod">Show all time</button>';
+    } else {
+      empty+='<h3>No matches</h3><p>No articles match your current filters. Try adjusting the region or search term.</p>';
+    }
+    empty+='</div>';
+    html=empty;
+  }
+
+  document.getElementById("content").innerHTML=html;
+}
+
+function renderAll(){renderTabs();renderPeriods();render();}
+function renderWithSpinner(){
+  var el=document.getElementById("content");
+  el.innerHTML='<div class="content-spinner"><div class="ring"></div><p>Loading…</p></div>';
+  requestAnimationFrame(function(){setTimeout(render,120);});
 }
 
 function buildReport(){
@@ -707,13 +893,14 @@ function buildReport(){
   var lines=[
     "SEEDPULSE DAILY BRIEF — "+regObj.label+(period!=="all"?" — "+perObj.label:""),
     "Generated: "+new Date().toLocaleDateString("en-GB",{weekday:"long",year:"numeric",month:"long",day:"numeric"}),
-    filter?"Filter: "+filter:"","",
-    "══════════════════════════════════════════════"
+    filter?"Filter: "+filter:"","","══════════════════════════════════════════════"
   ];
   CATS.forEach(function(cat){
-    var ci=items.filter(function(a){return a.c===cat.id;});
+    var ci = cat.id==='germains'
+      ? items.filter(function(a){return a.g||isGermains(a.t,a.s);})
+      : items.filter(function(a){return a.c===cat.id;});
     if(!ci.length) return;
-    lines.push("",cat.icon+"  "+cat.label.toUpperCase()+" ("+ci.length+")","──────────────────────────────────────");
+    lines.push("",cat.label.toUpperCase()+" ("+ci.length+")","──────────────────────────────────────");
     ci.forEach(function(a,i){
       lines.push("",(i+1)+". "+a.t,"   "+a.s,"   Source: "+(a.src||"N/A")+" | "+(a.d||""));
       if(a.u) lines.push("   "+a.u);
@@ -723,70 +910,167 @@ function buildReport(){
   return lines.join("\n");
 }
 
-// ── renderAll — called after articles load ────────────────────────────────────
-function renderAll(){
-  renderTabs();
-  renderPeriods();
-  render();
+/* ═══════════════════════ Cache (read) ═══════════════════════ */
+function loadCached(){
+  try{
+    var raw=localStorage.getItem(CACHE_KEY);
+    if(!raw) return false;
+    var obj=JSON.parse(raw);
+    if(!obj||!obj.items||!obj.ts) return false;
+    if(Date.now()-obj.ts > CACHE_TTL_MS) return false;
+    A=obj.items; liveLoaded=true; return true;
+  }catch(e){return false;}
 }
 
-// ── renderWithSpinner — shows spinner briefly, then renders filtered content ──
-function renderWithSpinner(){
-  var el=document.getElementById("content");
-  el.innerHTML='<div class="content-spinner"><div class="ring"></div><p>Loading…</p></div>';
-  // Use rAF + setTimeout so the spinner frame actually paints before render() blocks
-  requestAnimationFrame(function(){
-    setTimeout(function(){ render(); }, 120);
+/* ═══════════════════════ Load articles ═══════════════════════ */
+function loadArticles(){
+  var usedCache=loadCached();
+  renderAll();
+
+  // If cache is fresh, skip the network fetch on this launch
+  if(usedCache){ return; }
+
+  batchedFetch(FEEDS,4).then(function(fresh){
+    fresh=dedupe(fresh.filter(function(a){return a.t;}));
+    if(fresh.length>0){
+      var seen={};
+      fresh.forEach(function(a){seen[a.t]=true;});
+      var merged=fresh.concat(FALLBACK.filter(function(a){return !seen[a.t];}));
+      A=dedupe(merged);
+      liveLoaded=true;
+      try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),items:A}));}catch(e){}
+    } else {
+      liveLoaded=true;
+    }
+    render();
+    renderStats(getFiltered());
   });
 }
 
-// ── Init ─────────────────────────────────────────────────────────────────────
+/* ═══════════════════════ Install banner ═══════════════════════ */
+var deferredInstallPrompt=null;
+window.addEventListener('beforeinstallprompt',function(e){
+  e.preventDefault(); deferredInstallPrompt=e; showInstallBanner('android');
+});
+function showInstallBanner(platform){
+  var el=document.getElementById("installPrompt");
+  if(!el||el.innerHTML) return;
+  if(platform==='ios'){
+    el.innerHTML=
+      '<div class="install-banner">'+
+        '<span class="install-icon">'+icon('icon-share-ios')+'</span>'+
+        '<div class="install-text">'+
+          '<b>Install SeedPulse on iPhone</b>'+
+          '<ul class="install-steps">'+
+            '<li>Tap the Share button in Safari</li>'+
+            '<li>Scroll down and tap <b>Add to Home Screen</b></li>'+
+            '<li>Tap <b>Add</b> — done!</li>'+
+          '</ul>'+
+        '</div>'+
+        '<button class="close" id="closeBanner" aria-label="Dismiss install prompt">'+icon('icon-close')+'</button>'+
+      '</div>';
+  } else {
+    el.innerHTML=
+      '<div class="install-banner">'+
+        '<span class="install-icon">'+icon('icon-install')+'</span>'+
+        '<div class="install-text">'+
+          '<b>Install SeedPulse</b>'+
+          '<div style="font-size:12px;color:var(--mute);margin-top:2px">Add to your home screen for offline access</div>'+
+          '<button class="btn-install" id="installBtn">'+icon('icon-install')+' Install App</button>'+
+        '</div>'+
+        '<button class="close" id="closeBanner" aria-label="Dismiss install prompt">'+icon('icon-close')+'</button>'+
+      '</div>';
+    var ib=document.getElementById("installBtn");
+    if(ib) ib.onclick=function(){
+      if(deferredInstallPrompt){
+        deferredInstallPrompt.prompt();
+        deferredInstallPrompt.userChoice.then(function(){deferredInstallPrompt=null;el.innerHTML='';});
+      }
+    };
+  }
+  var cb=document.getElementById("closeBanner");
+  if(cb) cb.onclick=function(){el.innerHTML='';};
+}
+function checkInstallPrompt(){
+  var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+  var isStandalone=window.navigator.standalone===true||window.matchMedia('(display-mode: standalone)').matches;
+  if(isIOS && !isStandalone) showInstallBanner('ios');
+}
+
+/* ═══════════════════════ Event wiring ═══════════════════════ */
 document.getElementById("hdrSub").textContent=
   "Vegetable seed & horticulture intelligence — "+
   TODAY.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
 
-// Wire up controls immediately (content arrives async)
 document.getElementById("tabs").addEventListener("click",function(e){
-  var btn=e.target.closest("[data-region]");
-  if(!btn) return;
-  region=btn.getAttribute("data-region");
-  renderTabs(); renderWithSpinner();
+  var btn=e.target.closest("[data-region]"); if(!btn) return;
+  region=btn.getAttribute("data-region"); renderTabs(); renderWithSpinner();
 });
 document.getElementById("periods").addEventListener("click",function(e){
-  var btn=e.target.closest("[data-period]");
-  if(!btn) return;
-  period=btn.getAttribute("data-period");
-  renderPeriods(); renderWithSpinner();
+  var btn=e.target.closest("[data-period]"); if(!btn) return;
+  period=btn.getAttribute("data-period"); renderPeriods(); renderWithSpinner();
 });
-document.getElementById("search").addEventListener("input",function(e){ filter=e.target.value; renderWithSpinner(); });
 
-document.getElementById("emailBtn").onclick=function(){ emailOpen=!emailOpen; document.getElementById("emailPanel").style.display=emailOpen?"block":"none"; };
-document.getElementById("mailtoBtn").onclick=function(){
+// Debounced search — render only after user pauses typing
+var searchHandler=debounce(function(val){ filter=val; renderWithSpinner(); },220);
+document.getElementById("search").addEventListener("input",function(e){ searchHandler(e.target.value); });
+
+// Category expand/collapse — delegated, and only toggles its own section
+document.getElementById("content").addEventListener("click",function(e){
+  var catBtn=e.target.closest("[data-cat]");
+  if(catBtn){
+    var cid=catBtn.getAttribute("data-cat");
+    expanded[cid]=!expanded[cid];
+    render();
+    return;
+  }
+  var reset=e.target.closest("#resetPeriod");
+  if(reset){ period="all"; renderPeriods(); renderWithSpinner(); }
+});
+
+document.getElementById("emailBtn").addEventListener("click",function(){
+  emailOpen=!emailOpen;
+  document.getElementById("emailPanel").style.display=emailOpen?"block":"none";
+  this.setAttribute("aria-expanded",emailOpen);
+});
+document.getElementById("mailtoBtn").addEventListener("click",function(){
   var regObj=REGIONS.find(function(r){return r.id===region;});
   var subj="SeedPulse Daily Brief — "+regObj.label+" — "+new Date().toLocaleDateString("en-GB");
   window.location.href="mailto:?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(buildReport());
-};
-document.getElementById("copyBtn").onclick=function(){
+});
+document.getElementById("copyBtn").addEventListener("click",function(){
+  var btn=this, span=btn.querySelector('span');
   navigator.clipboard.writeText(buildReport()).then(function(){
-    document.getElementById("copyBtn").textContent="✅ Copied!";
-    setTimeout(function(){ document.getElementById("copyBtn").textContent="📋 Copy Report"; },2000);
+    if(span) span.textContent="Copied!";
+    btn.querySelector('use').setAttribute('href','#icon-check');
+    setTimeout(function(){
+      if(span) span.textContent="Copy Report";
+      btn.querySelector('use').setAttribute('href','#icon-copy');
+    },1800);
   });
-};
+});
 
-// Render static shells, then fetch fresh articles
+// Scroll-to-top
+var scrollTop=document.getElementById("scrollTop");
+window.addEventListener("scroll",function(){
+  if(window.scrollY>600) scrollTop.classList.add("show");
+  else scrollTop.classList.remove("show");
+},{passive:true});
+scrollTop.addEventListener("click",function(){ window.scrollTo({top:0,behavior:'smooth'}); });
+
+/* ═══════════════════════ Init ═══════════════════════ */
 renderTabs();
 renderPeriods();
 checkInstallPrompt();
-loadArticles(); // always fetches fresh on every load
+loadArticles();
 
-// ── Service Worker ────────────────────────────────────────────────────────────
+/* ═══════════════════════ Service worker ═══════════════════════ */
 if('serviceWorker' in navigator){
-  window.addEventListener('load', function(){
-    navigator.serviceWorker.register('sw.js').catch(function(e){
-      console.warn('SW registration failed:', e);
-    });
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('sw.js').catch(function(e){console.warn('SW registration failed:',e);});
   });
 }
+})();
 </script>
 </body>
 </html>
