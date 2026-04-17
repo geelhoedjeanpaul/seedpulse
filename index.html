@@ -1231,27 +1231,35 @@ function buildReport(){
 }
 
 /* ═══════════════════════ HTML report (email + clipboard) ═══════════════════════ */
-// Returns a full, self-contained HTML document that mirrors the app's look:
-// gradient header, category sections with accent bars, numbered article cards,
-// priority badges. Uses inline styles so it survives pasting into Gmail,
-// Apple Mail, Outlook, Slack — all of which strip <style> blocks.
+// Outlook-bulletproof: table-only layout, solid background-colors (no gradients),
+// no flex, no inline-block for layout, split `font:` shorthand → Word engine
+// renders it correctly. Inline styles only — no <style> blocks (stripped by Gmail).
+// Category icons rendered as colored letter badges — identical across every client.
 function esc(s){
   return String(s==null?'':s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
-// Category accent colors — plain hex so email clients don't need CSS vars
+// Category accent colors + icon glyphs — letters render identically everywhere
 var CAT_COLORS={
   germains:'#0A4A2A', seed_tech:'#1B6B4A', market:'#2E7D5B',
   breeding:'#4A9E72', regulation:'#5A8A7A', competitors:'#2B5C8A', crops:'#8A6B2E'
+};
+var CAT_GLYPH={
+  germains:'G', seed_tech:'S', market:'M',
+  breeding:'B', regulation:'R', competitors:'I', crops:'C'
 };
 function buildHtmlReport(){
   var items=getFiltered();
   var regObj=REGIONS.find(function(r){return r.id===region;});
   var perObj=PERIODS.find(function(p){return p.id===period;});
   var today=new Date().toLocaleDateString("en-GB",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
-  var subLine=regObj.label+(period!=="all"?" · "+perObj.label:"")+(filter?" · Filter: "+esc(filter):"");
+  var subLine=regObj.label+(period!=="all"?" \u00B7 "+perObj.label:"")+(filter?" \u00B7 Filter: "+esc(filter):"");
   var totalCount=0;
+
+  // Outlook-safe font stack (MSO respects first match)
+  var SANS="font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif";
+  var SERIF="font-family:Georgia,'Times New Roman',Times,serif";
 
   var sections='';
   CATS.forEach(function(cat){
@@ -1267,88 +1275,109 @@ function buildHtmlReport(){
     if(!ci.length) return;
     totalCount += ci.length;
     var color=CAT_COLORS[cat.id]||'#1B6B4A';
+    var glyph=CAT_GLYPH[cat.id]||'?';
 
     var cards = ci.map(function(a,i){
       var badge='';
       if(cat.id==='germains' && a.gs){
-        var tier = a.gs>=6?'High':a.gs>=3?'Medium':'Low';
+        var tier = a.gs>=6?'HIGH':a.gs>=3?'MED':'LOW';
         var bgTier = a.gs>=6?'#0A4A2A':a.gs>=3?'#2E7D5B':'#6E867C';
-        badge = '<span style="display:inline-block;font:600 10px/1 -apple-system,Helvetica,Arial,sans-serif;color:#fff;background:'+bgTier+';padding:4px 8px;border-radius:4px;letter-spacing:.3px;text-transform:uppercase;vertical-align:middle;margin-left:8px">'+tier+' · '+a.gs+'</span>';
+        // Use <table> for badge so Outlook renders the background color
+        badge = ' <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="display:inline-table;vertical-align:middle;margin-left:6px"><tr><td style="background-color:'+bgTier+';padding:3px 8px;color:#ffffff;'+SANS+';font-size:10px;font-weight:700;letter-spacing:0.6px;line-height:1">'+tier+' '+a.gs+'</td></tr></table>';
       }
-      var meta = '<span style="color:#6E867C">'+esc(a.src||'Source')+'</span>'+
-                 (a.d?' <span style="color:#C6D6CD">·</span> <span style="color:#6E867C">'+esc(a.d)+'</span>':'');
+      var sourceBadge = '<span style="background-color:#EAF2EC;color:#35524A;padding:2px 7px;'+SANS+';font-size:10.5px;font-weight:600;letter-spacing:0.2px">'+esc(a.src||'Source')+'</span>';
+      var dateTxt = a.d ? ' <span style="color:#6E867C;'+SANS+';font-size:11px">'+esc(a.d)+'</span>' : '';
       var readMore = a.u
-        ? '<div style="margin-top:10px"><a href="'+esc(a.u)+'" style="display:inline-block;font:600 12px -apple-system,Helvetica,Arial,sans-serif;color:'+color+';text-decoration:none;border-bottom:1px solid '+color+'33;padding-bottom:1px">Read article →</a></div>'
+        ? '<tr><td style="padding:10px 18px 14px 18px"><a href="'+esc(a.u)+'" style="color:'+color+';'+SANS+';font-size:12px;font-weight:600;text-decoration:none;border-bottom:1px solid '+color+'">Read article \u2192</a></td></tr>'
         : '';
       return ''+
-        '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#FFFFFF;border:1px solid #E0EAE4;border-left:3px solid '+color+';border-radius:8px;margin:0 0 12px 0">'+
-          '<tr><td style="padding:16px 18px">'+
-            '<div style="font:700 11px -apple-system,Helvetica,Arial,sans-serif;color:'+color+';letter-spacing:.5px">#'+(i+1)+'</div>'+
-            '<h3 style="margin:4px 0 0 0;font:700 15.5px/1.4 Georgia,\'Times New Roman\',serif;color:#112A20;letter-spacing:-.1px">'+esc(a.t)+badge+'</h3>'+
-            '<p style="margin:8px 0 0 0;font:400 13.5px/1.6 -apple-system,Helvetica,Arial,sans-serif;color:#35524A">'+esc(a.s||'')+'</p>'+
-            '<div style="margin-top:10px;font:500 11.5px -apple-system,Helvetica,Arial,sans-serif">'+meta+'</div>'+
-            readMore+
+        '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#FFFFFF;border:1px solid #E0EAE4;border-left:4px solid '+color+';margin:0 0 12px 0">'+
+          '<tr><td style="padding:14px 18px 4px 18px">'+
+            '<span style="'+SANS+';font-size:10.5px;font-weight:700;color:'+color+';letter-spacing:0.6px">#'+(i+1)+'</span>'+
           '</td></tr>'+
+          '<tr><td style="padding:2px 18px 0 18px">'+
+            '<span style="'+SERIF+';font-size:16px;font-weight:700;color:#112A20;line-height:1.35">'+esc(a.t)+'</span>'+badge+
+          '</td></tr>'+
+          '<tr><td style="padding:8px 18px 12px 18px;'+SANS+';font-size:13.5px;line-height:1.55;color:#35524A">'+
+            esc(a.s||'')+
+          '</td></tr>'+
+          '<tr><td style="padding:0 18px 10px 18px">'+
+            sourceBadge+dateTxt+
+          '</td></tr>'+
+          readMore+
         '</table>';
     }).join('');
 
+    // Section header: icon badge (table cell, bulletproof in Outlook) + title
     sections += ''+
-      '<div style="margin:28px 0 14px 0">'+
-        '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>'+
-          '<td style="background:'+color+';width:4px;border-radius:2px"></td>'+
-          '<td style="padding-left:12px">'+
-            '<div style="font:700 17px/1.2 Georgia,\'Times New Roman\',serif;color:#112A20;letter-spacing:-.2px">'+esc(cat.label)+'</div>'+
-            '<div style="font:500 11px -apple-system,Helvetica,Arial,sans-serif;color:#6E867C;margin-top:3px;letter-spacing:.3px;text-transform:uppercase">'+ci.length+' '+(ci.length===1?'article':'articles')+'</div>'+
+      '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:28px 0 14px 0">'+
+        '<tr>'+
+          '<td width="36" style="background-color:'+color+';color:#FFFFFF;'+SERIF+';font-size:18px;font-weight:800;width:36px;height:36px;text-align:center;line-height:36px">'+glyph+'</td>'+
+          '<td style="padding-left:12px;vertical-align:middle">'+
+            '<div style="'+SERIF+';font-size:18px;font-weight:700;color:#112A20;line-height:1.2">'+esc(cat.label)+'</div>'+
+            '<div style="'+SANS+';font-size:11px;font-weight:600;color:'+color+';margin-top:2px;letter-spacing:0.6px">'+ci.length+' '+(ci.length===1?'ARTICLE':'ARTICLES').toUpperCase()+'</div>'+
           '</td>'+
-        '</tr></table>'+
-      '</div>'+
+        '</tr>'+
+      '</table>'+
       cards;
   });
 
   if(!sections){
-    sections = '<div style="padding:40px 20px;text-align:center;color:#6E867C;font:400 14px -apple-system,Helvetica,Arial,sans-serif;background:#FFFFFF;border:1px solid #E0EAE4;border-radius:8px">No articles match the current filters.</div>';
+    sections = '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#FFFFFF;border:1px solid #E0EAE4"><tr><td style="padding:40px 20px;text-align:center;color:#6E867C;'+SANS+';font-size:14px">No articles match the current filters.</td></tr></table>';
   }
 
+  // Outlook desktop conditional: force table width even when MSO miscalculates
   var html=''+
-'<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">'+
+'<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">'+
+'<html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head>'+
+'<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">'+
 '<meta name="viewport" content="width=device-width,initial-scale=1">'+
-'<title>SeedPulse Brief — '+esc(regObj.label)+' — '+esc(today)+'</title>'+
+'<meta http-equiv="X-UA-Compatible" content="IE=edge">'+
+'<meta name="color-scheme" content="light">'+
+'<meta name="supported-color-schemes" content="light">'+
+'<title>SeedPulse Brief \u2014 '+esc(regObj.label)+' \u2014 '+esc(today)+'</title>'+
 '</head>'+
-'<body style="margin:0;padding:0;background:#F4F8F5;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;color:#112A20;-webkit-font-smoothing:antialiased">'+
-  '<center style="width:100%;background:#F4F8F5">'+
-  '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:720px;margin:0 auto;background:linear-gradient(175deg,#E7F0EA 0%,#F4F8F5 35%,#FBFDFC 100%)">'+
-    '<tr><td style="padding:32px 28px 8px 28px">'+
-      // Header
-      '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">'+
-        '<tr><td>'+
-          '<div style="display:inline-block;vertical-align:middle;width:44px;height:44px;background:linear-gradient(135deg,#2D8A5B,#1B6B4A);border-radius:10px;text-align:center;line-height:44px;color:#fff;font:800 18px Georgia,serif;letter-spacing:.5px">SP</div>'+
-          '<div style="display:inline-block;vertical-align:middle;margin-left:14px">'+
-            '<div style="font:800 22px/1.1 Georgia,\'Times New Roman\',serif;color:#112A20;letter-spacing:-.4px">SeedPulse</div>'+
-            '<div style="font:500 12px -apple-system,Helvetica,Arial,sans-serif;color:#35524A;margin-top:3px">Vegetable seed & horticulture intelligence</div>'+
-          '</div>'+
+'<body style="margin:0;padding:0;background-color:#F4F8F5;'+SANS+';color:#112A20">'+
+  '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#F4F8F5">'+
+    '<tr><td align="center" style="padding:0">'+
+      '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="720" style="max-width:720px;width:100%;background-color:#FBFDFC">'+
+        // Top accent band
+        '<tr><td style="background-color:#1B6B4A;height:6px;line-height:6px;font-size:6px">&nbsp;</td></tr>'+
+        // Header
+        '<tr><td style="padding:28px 28px 8px 28px;background-color:#E7F0EA">'+
+          '<table role="presentation" cellpadding="0" cellspacing="0" border="0">'+
+            '<tr>'+
+              '<td width="56" style="background-color:#1B6B4A;color:#FFFFFF;'+SERIF+';font-size:22px;font-weight:800;width:56px;height:56px;text-align:center;line-height:56px;letter-spacing:1px">SP</td>'+
+              '<td style="padding-left:16px;vertical-align:middle">'+
+                '<div style="'+SERIF+';font-size:26px;font-weight:800;color:#0A4A2A;line-height:1;letter-spacing:-0.5px">SeedPulse</div>'+
+                '<div style="'+SANS+';font-size:12px;font-weight:500;color:#35524A;margin-top:4px">Vegetable seed &amp; horticulture intelligence</div>'+
+              '</td>'+
+            '</tr>'+
+          '</table>'+
         '</td></tr>'+
-      '</table>'+
-      // Meta strip
-      '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:24px">'+
-        '<tr><td style="padding:12px 16px;background:#FFFFFF;border:1px solid #E0EAE4;border-radius:8px">'+
-          '<div style="font:700 13px -apple-system,Helvetica,Arial,sans-serif;color:#112A20">'+esc(today)+'</div>'+
-          '<div style="font:500 12px -apple-system,Helvetica,Arial,sans-serif;color:#6E867C;margin-top:3px">'+esc(subLine)+' <span style="color:#C6D6CD">·</span> '+totalCount+' articles</div>'+
+        // Meta strip
+        '<tr><td style="padding:16px 28px 8px 28px;background-color:#E7F0EA">'+
+          '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#FFFFFF;border:1px solid #C6D6CD">'+
+            '<tr><td style="padding:14px 18px">'+
+              '<div style="'+SANS+';font-size:13px;font-weight:700;color:#112A20">'+esc(today)+'</div>'+
+              '<div style="'+SANS+';font-size:12px;font-weight:500;color:#35524A;margin-top:3px">'+esc(subLine)+' \u00B7 <span style="color:#1B6B4A;font-weight:700">'+totalCount+' articles</span></div>'+
+            '</td></tr>'+
+          '</table>'+
         '</td></tr>'+
+        // Body
+        '<tr><td style="padding:12px 28px 24px 28px;background-color:#F4F8F5">'+
+          sections+
+        '</td></tr>'+
+        // Footer
+        '<tr><td style="padding:20px 28px 28px 28px;background-color:#E7F0EA;border-top:2px solid #C6D6CD">'+
+          '<div style="'+SERIF+';font-size:13px;font-weight:700;color:#0A4A2A;text-align:center">SeedPulse \u2014 Germains Seed Technology</div>'+
+          '<div style="'+SANS+';font-size:11px;font-weight:500;color:#6E867C;text-align:center;margin-top:6px;line-height:1.6">Curated from '+(items.length||0)+' tracked sources \u00B7 Generated '+esc(today)+'</div>'+
+        '</td></tr>'+
+        // Bottom accent band
+        '<tr><td style="background-color:#1B6B4A;height:6px;line-height:6px;font-size:6px">&nbsp;</td></tr>'+
       '</table>'+
-    '</td></tr>'+
-    // Body
-    '<tr><td style="padding:8px 28px 28px 28px">'+
-      sections+
-    '</td></tr>'+
-    // Footer
-    '<tr><td style="padding:24px 28px 40px 28px;border-top:1px solid #E0EAE4;margin-top:20px">'+
-      '<div style="font:500 11px -apple-system,Helvetica,Arial,sans-serif;color:#6E867C;text-align:center;line-height:1.6">'+
-        '<div style="font:700 12px Georgia,serif;color:#35524A;margin-bottom:4px">SeedPulse — Germains Seed Technology</div>'+
-        'Curated from '+(items.length||0)+' tracked sources · Generated '+esc(today)+
-      '</div>'+
     '</td></tr>'+
   '</table>'+
-  '</center>'+
 '</body></html>';
   return html;
 }
@@ -1527,28 +1556,56 @@ function showToast(msg){
   },2800);
 }
 
-// ─── Open in Mail: copy HTML to clipboard, then launch the mail composer ───
-// mailto: URLs cannot carry HTML bodies (RFC 6068 is text-only). The only
-// reliable way to get a formatted email is: stash the HTML on the clipboard,
-// open the compose window, and have the user paste (⌘V). Every major mail
-// client — Apple Mail, Gmail web, Outlook — renders pasted HTML correctly.
+// ─── Open in Mail: platform-specific flows ───
+// Two problems with mailto: (1) it's RFC-6068 text-only, can't carry HTML;
+// (2) on iOS, the composer is already filled with text before the user knows
+// to paste. Solutions by platform:
+//
+//   iOS / iPadOS → open the HTML report in a new Safari tab. User taps
+//     Share → Mail, and Apple Mail automatically embeds the rendered HTML
+//     as the email body. This is the iOS-native "email this page" flow.
+//
+//   Desktop (macOS, Windows, Linux) → copy HTML+text to the clipboard
+//     (rich mail clients render pasted HTML), then launch the mailto:
+//     composer with a paste-here hint. User hits ⌘V / Ctrl+V.
 document.getElementById("mailtoBtn").addEventListener("click",async function(){
   var regObj=REGIONS.find(function(r){return r.id===region;});
   var subj="SeedPulse Daily Brief — "+regObj.label+" — "+new Date().toLocaleDateString("en-GB");
   var html=buildHtmlReport();
   var text=buildReport();
+  var ua=navigator.userAgent||'';
+  var isIOS=/iPad|iPhone|iPod/.test(ua) ||
+            (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1); // iPadOS
+
+  if(isIOS){
+    // Wrap in a page with a prominent "Share to Mail" hint at the top so the
+    // user knows what to do with the new tab.
+    var hint=''+
+      '<div style="position:sticky;top:0;z-index:9999;background-color:#0A4A2A;color:#ffffff;padding:14px 18px;font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.5;text-align:center">'+
+        '<b>Tap Share \u2192 Mail</b> below to send this report as a formatted email. '+
+        'The formatting (colors, layout, links) will carry through.'+
+      '</div>';
+    var pageHtml=html.replace(/<body([^>]*)>/,'<body$1>'+hint);
+    var blob=new Blob([pageHtml],{type:'text/html'});
+    var url=URL.createObjectURL(blob);
+    var w=window.open(url,'_blank');
+    if(!w){
+      // Popup blocked (rare on user-gesture) — fall back to same-tab
+      window.location.href=url;
+    }
+    setTimeout(function(){ try{URL.revokeObjectURL(url);}catch(e){} },120000);
+    return;
+  }
+
+  // Desktop: clipboard-first flow
   var copied=false;
   try{ await writeRichClipboard(html,text); copied=true; }catch(e){ /* fall through */ }
-
-  // Compose a short text body with a pointer to paste — if the user's mail
-  // client has a rich text mode (most do by default), their ⌘V will paste the
-  // formatted HTML over this placeholder.
   var bodyHint = copied
-    ? "The fully formatted SeedPulse brief is on your clipboard.\n\nPress ⌘V (Mac) or Ctrl+V (Windows) to paste the HTML version here.\n\n— plain-text fallback follows —\n\n"
+    ? "The fully formatted SeedPulse brief is on your clipboard.\n\nPress Ctrl+V (Windows) or \u2318V (Mac) to paste the HTML version here.\n\n\u2014 plain-text fallback follows \u2014\n\n"
     : "";
   window.location.href="mailto:?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(bodyHint+text);
-  if(copied) showToast("HTML report copied — paste (⌘V) into the mail window");
-  else showToast("Opened Mail (clipboard copy failed — pasted as text only)");
+  if(copied) showToast("HTML report copied \u2014 paste (\u2318V / Ctrl+V) into the mail window");
+  else showToast("Opened Mail (clipboard copy failed \u2014 pasted as text only)");
 });
 
 // ─── Copy Report: write both HTML and plain text to clipboard ───
