@@ -94,7 +94,40 @@ wrangler secret put TRIGGER_KEY
 # paste any random string, e.g. output of `openssl rand -hex 16`
 ```
 
-### 4. Deploy
+### 4. (Optional) Enable the daily digest email (feature #5)
+
+The Worker can send a morning briefing every day at 07:00 UTC via [Resend](https://resend.com)
+(free tier: 3k emails/month). Skip this section to leave it disabled — the
+Worker will silently no-op the daily cron.
+
+1. Sign up at resend.com and grab an API key.
+2. Set the API key as a secret:
+
+```bash
+wrangler secret put RESEND_API_KEY
+# paste the key, press Ctrl-D
+```
+
+3. Set the recipient list in `wrangler.toml` under `[vars]`:
+
+```toml
+DIGEST_TO_EMAIL   = "you@example.com,boss@example.com"
+DIGEST_FROM_EMAIL = "SeedPulse <onboarding@resend.dev>"   # or your verified domain
+```
+
+Resend's sandbox sender `onboarding@resend.dev` works out of the box but only
+delivers to your own verified email. For production, verify a domain in Resend
+and use an address on it.
+
+### 5. (Optional) Enable the "Ask SeedPulse" AI summary (feature #10)
+
+The `[ai]` binding in `wrangler.toml` activates [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/)
+(free tier: 10k neurons/day — easily enough for dozens of summaries per day
+plus the daily digest). No extra setup beyond keeping the binding in
+`wrangler.toml`. Remove the `[ai]` block to disable — the `/ai-summary`
+endpoint will then return 503 and the app will hide the button automatically.
+
+### 6. Deploy
 
 ```bash
 wrangler deploy

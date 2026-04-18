@@ -95,6 +95,13 @@
     <symbol id="icon-logo" viewBox="0 0 24 24"><path d="M12 4c-2 2-3 4-3 6a3 3 0 006 0c0-2-1-4-3-6z" fill="currentColor"/><path d="M12 10v10M9 17c1-.5 2-.6 3-.6s2 .1 3 .6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
     <symbol id="icon-bell" viewBox="0 0 24 24"><path d="M6 16h12l-1.5-2.5V10a4.5 4.5 0 00-9 0v3.5L6 16z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 19a2 2 0 004 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
     <symbol id="icon-bell-off" viewBox="0 0 24 24"><path d="M6 16h12l-1.5-2.5V10a4.5 4.5 0 00-9 0v3.5L6 16z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 19a2 2 0 004 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M4 4l16 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="icon-star" viewBox="0 0 24 24"><path d="M12 3l2.6 5.9 6.4.6-4.8 4.4 1.4 6.3L12 17l-5.6 3.2 1.4-6.3L3 9.5l6.4-.6L12 3z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="icon-star-fill" viewBox="0 0 24 24"><path d="M12 3l2.6 5.9 6.4.6-4.8 4.4 1.4 6.3L12 17l-5.6 3.2 1.4-6.3L3 9.5l6.4-.6L12 3z" fill="currentColor"/></symbol>
+    <symbol id="icon-sparkles" viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></symbol>
+    <symbol id="icon-trending-up" viewBox="0 0 24 24"><path d="M4 17l6-6 4 4 6-7M14 8h6v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="icon-trending-down" viewBox="0 0 24 24"><path d="M4 7l6 6 4-4 6 7M14 16h6v-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="icon-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="2.8" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   </defs>
 </svg>
 
@@ -398,6 +405,83 @@ main{max-width:760px;margin:0 auto;padding:18px 16px calc(24px + var(--safe-b))}
   .card:hover{transform:translateY(-1px);box-shadow:var(--shadow-md);border-color:var(--border-strong)}
 }
 
+/* ─── Competitor + angle chips (#4, #7) ─── */
+.chip-comp, .chip-angle{
+  display:inline-block;font:700 9.5px var(--sans);letter-spacing:.4px;text-transform:uppercase;
+  padding:2px 7px;border-radius:4px;line-height:1.4;color:#fff;
+}
+.chip-angle{letter-spacing:.3px}
+.chip-wl{display:inline-flex;align-items:center;gap:3px;font:700 10px var(--sans);letter-spacing:.3px;padding:3px 7px;border-radius:4px;background:#FFF2CC;color:#664400;border:1px solid #E5B94A}
+.chip-wl::before{content:'●';font-size:8px;color:#D98B30}
+@media(prefers-color-scheme:dark){
+  .chip-wl{background:#3D3010;color:#F5CF6B;border-color:#7A5F1E}
+}
+.card-tags-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+
+/* ─── Star / shortlist (#1) ─── */
+.card-top{display:flex;gap:8px;align-items:flex-start}
+.star-btn{
+  flex-shrink:0;background:none;border:0;cursor:pointer;padding:2px 4px;margin:-2px -4px -2px 0;
+  color:var(--mute);transition:color .15s ease,transform .15s ease;line-height:0;
+}
+.star-btn:hover{color:#E5B94A;transform:scale(1.08)}
+.star-btn.on{color:#E5B94A}
+.star-btn .icon{font-size:17px}
+
+/* ─── Trend delta arrow (#8) ─── */
+.cat-trend{display:inline-flex;align-items:center;gap:3px;font:700 10.5px var(--sans);padding:2px 7px;border-radius:4px;margin-left:6px;letter-spacing:.3px}
+.cat-trend.up{background:#DCF4E3;color:#0A4A2A}
+.cat-trend.down{background:#F4E3DC;color:#8A2E1E}
+@media(prefers-color-scheme:dark){
+  .cat-trend.up{background:#163827;color:#A9E6BF}
+  .cat-trend.down{background:#3D1F16;color:#E6A99F}
+}
+
+/* ─── Smart summary block (#2) ─── */
+.summary-block{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);
+  padding:16px 18px;margin:0 0 18px 0;box-shadow:var(--shadow-sm);
+  border-left:4px solid var(--accent);
+}
+.summary-title{font:700 11.5px var(--sans);letter-spacing:.5px;text-transform:uppercase;color:var(--accent);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.summary-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;align-items:center}
+.summary-row:last-child{margin-bottom:0}
+.summary-label{font:600 11.5px var(--sans);color:var(--mute);min-width:88px}
+.summary-value{font:500 13px var(--sans);color:var(--text)}
+.summary-value b{color:var(--accent);font-weight:700}
+.summary-chips{display:inline-flex;gap:5px;flex-wrap:wrap}
+.summary-btn-ai{
+  display:inline-flex;align-items:center;gap:5px;font:700 11px var(--sans);
+  padding:6px 12px;border-radius:6px;border:1px solid var(--border-strong);
+  background:var(--surface);color:var(--text);cursor:pointer;margin-top:10px;
+  transition:all .15s ease;
+}
+.summary-btn-ai:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.summary-btn-ai:disabled{opacity:.5;cursor:wait}
+.ai-output{margin-top:12px;padding:14px 16px;background:var(--chip-bg);border-radius:8px;font:400 13px/1.6 var(--sans);color:var(--text);white-space:pre-wrap;display:none}
+.ai-output.show{display:block}
+
+/* ─── Watchlist panel (#13) ─── */
+.wl-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 14px;margin:10px 0;box-shadow:var(--shadow-sm)}
+.wl-title{font:700 11.5px var(--sans);letter-spacing:.5px;text-transform:uppercase;color:var(--accent);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.wl-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.wl-tag{display:inline-flex;align-items:center;gap:4px;font:600 11px var(--sans);padding:4px 8px;border-radius:5px;background:#FFF2CC;color:#664400;border:1px solid #E5B94A}
+.wl-tag button{background:none;border:0;color:#664400;cursor:pointer;padding:0;font-size:14px;line-height:1;opacity:.6}
+.wl-tag button:hover{opacity:1}
+@media(prefers-color-scheme:dark){
+  .wl-tag{background:#3D3010;color:#F5CF6B;border-color:#7A5F1E}
+  .wl-tag button{color:#F5CF6B}
+}
+.wl-form{display:flex;gap:6px}
+.wl-form input{flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font:500 12.5px var(--sans)}
+.wl-form button{padding:7px 14px;border:0;border-radius:6px;background:var(--accent);color:#fff;font:700 12px var(--sans);cursor:pointer}
+.wl-empty{font:500 11.5px var(--sans);color:var(--mute);margin-bottom:8px}
+
+/* ─── Shortlist tab + highlight ─── */
+.card.in-shortlist{box-shadow:0 0 0 2px #E5B94A33 inset, var(--shadow-sm)}
+.shortlist-empty{padding:40px 20px;text-align:center;color:var(--mute)}
+.shortlist-empty .icon{font-size:32px;margin-bottom:12px;display:block}
+
 /* Skeleton */
 .skeleton-card{
   background:var(--surface);border-radius:var(--radius-md);padding:14px 16px;
@@ -551,6 +635,44 @@ var CACHE_KEY='seedpulse_v7';
 var CACHE_TTL_MS=2*60*60*1000; // 2 hours — reuse cached feed below this age
 var SEEN_KEY='seedpulse_seen_v1';      // stored set of article IDs we've already notified about
 var NOTIF_PREF_KEY='seedpulse_notify'; // 'on' | 'off' | undefined (never asked)
+var SHORTLIST_KEY='seedpulse_shortlist_v1'; // user-starred article IDs
+var WATCHLIST_KEY='seedpulse_watchlist_v1'; // user-defined alert keywords (array of strings)
+var TREND_SNAPSHOT_KEY='seedpulse_trend_v1'; // last-week counts by category for delta arrow
+var DIGEST_TO_KEY='seedpulse_digest_email'; // subscriber email for daily digest (UI only — actual subscription via worker)
+
+/* ─── Competitors (auto-tag + summary) ─── */
+var COMPETITORS=[
+  {k:'incotec',      label:'Incotec',      color:'#D98B30'},
+  {k:'croda',        label:'Croda',        color:'#8A6B2E'},
+  {k:'syngenta',     label:'Syngenta',     color:'#2B5C8A'},
+  {k:'bayer',        label:'Bayer',        color:'#1E6B88'},
+  {k:'basf',         label:'BASF',         color:'#1E4D8A'},
+  {k:'rijk zwaan',   label:'Rijk Zwaan',   color:'#6B4A8A'},
+  {k:'enza zaden',   label:'Enza Zaden',   color:'#8A2E5A'},
+  {k:'bejo',         label:'Bejo',         color:'#4A7A2E'},
+  {k:'sakata',       label:'Sakata',       color:'#8A4A2E'},
+  {k:'takii',        label:'Takii',        color:'#8A6B4A'},
+  {k:'limagrain',    label:'Limagrain',    color:'#4A8A6B'},
+  {k:'nunhems',      label:'Nunhems',      color:'#6B7A4A'},
+  {k:'corteva',      label:'Corteva',      color:'#2E6B8A'},
+  {k:'east-west',    label:'East-West',    color:'#8A2E2E'},
+  {k:'vilmorin',     label:'Vilmorin',     color:'#6B2E8A'},
+  {k:'hazera',       label:'Hazera',       color:'#8A6B2E'},
+  {k:'advanta',      label:'Advanta',      color:'#2E8A6B'}
+];
+
+/* ─── Germains product angles (auto-tag) ─── */
+// Each angle has a label + primary keywords. An article can match multiple.
+var PRODUCT_ANGLES=[
+  {id:'priming',  label:'Priming',   color:'#0A4A2A',
+   kw:['priming','osmopriming','hydropriming','hydro priming','osmo priming','drum priming','matrix priming','solid matrix priming','biopriming','pre-germination','osmotic conditioning']},
+  {id:'coating',  label:'Coating',   color:'#1B6B4A',
+   kw:['pelleting','pellet','film coat','filmcoat','film-coat','film coating','encrust','encrustment','seed coating','seed dressing','seed applied','coated seed','microplastic','polymer coating']},
+  {id:'hygiene',  label:'Hygiene',   color:'#2E7D5B',
+   kw:['seed hygiene','seed sanitation','seed health','thermotherapy','hot-water','hot water treatment','peroxide','steam treatment','pathogen','sanitiz','disinfect','phytosanitary']},
+  {id:'analytics',label:'Analytics', color:'#4A9E72',
+   kw:['multispectral','x-ray','x ray','near-infrared','nir','seed imaging','vigor test','ista','tetrazolium','digital phenotyp','seed analytics','3d imaging','hyperspectral','quality grading','seed grading','machine vision']}
+];
 
 // ─── Self-hosted RSS proxy (optional) ───────────────────────────────────────
 // Deploy cloudflare-worker/ and paste your Worker URL here (keep the `?url=`).
@@ -650,11 +772,12 @@ var REG_KW={
 
 /* ═══════════════════════ Config ═══════════════════════ */
 var REGIONS=[
-  {id:"all",     label:"All Regions",  icon:"icon-globe"},
-  {id:"europe",  label:"Europe",       icon:"icon-europe"},
-  {id:"mena",    label:"MENA",         icon:"icon-mena"},
-  {id:"apac",    label:"Asia-Pacific", icon:"icon-apac"},
-  {id:"americas",label:"Americas",     icon:"icon-americas"}
+  {id:"all",        label:"All Regions",  icon:"icon-globe"},
+  {id:"europe",     label:"Europe",       icon:"icon-europe"},
+  {id:"mena",       label:"MENA",         icon:"icon-mena"},
+  {id:"apac",       label:"Asia-Pacific", icon:"icon-apac"},
+  {id:"americas",   label:"Americas",     icon:"icon-americas"},
+  {id:"shortlist",  label:"Shortlist",    icon:"icon-star-fill"}  // #1
 ];
 var PERIODS=[
   {id:"all",  label:"All Time"},
@@ -770,6 +893,28 @@ function articleId(title,link){
   var base=(link||title||'').toLowerCase().replace(/[^a-z0-9]+/g,'').substring(0,64);
   return base || String(Date.now());
 }
+
+// Detect competitors mentioned in title+desc. Returns array of labels.
+function detectCompetitors(title,desc){
+  var txt=(title+' '+desc).toLowerCase();
+  return COMPETITORS.filter(function(c){return txt.indexOf(c.k)>=0;})
+                    .map(function(c){return c.label;});
+}
+// Detect Germains product angles (priming / coating / hygiene / analytics)
+function detectAngles(title,desc){
+  var txt=(title+' '+desc).toLowerCase();
+  return PRODUCT_ANGLES.filter(function(a){
+    return a.kw.some(function(k){return txt.indexOf(k)>=0;});
+  }).map(function(a){return a.id;});
+}
+// Detect watchlist keyword hits (user-defined). Returns matching terms.
+function detectWatchlist(title,desc){
+  var list=loadWatchlist();
+  if(!list.length) return [];
+  var txt=(title+' '+desc).toLowerCase();
+  return list.filter(function(kw){return kw && txt.indexOf(kw.toLowerCase())>=0;});
+}
+
 function normalizeItem(item,srcName){
   var title=(item.title||'').trim();
   var desc=stripHtml(item.content||item.description||'').substring(0,280);
@@ -782,8 +927,67 @@ function normalizeItem(item,srcName){
     c:categorize(title,desc), g:gs>0, gs:gs, r:regionalize(title,desc),
     t:title, s:desc, src:srcName, u:link,
     d:pubDate.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),
-    iso:pubDate.toISOString().split('T')[0]
+    iso:pubDate.toISOString().split('T')[0],
+    comp:detectCompetitors(title,desc),   // ← #4 competitor tags
+    ang: detectAngles(title,desc)         // ← #7 product angles
+    // wl:   filled lazily on render (depends on user's watchlist which can change)
   };
+}
+
+/* ═══════════════════════ Shortlist / Watchlist / Trends storage ═══════════════════════ */
+// #1 Shortlist — user-starred articles
+function loadShortlist(){
+  try{ return JSON.parse(localStorage.getItem(SHORTLIST_KEY)||'{}'); }
+  catch(e){ return {}; }
+}
+function saveShortlist(s){ try{ localStorage.setItem(SHORTLIST_KEY,JSON.stringify(s)); }catch(e){} }
+function toggleShortlist(id){
+  var s=loadShortlist();
+  if(s[id]) delete s[id]; else s[id]=Date.now();
+  saveShortlist(s);
+  return !!s[id];
+}
+function shortlistIds(){ return Object.keys(loadShortlist()); }
+
+// #13 Watchlist — user-defined alert keywords
+function loadWatchlist(){
+  try{ return JSON.parse(localStorage.getItem(WATCHLIST_KEY)||'[]'); }
+  catch(e){ return []; }
+}
+function saveWatchlist(arr){ try{ localStorage.setItem(WATCHLIST_KEY,JSON.stringify(arr)); }catch(e){} }
+function addWatchlistKeyword(kw){
+  kw=(kw||'').trim(); if(!kw) return;
+  var list=loadWatchlist();
+  if(list.map(function(x){return x.toLowerCase();}).indexOf(kw.toLowerCase())<0){
+    list.push(kw); saveWatchlist(list);
+  }
+}
+function removeWatchlistKeyword(kw){
+  saveWatchlist(loadWatchlist().filter(function(x){return x!==kw;}));
+}
+
+// #8 Trend snapshots — compare current counts to previous snapshot
+// Snapshot is rotated weekly so we always compare "this week" vs "last week"
+function loadTrendSnapshot(){
+  try{ return JSON.parse(localStorage.getItem(TREND_SNAPSHOT_KEY)||'null'); }
+  catch(e){ return null; }
+}
+function maybeUpdateTrendSnapshot(catCounts){
+  var prev=loadTrendSnapshot();
+  var now=Date.now();
+  var WEEK=7*24*60*60*1000;
+  if(!prev || (now - prev.ts) > WEEK){
+    try{ localStorage.setItem(TREND_SNAPSHOT_KEY, JSON.stringify({ts:now, counts:catCounts})); }catch(e){}
+  }
+}
+function trendDelta(catId, currentCount){
+  var prev=loadTrendSnapshot();
+  if(!prev || !prev.counts || prev.counts[catId]==null || prev.counts[catId]===0) return null;
+  var prevC=prev.counts[catId];
+  var delta=currentCount - prevC;
+  var pct=Math.round((delta/prevC)*100);
+  if(Math.abs(pct)<10) return null; // hide noise
+  return { pct:pct, dir: pct>0?'up':'down' };
 }
 
 /* ═══════════════════════ Feed fetching ═══════════════════════ */
@@ -1035,8 +1239,10 @@ function passesperiod(isoStr){
   return true;
 }
 function getFiltered(){
+  var s = region==='shortlist' ? loadShortlist() : null;
   return A.filter(function(a){
-    if(region!=="all"&&a.r.indexOf(region)<0) return false;
+    if(region==='shortlist'){ if(!s[a.id]) return false; }
+    else if(region!=='all' && a.r.indexOf(region)<0) return false;
     if(!passesperiod(a.iso)) return false;
     if(!filter) return true;
     var txt=(a.t+" "+a.s+" "+(a.src||"")).toLowerCase();
@@ -1085,6 +1291,113 @@ function renderStats(items){
   document.getElementById("emailCount").textContent="Export "+items.length+" articles as formatted report:";
 }
 
+/* #2 Smart summary — "Why this matters to Germains" ─────────────────────────
+   Scans the current filtered item set and produces a 3-line brief:
+   high-priority count, top competitors, top Germains angles. */
+function computeSummary(items){
+  var s=loadShortlist();
+  // High-priority Germains items (gs>=3)
+  var highPri = items.filter(function(a){
+    if(a.gs==null) a.gs=germainsScore(a.t,a.s);
+    return a.gs >= GERMAINS_NOTIFY_MIN;
+  });
+  // Tally competitor mentions
+  var compTally={};
+  items.forEach(function(a){(a.comp||[]).forEach(function(c){compTally[c]=(compTally[c]||0)+1;});});
+  var topComp=Object.keys(compTally).map(function(k){return {k:k,n:compTally[k]};})
+    .sort(function(x,y){return y.n-x.n;}).slice(0,5);
+  // Tally product angles
+  var angTally={};
+  items.forEach(function(a){(a.ang||[]).forEach(function(c){angTally[c]=(angTally[c]||0)+1;});});
+  var topAng=Object.keys(angTally).map(function(k){return {k:k,n:angTally[k]};})
+    .sort(function(x,y){return y.n-x.n;}).slice(0,4);
+  // Watchlist hits
+  var wlTally={};
+  var wl=loadWatchlist();
+  if(wl.length){
+    items.forEach(function(a){
+      wl.forEach(function(kw){
+        var txt=(a.t+' '+a.s).toLowerCase();
+        if(txt.indexOf(kw.toLowerCase())>=0) wlTally[kw]=(wlTally[kw]||0)+1;
+      });
+    });
+  }
+  var topWl=Object.keys(wlTally).map(function(k){return {k:k,n:wlTally[k]};})
+    .sort(function(x,y){return y.n-x.n;}).slice(0,4);
+  return {
+    total:items.length,
+    highPri:highPri.length,
+    shortlistCount:Object.keys(s).length,
+    topComp:topComp,
+    topAng:topAng,
+    topWl:topWl
+  };
+}
+
+function renderSmartSummary(items, isShortlist){
+  var s=computeSummary(items);
+  var compHtml = s.topComp.length
+    ? s.topComp.map(function(c){
+        var def=COMPETITORS.find(function(x){return x.label===c.k;});
+        var col=def?def.color:'#6E867C';
+        return '<span class="chip-comp" style="background:'+col+'">'+esc(c.k)+' ·'+c.n+'</span>';
+      }).join('')
+    : '<span style="color:var(--mute);font-size:12px">none detected</span>';
+  var angHtml = s.topAng.length
+    ? s.topAng.map(function(a){
+        var def=PRODUCT_ANGLES.find(function(x){return x.id===a.k;});
+        return def ? '<span class="chip-angle" style="background:'+def.color+'">'+esc(def.label)+' ·'+a.n+'</span>' : '';
+      }).join('')
+    : '<span style="color:var(--mute);font-size:12px">none detected</span>';
+  var wlHtml = s.topWl.length
+    ? s.topWl.map(function(w){
+        return '<span class="chip-wl">'+esc(w.k)+' ·'+w.n+'</span>';
+      }).join('')
+    : '';
+
+  var heading = isShortlist ? 'Your Shortlist' : 'Why this matters to Germains';
+  var h = '<div class="summary-block" id="summaryBlock">'+
+    '<div class="summary-title">'+icon('icon-sparkles')+' '+esc(heading)+'</div>'+
+    '<div class="summary-row"><span class="summary-label">High priority</span>'+
+      '<span class="summary-value"><b>'+s.highPri+'</b> Germains-relevant '+
+      (isShortlist?'in shortlist':'articles (score ≥ 3)')+
+      (s.shortlistCount&&!isShortlist?' · <b>'+s.shortlistCount+'</b> starred total':'')+
+      '</span></div>'+
+    '<div class="summary-row"><span class="summary-label">Competitors</span>'+
+      '<span class="summary-value summary-chips">'+compHtml+'</span></div>'+
+    '<div class="summary-row"><span class="summary-label">Product angles</span>'+
+      '<span class="summary-value summary-chips">'+angHtml+'</span></div>'+
+    (wlHtml?'<div class="summary-row"><span class="summary-label">Watchlist hits</span>'+
+      '<span class="summary-value summary-chips">'+wlHtml+'</span></div>':'')+
+    // #10 AI summary button — enabled when push worker URL configured
+    (PUSH_WORKER_URL?'<button class="summary-btn-ai" id="aiSumBtn">'+icon('icon-sparkles')+' Summarize for leadership</button>':'')+
+    '<div class="ai-output" id="aiOutput"></div>'+
+  '</div>';
+  return h;
+}
+
+/* #13 Watchlist management panel — inline at top of content */
+function renderWatchlistPanel(){
+  var list=loadWatchlist();
+  var chipsHtml = list.length
+    ? list.map(function(kw){
+        return '<span class="wl-tag">'+esc(kw)+
+          '<button data-wl-remove="'+esc(kw)+'" aria-label="Remove \''+esc(kw)+'\'">&times;</button>'+
+        '</span>';
+      }).join('')
+    : '<span class="wl-empty">No watchlist keywords yet. Add terms to highlight matching articles and get alerts.</span>';
+  return '<details class="wl-panel"'+(list.length?' open':'')+'>'+
+    '<summary style="cursor:pointer;list-style:none">'+
+      '<div class="wl-title">'+icon('icon-eye')+' Watchlist · '+list.length+' keyword'+(list.length===1?'':'s')+'</div>'+
+    '</summary>'+
+    '<div class="wl-chips">'+chipsHtml+'</div>'+
+    '<form class="wl-form" id="wlForm">'+
+      '<input type="text" id="wlInput" placeholder="Add keyword (e.g. Enza Zaden, sugar beet, NGT)" maxlength="60" autocomplete="off">'+
+      '<button type="submit">Add</button>'+
+    '</form>'+
+  '</details>';
+}
+
 function renderCatSection(cat,ci){
   var isOpen=expanded[cat.id];
   // Germains "new high-priority" pip — number of unseen gs>=3 items
@@ -1094,33 +1407,84 @@ function renderCatSection(cat,ci){
     var newHigh=ci.filter(function(a){return a.gs>=GERMAINS_NOTIFY_MIN && !seen[a.id];}).length;
     if(newHigh>0) pipHtml='<span class="cat-pip" title="'+newHigh+' new high-priority">'+newHigh+' new</span>';
   }
-  var h='<section class="cat-section" style="--cat-c:var('+cat.cvar+')">'+
+  // #8 Trend delta vs last week
+  var trendHtml='';
+  var td=trendDelta(cat.id, ci.length);
+  if(td){
+    trendHtml='<span class="cat-trend '+td.dir+'" title="'+(td.dir==='up'?'+':'')+td.pct+'% vs last week">'+
+      icon(td.dir==='up'?'icon-trending-up':'icon-trending-down')+
+      (td.pct>0?'+':'')+td.pct+'%</span>';
+  }
+  var h='<section class="cat-section" style="--cat-c:var('+(cat.cvar||'--accent')+')">'+
     '<button class="cat-btn" data-cat="'+cat.id+'" aria-expanded="'+isOpen+'">'+
       '<span class="cat-icon-wrap">'+icon(cat.icon)+'</span>'+
       '<span class="cat-label">'+esc(cat.label)+'</span>'+
+      trendHtml+
       pipHtml+
       '<span class="cat-count">'+ci.length+'</span>'+
       '<span class="cat-arrow '+(isOpen?'open':'')+'">'+icon('icon-chevron')+'</span>'+
     '</button>';
   if(isOpen){
+    var shortlist=loadShortlist();
     h+='<div class="cat-cards">';
     ci.forEach(function(a){
-      var rtags=a.r.filter(function(r){return r!=="all";}).map(function(rid){
-        var rr=REGIONS.find(function(x){return x.id===rid;});
-        return rr?'<span class="tag-region">'+icon(rr.icon)+' '+esc(rr.label)+'</span>':'';
-      }).join('');
-      // Germains score badge (High / Med / Low) — only in the Germains section
-      var scoreBadge='';
-      if(cat.id==='germains' && a.gs){
-        var tier=a.gs>=6?'high':(a.gs>=3?'med':'low');
-        var label=a.gs>=6?'High':(a.gs>=3?'Medium':'Low');
-        scoreBadge='<span class="score-badge '+tier+'" title="Germains relevance score: '+a.gs+'">'+label+'</span>';
-      }
-      h+='<article class="card">'+
-           '<div class="card-top"><h4>'+esc(a.t)+'</h4>'+
-           (a.u?'<a class="card-link" href="'+esc(a.u)+'" target="_blank" rel="noopener">Source '+icon('icon-external')+'</a>':'')+
+      h+=renderCard(a,cat,shortlist);
+    });
+    h+='</div>';
+  }
+  h+='</section>';
+  return h;
+}
+
+// Single card renderer — reused by category sections + shortlist view
+function renderCard(a,cat,shortlist){
+  shortlist = shortlist || loadShortlist();
+  var starred = !!shortlist[a.id];
+  var rtags=a.r.filter(function(r){return r!=="all"&&r!=="shortlist";}).map(function(rid){
+    var rr=REGIONS.find(function(x){return x.id===rid;});
+    return rr && rr.id!=='shortlist' ? '<span class="tag-region">'+icon(rr.icon)+' '+esc(rr.label)+'</span>' : '';
+  }).join('');
+
+  var scoreBadge='';
+  if(cat && cat.id==='germains' && a.gs){
+    var tier=a.gs>=6?'high':(a.gs>=3?'med':'low');
+    var label=a.gs>=6?'High':(a.gs>=3?'Medium':'Low');
+    scoreBadge='<span class="score-badge '+tier+'" title="Germains relevance score: '+a.gs+'">'+label+'</span>';
+  }
+
+  // #4 Competitor chips (filter to at most 3 to avoid visual noise)
+  var compChips = (a.comp||[]).slice(0,3).map(function(label){
+    var c=COMPETITORS.find(function(x){return x.label===label;});
+    var col=c?c.color:'#6E867C';
+    return '<span class="chip-comp" style="background:'+col+'" title="Mentions '+esc(label)+'">'+esc(label)+'</span>';
+  }).join('');
+
+  // #7 Product-angle chips
+  var angChips = (a.ang||[]).map(function(id){
+    var ang=PRODUCT_ANGLES.find(function(x){return x.id===id;});
+    return ang ? '<span class="chip-angle" style="background:'+ang.color+'" title="Germains product angle: '+esc(ang.label)+'">'+esc(ang.label)+'</span>' : '';
+  }).join('');
+
+  // #13 Watchlist chip — computed at render time (user can edit list anytime)
+  var wlHits=detectWatchlist(a.t,a.s);
+  var wlChips = wlHits.slice(0,2).map(function(kw){
+    return '<span class="chip-wl" title="Watchlist keyword">'+esc(kw)+'</span>';
+  }).join('');
+
+  var tagsRow = (compChips||angChips||wlChips)
+    ? '<div class="card-tags-row">'+wlChips+compChips+angChips+'</div>'
+    : '';
+
+  return '<article class="card'+(starred?' in-shortlist':'')+'" data-aid="'+esc(a.id)+'">'+
+           '<div class="card-top">'+
+             '<h4>'+esc(a.t)+'</h4>'+
+             '<button class="star-btn '+(starred?'on':'')+'" data-star="'+esc(a.id)+'" aria-pressed="'+starred+'" aria-label="'+(starred?'Remove from shortlist':'Add to shortlist')+'" title="'+(starred?'Remove from shortlist':'Add to shortlist')+'">'+
+               icon(starred?'icon-star-fill':'icon-star')+
+             '</button>'+
+             (a.u?'<a class="card-link" href="'+esc(a.u)+'" target="_blank" rel="noopener">Source '+icon('icon-external')+'</a>':'')+
            '</div>'+
            (a.s?'<p>'+esc(a.s)+'</p>':'')+
+           tagsRow+
            '<div class="card-meta">'+
              scoreBadge+
              (a.src?'<span class="tag">'+esc(a.src)+'</span>':'')+
@@ -1128,11 +1492,6 @@ function renderCatSection(cat,ci){
              rtags+
            '</div>'+
          '</article>';
-    });
-    h+='</div>';
-  }
-  h+='</section>';
-  return h;
 }
 
 function renderSkeletons(){
@@ -1152,7 +1511,36 @@ function render(){
   var items=getFiltered();
   renderStats(items);
 
-  var html='';
+  // #1 Shortlist — flat view, no category grouping
+  if(region==='shortlist'){
+    var html=renderSmartSummary(items,true);
+    html+=renderWatchlistPanel();
+    if(!items.length){
+      html+='<div class="shortlist-empty">'+icon('icon-star')+
+            '<h3>Your Shortlist is empty</h3>'+
+            '<p>Tap the star on any article to save it here — build a weekly read-list and export just your curated picks.</p></div>';
+    } else {
+      var shortlist=loadShortlist();
+      // Sort by date desc, then Germains score desc
+      var sorted=items.slice().sort(function(x,y){
+        var d=(y.iso||'').localeCompare(x.iso||'');
+        if(d!==0) return d;
+        return (y.gs||0)-(x.gs||0);
+      });
+      html+='<div class="cat-cards" style="margin-left:0">';
+      sorted.forEach(function(a){ html+=renderCard(a,null,shortlist); });
+      html+='</div>';
+    }
+    document.getElementById("content").innerHTML=html;
+    return;
+  }
+
+  // #2 Smart summary block + #13 watchlist panel
+  var html=renderSmartSummary(items,false);
+  html+=renderWatchlistPanel();
+
+  // Collect per-category counts for #8 trend tracking
+  var catCounts={};
   CATS.forEach(function(cat){
     var ci = cat.id==='germains'
       ? items.filter(function(a){
@@ -1165,9 +1553,12 @@ function render(){
           return (y.iso||'').localeCompare(x.iso||'');
         })
       : items.filter(function(a){return a.c===cat.id;});
+    catCounts[cat.id]=ci.length;
     if(!ci.length) return;
     html+=renderCatSection(cat,ci);
   });
+  // Persist a weekly snapshot so next week's render can show trend deltas
+  maybeUpdateTrendSnapshot(catCounts);
 
   if(!items.length){
     var empty='<div class="empty"><div class="empty-icon">'+icon('icon-empty')+'</div>';
@@ -1249,6 +1640,55 @@ var CAT_GLYPH={
   germains:'G', seed_tech:'S', market:'M',
   breeding:'B', regulation:'R', competitors:'I', crops:'C'
 };
+// #2 Smart summary block for the HTML email — Outlook-safe table layout
+function buildEmailSummaryBlock(items, SANS, SERIF){
+  var s=computeSummary(items);
+  if(!s.highPri && !s.topComp.length && !s.topAng.length && !s.topWl.length) return '';
+  function chipsHtml(pairs, resolver){
+    if(!pairs.length) return '<span style="color:#6E867C;'+SANS+';font-size:12px">(none detected)</span>';
+    return '<table role="presentation" cellpadding="0" cellspacing="4" border="0" style="display:inline-table"><tr>'+
+      pairs.map(function(p){
+        var r=resolver(p.k);
+        return '<td style="background-color:'+r.color+';color:#ffffff;padding:3px 8px;'+SANS+';font-size:10px;font-weight:700;letter-spacing:0.4px;line-height:1">'+esc(r.label).toUpperCase()+' \u00B7 '+p.n+'</td>';
+      }).join('<td style="width:4px">&nbsp;</td>')+
+      '</tr></table>';
+  }
+  var compRow = chipsHtml(s.topComp, function(k){
+    var c=COMPETITORS.find(function(x){return x.label===k;});
+    return { label:k, color:c?c.color:'#6E867C' };
+  });
+  var angRow = chipsHtml(s.topAng, function(k){
+    var a=PRODUCT_ANGLES.find(function(x){return x.id===k;});
+    return { label:a?a.label:k, color:a?a.color:'#6E867C' };
+  });
+  var wlRow = s.topWl.length
+    ? chipsHtml(s.topWl, function(k){ return { label:k, color:'#D98B30' }; })
+    : '';
+
+  function row(lbl, val){
+    return '<tr>'+
+      '<td style="padding:6px 0 6px 0;width:120px;vertical-align:top;'+SANS+';font-size:11px;font-weight:700;color:#6E867C;letter-spacing:0.3px;text-transform:uppercase">'+esc(lbl)+'</td>'+
+      '<td style="padding:6px 0 6px 0;'+SANS+';font-size:13px;color:#112A20;vertical-align:middle">'+val+'</td>'+
+    '</tr>';
+  }
+  return ''+
+    '<tr><td style="padding:16px 28px 0 28px;background-color:#F4F8F5">'+
+      '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#FFFFFF;border:1px solid #C6D6CD;border-left:4px solid #1B6B4A">'+
+        '<tr><td style="padding:16px 20px 4px 20px">'+
+          '<div style="'+SANS+';font-size:11px;font-weight:800;color:#1B6B4A;letter-spacing:0.8px;text-transform:uppercase">\u2728 Why this matters to Germains</div>'+
+        '</td></tr>'+
+        '<tr><td style="padding:8px 20px 16px 20px">'+
+          '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">'+
+            row('High priority', '<b style="color:#0A4A2A;font-size:15px">'+s.highPri+'</b> Germains-relevant articles (score \u2265 3)') +
+            row('Competitors',   compRow) +
+            row('Product angles', angRow) +
+            (wlRow ? row('Watchlist',    wlRow) : '') +
+          '</table>'+
+        '</td></tr>'+
+      '</table>'+
+    '</td></tr>';
+}
+
 function buildHtmlReport(){
   var items=getFiltered();
   var regObj=REGIONS.find(function(r){return r.id===region;});
@@ -1290,6 +1730,20 @@ function buildHtmlReport(){
       var readMore = a.u
         ? '<tr><td style="padding:10px 18px 14px 18px"><a href="'+esc(a.u)+'" style="color:'+color+';'+SANS+';font-size:12px;font-weight:600;text-decoration:none;border-bottom:1px solid '+color+'">Read article \u2192</a></td></tr>'
         : '';
+      // #4 + #7 — competitor + angle chips as table-cell pills (Outlook-safe)
+      var chipCells = [];
+      (a.comp||[]).slice(0,3).forEach(function(label){
+        var def=COMPETITORS.find(function(x){return x.label===label;});
+        var col=def?def.color:'#6E867C';
+        chipCells.push('<td style="background-color:'+col+';color:#ffffff;padding:3px 8px;'+SANS+';font-size:10px;font-weight:700;letter-spacing:0.4px;line-height:1">'+esc(label).toUpperCase()+'</td>');
+      });
+      (a.ang||[]).forEach(function(id){
+        var ang=PRODUCT_ANGLES.find(function(x){return x.id===id;});
+        if(ang) chipCells.push('<td style="background-color:'+ang.color+';color:#ffffff;padding:3px 8px;'+SANS+';font-size:10px;font-weight:700;letter-spacing:0.4px;line-height:1">'+esc(ang.label).toUpperCase()+'</td>');
+      });
+      var chipsRow = chipCells.length
+        ? '<tr><td style="padding:0 18px 10px 18px"><table role="presentation" cellpadding="0" cellspacing="4" border="0"><tr>'+chipCells.join('<td style="width:4px">&nbsp;</td>')+'</tr></table></td></tr>'
+        : '';
       return ''+
         '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#FFFFFF;border:1px solid #E0EAE4;border-left:4px solid '+color+';margin:0 0 12px 0">'+
           '<tr><td style="padding:14px 18px 4px 18px">'+
@@ -1301,6 +1755,7 @@ function buildHtmlReport(){
           '<tr><td style="padding:8px 18px 12px 18px;'+SANS+';font-size:13.5px;line-height:1.55;color:#35524A">'+
             esc(a.s||'')+
           '</td></tr>'+
+          chipsRow+
           '<tr><td style="padding:0 18px 10px 18px">'+
             sourceBadge+dateTxt+
           '</td></tr>'+
@@ -1364,6 +1819,8 @@ function buildHtmlReport(){
             '</td></tr>'+
           '</table>'+
         '</td></tr>'+
+        // #2 Smart summary block — "Why this matters"
+        buildEmailSummaryBlock(items, SANS, SERIF)+
         // Body
         '<tr><td style="padding:12px 28px 24px 28px;background-color:#F4F8F5">'+
           sections+
@@ -1495,8 +1952,36 @@ document.getElementById("periods").addEventListener("click",function(e){
 var searchHandler=debounce(function(val){ filter=val; renderWithSpinner(); },220);
 document.getElementById("search").addEventListener("input",function(e){ searchHandler(e.target.value); });
 
-// Category expand/collapse — delegated, and only toggles its own section
+// Category expand/collapse + shortlist star + watchlist remove + AI summary — delegated
 document.getElementById("content").addEventListener("click",function(e){
+  // #1 star toggle
+  var starBtn=e.target.closest("[data-star]");
+  if(starBtn){
+    e.preventDefault(); e.stopPropagation();
+    var id=starBtn.getAttribute("data-star");
+    var now=toggleShortlist(id);
+    starBtn.classList.toggle('on',now);
+    starBtn.setAttribute('aria-pressed',now);
+    starBtn.setAttribute('aria-label', now?'Remove from shortlist':'Add to shortlist');
+    var useEl=starBtn.querySelector('use');
+    if(useEl) useEl.setAttribute('href', now?'#icon-star-fill':'#icon-star');
+    var card=starBtn.closest('.card');
+    if(card) card.classList.toggle('in-shortlist', now);
+    // If we're currently viewing the shortlist and the user just un-starred → re-render to remove
+    if(region==='shortlist' && !now) setTimeout(render,180);
+    return;
+  }
+  // #13 watchlist remove
+  var wlX=e.target.closest("[data-wl-remove]");
+  if(wlX){
+    removeWatchlistKeyword(wlX.getAttribute("data-wl-remove"));
+    render();
+    return;
+  }
+  // #10 AI summary
+  var aiBtn=e.target.closest("#aiSumBtn");
+  if(aiBtn){ runAiSummary(aiBtn); return; }
+
   var catBtn=e.target.closest("[data-cat]");
   if(catBtn){
     var cid=catBtn.getAttribute("data-cat");
@@ -1507,6 +1992,53 @@ document.getElementById("content").addEventListener("click",function(e){
   var reset=e.target.closest("#resetPeriod");
   if(reset){ period="all"; renderPeriods(); renderWithSpinner(); }
 });
+
+// #13 watchlist add — submit the inline form
+document.getElementById("content").addEventListener("submit",function(e){
+  var form=e.target.closest("#wlForm");
+  if(!form) return;
+  e.preventDefault();
+  var input=form.querySelector("#wlInput");
+  if(input && input.value.trim()){
+    addWatchlistKeyword(input.value.trim());
+    input.value='';
+    render();
+  }
+});
+
+// #10 Call the push worker's /ai-summary endpoint to generate a leadership brief
+async function runAiSummary(btn){
+  var out=document.getElementById("aiOutput");
+  if(!out || !PUSH_WORKER_URL){ showToast("AI summary requires the push worker deployed"); return; }
+  btn.disabled=true;
+  var origLabel=btn.innerHTML;
+  btn.innerHTML=icon('icon-sparkles')+' Analyzing…';
+  out.classList.add('show');
+  out.textContent='Thinking…';
+  try{
+    var items=getFiltered();
+    // Send only the minimum the model needs — title, summary, source, score
+    var payload={
+      context:'Germains Seed Technology — priming, pelleting, film-coat, seed hygiene, and seed analytics are their products.',
+      items: items.slice(0,40).map(function(a){
+        return { t:a.t, s:(a.s||'').slice(0,220), src:a.src, gs:a.gs||0, comp:a.comp||[], ang:a.ang||[] };
+      })
+    };
+    var res=await fetch(PUSH_WORKER_URL.replace(/\/$/,'')+'/ai-summary',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('worker returned '+res.status);
+    var data=await res.json();
+    out.textContent = data.summary || '(no summary returned)';
+  }catch(e){
+    out.textContent = 'AI summary failed: '+e.message+'\n\nMake sure the push worker is deployed with an [ai] binding. See cloudflare-worker-push/README.md.';
+  }finally{
+    btn.disabled=false;
+    btn.innerHTML=origLabel;
+  }
+}
 
 document.getElementById("bellBtn").addEventListener("click",toggleNotifyPref);
 

@@ -112,14 +112,60 @@ export default {
         return cors(json({ subscribers: list.keys.length }));
       }
 
-      return cors(new Response('SeedPulse Push Worker — see /vapid-key, /subscribe, /unsubscribe, /latest', { status: 200 }));
+      // AI-powered executive summary (feature #10)
+      // Body: { context?: string, items: [{t, s, u, src, cat}] }
+      // Uses Cloudflare Workers AI (Llama 3.1 8B). Requires [ai] binding.
+      if (url.pathname === '/ai-summary' && request.method === 'POST') {
+        if (!env.AI) return cors(json({ error: 'AI binding not configured' }, 503));
+        const body = await request.json().catch(() => ({}));
+        const items = Array.isArray(body?.items) ? body.items.slice(0, 20) : [];
+        if (items.length === 0) return cors(json({ error: 'No items provided' }, 400));
+        const context = (body.context || '').toString().slice(0, 500);
+        const bulletList = items.map((a, i) =>
+          `${i + 1}. [${a.cat || '?'}] ${String(a.t || '').slice(0, 200)}` +
+          (a.s ? ` — ${String(a.s).slice(0, 200)}` : '') +
+          (a.src ? ` (${a.src})` : '')
+        ).join('\n');
+        const sys = 'You are a senior industry analyst at Germains Seed Technology, a global leader in seed priming, pelleting, film coating, and seed hygiene. You write crisp, executive-level briefings for the Germains leadership team. Focus on what matters commercially: competitive moves, new treatment/coating technology, regulatory shifts, market demand signals, M&A, and scientific advances in priming/coating/biologicals. Be specific; name companies and technologies. Never invent facts.';
+        const user = `Summarise the following ${items.length} articles into a 4-6 sentence executive briefing for Germains. Highlight (a) the single most important item for Germains' business, (b) any competitive threat or opportunity, and (c) one recommended action. Plain prose, no bullet points, no headings.${context ? `\n\nExtra context: ${context}` : ''}\n\nArticles:\n${bulletList}`;
+        try {
+          const out = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+            messages: [
+              { role: 'system', content: sys },
+              { role: 'user', content: user }
+            ],
+            max_tokens: 400
+          });
+          const summary = (out?.response || out?.result?.response || '').trim();
+          if (!summary) return cors(json({ error: 'Empty AI response' }, 502));
+          return cors(json({ summary, model: '@cf/meta/llama-3.1-8b-instruct', count: items.length }));
+        } catch (e) {
+          return cors(json({ error: 'AI error: ' + String(e?.message || e) }, 502));
+        }
+      }
+
+      // Dev helper: manually fire the daily digest email (requires TRIGGER_KEY).
+      if (url.pathname === '/trigger-digest' && request.method === 'GET') {
+        if (url.searchParams.get('key') !== env.TRIGGER_KEY) return cors(json({ error: 'forbidden' }, 403));
+        ctx.waitUntil(runDailyDigest(env));
+        return cors(json({ ok: true, msg: 'Digest queued' }));
+      }
+
+      return cors(new Response('SeedPulse Push Worker — see /vapid-key, /subscribe, /unsubscribe, /latest, /ai-summary', { status: 200 }));
     } catch (e) {
       return cors(json({ error: String(e?.message || e) }, 500));
     }
   },
 
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(runCheck(env));
+    // Two cron schedules are configured in wrangler.toml:
+    //   "*/30 * * * *"  → feed check + push fan-out
+    //   "0 7 * * *"     → daily digest email (07:00 UTC ≈ 08:00 CET / 09:00 CEST)
+    if (event.cron === '0 7 * * *') {
+      ctx.waitUntil(runDailyDigest(env));
+    } else {
+      ctx.waitUntil(runCheck(env));
+    }
   }
 };
 
@@ -339,3 +385,125 @@ function cors(res) {
   headers.set('Access-Control-Allow-Headers', 'Content-Type');
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
 }
+
+/* ═══════════════════════ Daily digest email (feature #5) ═══════════════════════
+ * Sends a morning executive briefing to DIGEST_TO_EMAIL via Resend.
+ * Requires:
+ *   - env.RESEND_API_KEY   (secret)  → https://resend.com/api-keys
+ *   - env.DIGEST_TO_EMAIL  (var)     → comma-separated recipient list
+ *   - env.DIGEST_FROM_EMAIL (var, optional) → verified sender, defaults to
+ *     "SeedPulse <seedpulse@resend.dev>" (works on the free Resend sandbox).
+ * Silently no-ops if RESEND_API_KEY or DIGEST_TO_EMAIL aren't set, so you can
+ * deploy the Worker before wiring up email.
+ */
+async function runDailyDigest(env) {
+  if (!env.RESEND_API_KEY || !env.DIGEST_TO_EMAIL) {
+    console.log('Daily digest skipped: RESEND_API_KEY or DIGEST_TO_EMAIL not configured');
+    return;
+  }
+
+  // 1. Fetch + score feeds (reuse same pipeline as runCheck)
+  const results = await Promise.all(FEEDS.map(fetchFeedSafe));
+  const articles = results.flat();
+  const byId = new Map();
+  for (const a of articles) if (!byId.has(a.id)) byId.set(a.id, a);
+  const scored = [...byId.values()]
+    .map(a => ({ ...a, gs: germainsScore(a.t, a.s) }))
+    .filter(a => a.gs > 0)
+    .sort((a, b) => b.gs - a.gs || (b.iso || '').localeCompare(a.iso || ''))
+    .slice(0, 15);
+
+  if (scored.length === 0) {
+    console.log('Daily digest skipped: no scoring articles today');
+    return;
+  }
+
+  // 2. Optionally enrich with an AI executive summary
+  let aiSummary = '';
+  if (env.AI) {
+    try {
+      const bulletList = scored.slice(0, 12).map((a, i) =>
+        `${i + 1}. ${String(a.t || '').slice(0, 200)}${a.s ? ' — ' + String(a.s).slice(0, 160) : ''}`
+      ).join('\n');
+      const out = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+        messages: [
+          { role: 'system', content: 'You are a senior industry analyst at Germains Seed Technology. Write a crisp 3-5 sentence executive briefing. No headings, no bullets.' },
+          { role: 'user', content: `Summarise today\'s top seed-industry news for the Germains leadership team. Call out the single highest-impact item and any competitive move.\n\n${bulletList}` }
+        ],
+        max_tokens: 320
+      });
+      aiSummary = (out?.response || out?.result?.response || '').trim();
+    } catch (e) {
+      console.log('Daily digest: AI summary failed, continuing without:', e?.message || e);
+    }
+  }
+
+  // 3. Build the HTML email
+  const html = buildDigestHtml(scored, aiSummary);
+  const today = new Date().toISOString().slice(0, 10);
+  const subject = `SeedPulse Daily — ${today} — ${scored.length} items (top score ${scored[0].gs})`;
+
+  // 4. Send via Resend
+  const recipients = env.DIGEST_TO_EMAIL.split(',').map(s => s.trim()).filter(Boolean);
+  const from = env.DIGEST_FROM_EMAIL || 'SeedPulse <onboarding@resend.dev>';
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + env.RESEND_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ from, to: recipients, subject, html })
+    });
+    const txt = await res.text();
+    console.log(`Daily digest: Resend status ${res.status} — ${txt.slice(0, 200)}`);
+  } catch (e) {
+    console.log('Daily digest: send error', e?.message || e);
+  }
+}
+
+function buildDigestHtml(items, aiSummary) {
+  const SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+  const SERIF = "'Georgia','Times New Roman',serif";
+  const esc = (s) => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+  const rows = items.map(a => `
+    <tr><td style="padding:14px 20px;border-bottom:1px solid #e8ddc9;">
+      <div style="font-family:${SERIF};font-size:16px;font-weight:700;color:#0A4A2A;line-height:1.35;">
+        <a href="${esc(a.u)}" style="color:#0A4A2A;text-decoration:none;">${esc(a.t)}</a>
+      </div>
+      <div style="font-family:${SANS};font-size:13px;color:#5b5244;margin-top:6px;line-height:1.45;">${esc((a.s || '').slice(0, 260))}</div>
+      <div style="font-family:${SANS};font-size:11px;color:#8a7f6c;margin-top:6px;">
+        <span style="display:inline-block;background-color:#0A4A2A;color:#fff;padding:2px 8px;border-radius:10px;font-weight:600;margin-right:6px;">Germains ${a.gs}</span>
+        ${esc(a.src || '')} &middot; ${esc(a.iso || '')}
+      </div>
+    </td></tr>`).join('');
+
+  const aiBlock = aiSummary ? `
+    <tr><td style="padding:18px 20px;background-color:#f5efe1;border-bottom:1px solid #e8ddc9;">
+      <div style="font-family:${SANS};font-size:11px;font-weight:700;letter-spacing:1px;color:#8a6b2e;text-transform:uppercase;margin-bottom:6px;">AI Executive Briefing</div>
+      <div style="font-family:${SERIF};font-size:14px;color:#2a2418;line-height:1.55;">${esc(aiSummary)}</div>
+    </td></tr>` : '';
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background-color:#faf6ec;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#faf6ec;">
+    <tr><td align="center" style="padding:24px 12px;">
+      <table role="presentation" width="640" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;background-color:#fffaf0;border:1px solid #e8ddc9;border-radius:12px;overflow:hidden;">
+        <tr><td style="padding:20px 20px 12px 20px;background-color:#0A4A2A;">
+          <div style="font-family:${SERIF};font-size:22px;font-weight:700;color:#fffaf0;">SeedPulse Daily</div>
+          <div style="font-family:${SANS};font-size:12px;color:#c9e0d4;margin-top:2px;">Germains seed-industry briefing &middot; ${new Date().toISOString().slice(0, 10)}</div>
+        </td></tr>
+        ${aiBlock}
+        ${rows}
+        <tr><td style="padding:14px 20px;font-family:${SANS};font-size:11px;color:#8a7f6c;text-align:center;">
+          Auto-generated by the SeedPulse Cloudflare Worker &middot; scored against Germains keyword dictionary.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
