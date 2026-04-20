@@ -112,6 +112,7 @@
     <symbol id="icon-sprout" viewBox="0 0 24 24"><path d="M12 20v-8M12 12c-4 0-6-3-6-6h3c3 0 3 3 3 3M12 12c4 0 6-3 6-6h-3c-3 0-3 3-3 3M5 20h14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="icon-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></symbol>
     <symbol id="icon-warning" viewBox="0 0 24 24"><path d="M12 3l10 18H2z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 10v5M12 18v.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3.51-7.12M21 4v5h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   </defs>
 </svg>
 
@@ -540,9 +541,23 @@ button.chip-comp.is-active, button.chip-angle.is-active, button.chip-wl.is-activ
 .brief-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
 .brief-btn.primary:hover{filter:brightness(1.08)}
 
-.header-brief-btn{font:600 12.5px var(--sans);padding:7px 12px;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:7px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.header-brief-btn{font:600 12.5px var(--sans);padding:7px 12px;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:7px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;position:relative}
 .header-brief-btn:hover{filter:brightness(1.08)}
 .header-brief-btn .icon{font-size:14px}
+.header-brief-btn .brief-fresh-dot{position:absolute;top:-3px;right:-3px;width:8px;height:8px;border-radius:50%;background:#3D8B3D;border:2px solid var(--surface, #fff);display:none}
+.header-brief-btn.has-fresh .brief-fresh-dot{display:block}
+
+.brief-age{font:400 11.5px var(--sans);color:var(--mute);margin-left:6px}
+.brief-age-stale{color:#B6482D}
+.brief-refresh{font:600 11px var(--sans);padding:4px 9px;margin-left:8px;background:none;border:1px solid var(--border-strong);color:var(--text-2);border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.brief-refresh:hover{background:var(--chip-bg);color:var(--text)}
+.brief-refresh:disabled{opacity:.5;cursor:wait}
+.brief-refresh .icon{font-size:12px}
+.brief-refresh.spinning .icon{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.brief-generating{padding:18px;text-align:center;color:var(--mute);font:italic 400 14px var(--serif)}
+.brief-generating .icon{font-size:18px;margin-right:5px;vertical-align:-3px;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
 
 /* ─── #6 Settings dialog ─── */
 .settings-overlay{position:fixed;inset:0;z-index:1000;background:rgba(20,16,8,.78);backdrop-filter:blur(6px);display:none;align-items:flex-start;justify-content:center;padding:36px 14px;overflow-y:auto}
@@ -755,6 +770,7 @@ footer{
       </button>
       <button class="header-brief-btn" id="briefingBtn" title="Open executive briefing mode">
         <svg class="icon" aria-hidden="true"><use href="#icon-briefing"/></svg> Briefing
+        <span class="brief-fresh-dot" aria-hidden="true"></span>
       </button>
       <button class="btn-email" id="emailBtn" aria-expanded="false" aria-controls="emailPanel">
         <svg class="icon" aria-hidden="true"><use href="#icon-mail"/></svg> Email
@@ -811,6 +827,8 @@ var TREND_SNAPSHOT_KEY='seedpulse_trend_v1'; // last-week counts by category for
 var DIGEST_TO_KEY='seedpulse_digest_email'; // subscriber email for daily digest (UI only — actual subscription via worker)
 var RELATIONSHIPS_KEY='seedpulse_relations_v1'; // {CompanyLabel: "customer"|"competitor"|"partner"|"prospect"}
 var ANNOTATIONS_KEY='seedpulse_annotations_v1'; // {articleId: {impact, soWhat, ts}}
+var BRIEFING_KEY='seedpulse_briefing_v1'; // cached daily executive briefing: {ts, execSummary, threats, opps, topComp, scope}
+var BRIEFING_TTL=22*60*60*1000; // refresh if cached briefing is older than ~22 h (once per day tolerance)
 
 /* ─── Competitors (auto-tag + summary) ─── */
 var COMPETITORS=[
@@ -1233,6 +1251,30 @@ function mergeAnnotations(newMap){
     m[id]=Object.assign({ts:now}, newMap[id]);
   });
   saveAnnotations(m);
+}
+
+/* #4 Briefing cache — the executive briefing is precomputed once per ~24 h
+ * so the modal opens instantly. Cache key stores a snapshot independent of
+ * the current region/period filter (briefing is always the global view,
+ * last 7 d, all regions). Freshness shown to the user in the header. */
+function loadBriefingCache(){
+  try{ return JSON.parse(localStorage.getItem(BRIEFING_KEY)||'null'); }
+  catch(e){ return null; }
+}
+function saveBriefingCache(b){ try{ localStorage.setItem(BRIEFING_KEY, JSON.stringify(b)); }catch(e){} }
+function isBriefingFresh(cache){
+  return !!(cache && cache.ts && (Date.now() - cache.ts) < BRIEFING_TTL);
+}
+function formatBriefingAge(ts){
+  if(!ts) return 'never';
+  var diff=Date.now()-ts;
+  var mins=Math.round(diff/60000);
+  if(mins<1) return 'just now';
+  if(mins<60) return mins+' min ago';
+  var hrs=Math.round(mins/60);
+  if(hrs<24) return hrs+' h ago';
+  var days=Math.round(hrs/24);
+  return days+' day'+(days===1?'':'s')+' ago';
 }
 
 /* ═══════════════════════ Feed fetching ═══════════════════════ */
@@ -2276,7 +2318,7 @@ function loadArticles(){
   updateBellUI();
 
   // If cache is fresh, skip the network fetch on this launch — still check notifications
-  if(usedCache){ checkAndNotify(); updateBellUI(); return; }
+  if(usedCache){ checkAndNotify(); updateBellUI(); updateBriefingIndicator(); setTimeout(function(){ maybeGenerateBriefing({}); }, 10000); return; }
 
   batchedFetch(FEEDS,4).then(function(fresh){
     fresh=dedupe(fresh.filter(function(a){return a.t;}));
@@ -2299,6 +2341,8 @@ function loadArticles(){
     renderStats(getFiltered());
     checkAndNotify();
     updateBellUI();
+    updateBriefingIndicator();
+    setTimeout(function(){ maybeGenerateBriefing({}); }, 10000);
   });
 }
 
@@ -2594,8 +2638,18 @@ function shareArticle(id){
 }
 
 /* ═══════════════════════ #4 Briefing mode ═══════════════════════
- * A focused full-screen view: exec summary + top 3 threats + top 3
- * opportunities + competitor tally + "share" CTA. Reuses annotations. */
+ * Strategy: the briefing is precomputed once per ~24 h in the background
+ * (see generateBriefing below), so opening it is instant. The cache holds
+ * a frozen snapshot of:
+ *   - execSummary (AI text)
+ *   - threats (top 3 articles tagged "threat" with soWhat)
+ *   - opps    (top 3 articles tagged "opportunity")
+ *   - topComp (competitor mention tally)
+ * Scope is always "all regions, last 7 days" — the executive view, not the
+ * user's current filter. A Refresh button regenerates on demand. */
+
+var _briefingRegenInFlight=false;
+
 function openBriefing(){
   var overlay=document.getElementById('briefingOverlay');
   var card=document.getElementById('briefingCard');
@@ -2603,33 +2657,11 @@ function openBriefing(){
   overlay.classList.add('show');
   overlay.setAttribute('aria-hidden','false');
   document.body.style.overflow='hidden';
-  // Kick off AI exec summary if we don't have one cached yet — reuse existing infra
-  var execEl=card.querySelector('#briefExec');
-  if(execEl && execEl.dataset.needsAi==='1' && PUSH_WORKER_URL){
-    (async function(){
-      try{
-        var items=getFiltered();
-        var payload={
-          context:'Write the executive summary for the Monday leadership brief. Lead with the single most important item for Germains.',
-          items: items.slice(0,30).map(function(a){
-            return { t:a.t, s:(a.s||'').slice(0,200), src:a.src, gs:a.gs||0, comp:a.comp||[], ang:a.ang||[] };
-          })
-        };
-        var res=await fetch(PUSH_WORKER_URL.replace(/\/$/,'')+'/ai-summary',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify(payload)
-        });
-        if(res.ok){
-          var data=await res.json();
-          execEl.textContent = data.summary || '(no briefing available)';
-        } else {
-          execEl.textContent = 'AI briefing unavailable right now.';
-        }
-      }catch(e){
-        execEl.textContent = 'AI briefing unavailable right now.';
-      }
-    })();
+  // If the briefing was never generated and we have items loaded, kick it off
+  // now so the user at least sees something within a few seconds.
+  var cache=loadBriefingCache();
+  if(!cache && liveLoaded && A.length>0 && !_briefingRegenInFlight){
+    generateBriefing({inModal:true});
   }
 }
 function closeBriefing(){
@@ -2638,64 +2670,83 @@ function closeBriefing(){
   overlay.setAttribute('aria-hidden','true');
   document.body.style.overflow='';
 }
+
+function briefingScopeItems(){
+  // Fixed scope: last 7 days across ALL regions. Independent of current filter.
+  var cutoff=new Date(Date.now() - 7*24*60*60*1000).toISOString().slice(0,10);
+  return A.filter(function(a){ return (a.iso||'') >= cutoff; });
+}
+
 function buildBriefingHtml(){
-  var items=getFiltered();
-  var anns=loadAnnotations();
-  var withAnn = items.filter(function(a){ return anns[a.id] && anns[a.id].soWhat; });
-  var threats = withAnn.filter(function(a){return anns[a.id].impact==='threat';})
-                       .sort(function(x,y){return (y.gs||0)-(x.gs||0);}).slice(0,3);
-  var opps    = withAnn.filter(function(a){return anns[a.id].impact==='opportunity';})
-                       .sort(function(x,y){return (y.gs||0)-(x.gs||0);}).slice(0,3);
+  var cache=loadBriefingCache();
+  var generating=_briefingRegenInFlight;
 
-  // Top competitors by mentions (respect relationships — customers come first)
-  var compTally={};
-  items.forEach(function(a){ (a.comp||[]).forEach(function(c){ compTally[c]=(compTally[c]||0)+1; }); });
-  var topComp=Object.keys(compTally).map(function(k){ return {k:k,n:compTally[k],rel:getRelationship(k)}; })
-    .sort(function(x,y){ return y.n-x.n; }).slice(0,6);
-  var maxN=topComp.length?topComp[0].n:1;
+  // Header / close / meta + refresh pieces are always shown
+  var ageLabel = cache ? formatBriefingAge(cache.ts) : 'not generated yet';
+  var stale = cache && !isBriefingFresh(cache);
+  var refreshBtn =
+    '<button type="button" class="brief-refresh'+(generating?' spinning':'')+'" id="briefRefreshBtn"'+(generating?' disabled':'')+' title="Regenerate briefing now">'+
+      icon('icon-refresh')+(generating?' Refreshing…':' Refresh')+
+    '</button>';
+  var meta =
+    '<div class="brief-meta">Last 7 days · all regions'+
+      '<span class="brief-age'+(stale?' brief-age-stale':'')+'"> · '+
+        (cache ? 'Updated '+esc(ageLabel) : esc(ageLabel))+
+      '</span>'+
+      (PUSH_WORKER_URL ? refreshBtn : '')+
+    '</div>';
 
-  var renderItem=function(a){
-    var ann=anns[a.id];
-    return '<div class="brief-item">'+
-             '<div class="brief-item-title">'+(a.u?'<a href="'+esc(a.u)+'" target="_blank" rel="noopener">'+esc(a.t)+'</a>':esc(a.t))+'</div>'+
-             (ann && ann.soWhat ? '<div class="brief-item-soWhat">'+esc(ann.soWhat)+'</div>' : '')+
-             '<div class="brief-item-meta">'+esc(a.src||'')+(a.iso?' · '+esc(a.iso):'')+(a.gs?' · Germains score '+a.gs:'')+'</div>'+
-           '</div>';
-  };
-
-  var regObj=REGIONS.find(function(r){return r.id===region;});
-  var perObj=PERIODS.find(function(p){return p.id===period;});
-  var annReady = withAnn.length >= 3;
-  return ''+
+  var head =
     '<button class="briefing-close" id="briefingCloseBtn" aria-label="Close briefing">'+icon('icon-close')+'</button>'+
     '<div class="brief-kicker">Leadership Briefing</div>'+
     '<h2 class="brief-title" id="briefTitle">SeedPulse — Executive Briefing</h2>'+
-    '<div class="brief-meta">'+esc(regObj?regObj.label:'All regions')+' · '+esc(perObj?perObj.label:'')+' · '+items.length+' stories in view</div>'+
+    meta;
 
+  // No cache yet — show generating state or empty state
+  if(!cache){
+    var msg = generating
+      ? '<div class="brief-generating">'+icon('icon-sparkles')+'Generating your daily briefing… this takes 5-15 seconds</div>'
+      : (PUSH_WORKER_URL
+          ? '<div class="brief-generating">No briefing yet. Click Refresh above to generate one.</div>'
+          : '<div class="brief-generating">Briefing mode requires the push worker with Workers AI enabled.</div>');
+    return head + msg;
+  }
+
+  // Render from cached snapshot
+  var renderItem=function(a){
+    return '<div class="brief-item">'+
+             '<div class="brief-item-title">'+(a.u?'<a href="'+esc(a.u)+'" target="_blank" rel="noopener">'+esc(a.t)+'</a>':esc(a.t))+'</div>'+
+             (a.soWhat ? '<div class="brief-item-soWhat">'+esc(a.soWhat)+'</div>' : '')+
+             '<div class="brief-item-meta">'+esc(a.src||'')+(a.iso?' · '+esc(a.iso):'')+(a.gs?' · Germains score '+a.gs:'')+'</div>'+
+           '</div>';
+  };
+  var maxN = (cache.topComp && cache.topComp.length) ? cache.topComp[0].n : 1;
+
+  return head +
     '<div class="brief-section">'+
       '<h4>'+icon('icon-sparkles')+' Executive Summary</h4>'+
-      '<div class="brief-exec" id="briefExec" data-needs-ai="1">Generating AI briefing…</div>'+
+      '<div class="brief-exec" id="briefExec">'+esc(cache.execSummary || '(no summary)')+'</div>'+
     '</div>'+
 
-    (threats.length ?
+    ((cache.threats && cache.threats.length) ?
       '<div class="brief-section">'+
         '<h4 style="color:#B6482D">'+icon('icon-warning')+' Top Threats</h4>'+
-        threats.map(renderItem).join('')+
-      '</div>' :
-      (annReady ? '' : '<div class="brief-section"><h4>Top Threats &amp; Opportunities</h4>'+
-        '<div style="font-size:13px;color:var(--mute)">Commercial impact tags are still being generated. Try again in a few seconds — or open individual articles below.</div></div>'))+
-
-    (opps.length ?
-      '<div class="brief-section">'+
-        '<h4 style="color:#3D8B3D">'+icon('icon-target')+' Top Opportunities</h4>'+
-        opps.map(renderItem).join('')+
+        cache.threats.map(renderItem).join('')+
       '</div>' : '')+
 
-    (topComp.length ?
+    ((cache.opps && cache.opps.length) ?
+      '<div class="brief-section">'+
+        '<h4 style="color:#3D8B3D">'+icon('icon-target')+' Top Opportunities</h4>'+
+        cache.opps.map(renderItem).join('')+
+      '</div>' : '')+
+
+    ((cache.topComp && cache.topComp.length) ?
       '<div class="brief-section">'+
         '<h4>'+icon('icon-trending-up')+' Competitor Activity</h4>'+
-        topComp.map(function(c){
-          var rel=relationshipDef(c.rel);
+        cache.topComp.map(function(c){
+          // Relationship type may have changed since the briefing was generated — read live
+          var relId=getRelationship(c.k);
+          var rel=relationshipDef(relId);
           var pct=Math.round(c.n/maxN*100);
           return '<div class="brief-comp-row">'+
                    '<span style="min-width:110px;">'+esc(c.k)+' <span style="color:var(--mute);font-weight:400;font-size:11px;">· '+esc(rel.label)+'</span></span>'+
@@ -2710,6 +2761,136 @@ function buildBriefingHtml(){
       '<button class="brief-btn" id="briefMailBtn">'+icon('icon-mail')+' Email briefing</button>'+
       '<button class="brief-btn" id="briefingCloseBtn2">Done</button>'+
     '</div>';
+}
+
+/* Update the header-button indicator. Shows a green dot when a fresh
+ * briefing is cached so the user knows it's ready to open. */
+function updateBriefingIndicator(){
+  var btn=document.getElementById('briefingBtn');
+  if(!btn) return;
+  var cache=loadBriefingCache();
+  btn.classList.toggle('has-fresh', isBriefingFresh(cache));
+  btn.title = cache
+    ? 'Executive briefing (updated '+formatBriefingAge(cache.ts)+')'
+    : 'Generate executive briefing';
+}
+
+/* If the briefing-modal is currently open, re-paint it with the latest cache.
+ * Used after a background generation completes while the user is looking at
+ * the modal's "generating…" state. */
+function refreshBriefingModalIfOpen(){
+  var overlay=document.getElementById('briefingOverlay');
+  if(!overlay || !overlay.classList.contains('show')) return;
+  var card=document.getElementById('briefingCard');
+  if(card) card.innerHTML = buildBriefingHtml();
+}
+
+/* Decide whether a fresh generation is needed and kick one off if so.
+ * Called from the init path (after feeds load + a small delay so annotations
+ * can hydrate) and from the manual Refresh button. */
+function maybeGenerateBriefing(opts){
+  opts=opts||{};
+  if(!PUSH_WORKER_URL) return;
+  if(_briefingRegenInFlight) return;
+  if(!liveLoaded || A.length===0) return;
+  var cache=loadBriefingCache();
+  if(!opts.force && isBriefingFresh(cache)) return; // still good
+  generateBriefing(opts);
+}
+
+/* Core generator. Builds exec summary + threats/opps/comp-tally and writes
+ * the cache. Designed to run silently in the background — only surfaces in
+ * the UI via the header dot + a modal refresh if the user happens to be
+ * viewing the "generating…" state. */
+async function generateBriefing(opts){
+  opts=opts||{};
+  if(!PUSH_WORKER_URL) return;
+  if(_briefingRegenInFlight) return;
+  _briefingRegenInFlight=true;
+
+  // Repaint modal if it's open so the refresh button spins
+  if(opts.inModal) refreshBriefingModalIfOpen();
+
+  try{
+    var items=briefingScopeItems();
+    if(items.length===0){ _briefingRegenInFlight=false; return; }
+
+    // Make sure we have annotations for as many high-priority items as possible
+    // before we pick threats/opps. /annotate is cached server-side so this is cheap.
+    var anns=loadAnnotations();
+    var needAnn = items
+      .filter(function(a){ return (a.gs||0) >= GERMAINS_NOTIFY_MIN && !(anns[a.id] && anns[a.id].soWhat); })
+      .slice(0,20);
+    if(needAnn.length){
+      try{
+        var res=await fetch(PUSH_WORKER_URL.replace(/\/$/,'')+'/annotate',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ items: needAnn.map(function(a){
+            return { id:a.id, t:a.t, s:(a.s||'').slice(0,220), src:a.src, cat:a.c, gs:a.gs||0, comp:a.comp||[], ang:a.ang||[] };
+          })})
+        });
+        if(res.ok){
+          var data=await res.json();
+          if(data.annotations) mergeAnnotations(data.annotations);
+          anns=loadAnnotations();
+        }
+      }catch(e){ /* keep going — briefing still useful without */ }
+    }
+
+    // Classify
+    var withAnn=items.filter(function(a){ return anns[a.id] && anns[a.id].soWhat; });
+    var threats=withAnn
+      .filter(function(a){return anns[a.id].impact==='threat';})
+      .sort(function(x,y){return (y.gs||0)-(x.gs||0);})
+      .slice(0,3)
+      .map(function(a){ return { t:a.t, u:a.u, src:a.src, iso:a.iso, gs:a.gs||0, soWhat:anns[a.id].soWhat }; });
+    var opps=withAnn
+      .filter(function(a){return anns[a.id].impact==='opportunity';})
+      .sort(function(x,y){return (y.gs||0)-(x.gs||0);})
+      .slice(0,3)
+      .map(function(a){ return { t:a.t, u:a.u, src:a.src, iso:a.iso, gs:a.gs||0, soWhat:anns[a.id].soWhat }; });
+
+    // Competitor tally
+    var compTally={};
+    items.forEach(function(a){ (a.comp||[]).forEach(function(c){ compTally[c]=(compTally[c]||0)+1; }); });
+    var topComp=Object.keys(compTally).map(function(k){ return {k:k,n:compTally[k]}; })
+      .sort(function(x,y){ return y.n-x.n; }).slice(0,6);
+
+    // Exec summary — ask the model for a punchy 4-6 sentence briefing
+    var execSummary='';
+    try{
+      var payload={
+        context:'Write the executive briefing for the Germains commercial director for this week. Lead with the single most important item. Be decisive; no hedging. Name companies and technologies.',
+        items: items.slice(0,30).map(function(a){
+          return { t:a.t, s:(a.s||'').slice(0,200), src:a.src, gs:a.gs||0, comp:a.comp||[], ang:a.ang||[] };
+        })
+      };
+      var sumRes=await fetch(PUSH_WORKER_URL.replace(/\/$/,'')+'/ai-summary',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      if(sumRes.ok){
+        var sumData=await sumRes.json();
+        execSummary = sumData.summary || '';
+      }
+    }catch(e){ /* keep going */ }
+
+    // Save snapshot
+    saveBriefingCache({
+      ts: Date.now(),
+      execSummary: execSummary,
+      threats: threats,
+      opps: opps,
+      topComp: topComp,
+      scope: { days:7, region:'all', items: items.length }
+    });
+  } finally {
+    _briefingRegenInFlight=false;
+    updateBriefingIndicator();
+    if(opts.inModal) refreshBriefingModalIfOpen();
+  }
 }
 
 /* ═══════════════════════ #6 Settings dialog (relationships) ═══════════════════════ */
@@ -2759,6 +2940,11 @@ document.getElementById("briefingOverlay").addEventListener("click",function(e){
   // Close on backdrop click, close-X, or "Done"
   if(e.target===this || e.target.closest("#briefingCloseBtn") || e.target.closest("#briefingCloseBtn2")){
     closeBriefing();
+    return;
+  }
+  // Manual refresh — regenerate briefing right now
+  if(e.target.closest("#briefRefreshBtn")){
+    generateBriefing({force:true, inModal:true});
     return;
   }
   // Copy briefing as HTML
