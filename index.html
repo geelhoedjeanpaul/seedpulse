@@ -418,6 +418,47 @@ main{max-width:760px;margin:0 auto;padding:18px 16px calc(24px + var(--safe-b))}
 }
 .card-tags-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
 
+/* ─── Clickable tag filters: style chip-like <button>s identically to the spans
+ *    they replace, but add cursor/hover/active feedback. Works in both the
+ *    summary block and the card tag row. ─── */
+button.chip-comp, button.chip-angle, button.chip-wl{
+  border:0;font-family:var(--sans);cursor:pointer;
+  transition:transform .12s ease, box-shadow .12s ease, opacity .12s ease, filter .12s ease;
+}
+button.chip-wl{border:1px solid #E5B94A}
+@media(prefers-color-scheme:dark){ button.chip-wl{border-color:#7A5F1E} }
+button.chip-comp:hover, button.chip-angle:hover{ filter:brightness(1.12); transform:translateY(-1px) }
+button.chip-wl:hover{ filter:brightness(1.05); transform:translateY(-1px) }
+button.chip-comp:focus-visible, button.chip-angle:focus-visible, button.chip-wl:focus-visible{
+  outline:2px solid var(--accent); outline-offset:2px;
+}
+/* Active (currently filtering) state — ring + slight lift */
+button.chip-comp.is-active, button.chip-angle.is-active, button.chip-wl.is-active{
+  box-shadow:0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+  transform:translateY(-1px);
+}
+/* Dim non-active chips of the same type when a filter is on */
+.tags-dimmed button.chip-comp:not(.is-active),
+.tags-dimmed button.chip-angle:not(.is-active),
+.tags-dimmed button.chip-wl:not(.is-active){ opacity:.55 }
+
+/* ─── Active-filter banner (shown above summary when a tag filter is on) ─── */
+.tag-filter-bar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  margin:6px 0 12px;padding:9px 14px;
+  background:linear-gradient(90deg, var(--accent-soft), transparent);
+  border:1px solid var(--accent);border-radius:10px;
+  font:600 12.5px var(--sans);color:var(--text);
+}
+.tag-filter-bar .tag-filter-label{color:var(--mute);font-weight:500;text-transform:uppercase;font-size:11px;letter-spacing:.5px}
+.tag-filter-bar .tag-filter-value{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:6px;background:var(--accent);color:#fff}
+.tag-filter-bar .tag-filter-clear{
+  margin-left:auto;background:none;border:1px solid var(--border-strong);color:var(--text);
+  font:600 11.5px var(--sans);padding:5px 11px;border-radius:6px;cursor:pointer;
+  display:inline-flex;align-items:center;gap:4px;
+}
+.tag-filter-bar .tag-filter-clear:hover{background:var(--chip-bg)}
+
 /* ─── Star / shortlist (#1) ─── */
 .card-top{display:flex;gap:8px;align-items:flex-start}
 .star-btn{
@@ -836,6 +877,31 @@ var FALLBACK=[
 var A=FALLBACK.slice();
 var liveLoaded=false;
 var region="all", period="7d", filter="", emailOpen=false;
+/* activeTag: null or {type:'comp'|'angle'|'wl', value:string}
+ * Set by clicking any chip in the summary or on a card. Cleared via the
+ * banner's "Clear" button or by clicking the active chip again. */
+var activeTag=null;
+function setTagFilter(type, value){
+  if(activeTag && activeTag.type===type && activeTag.value===value){
+    activeTag=null;     // click on the active chip → toggle off
+  } else {
+    activeTag={type:type, value:value};
+  }
+  render();
+  // Scroll to top so the user sees the new filtered context.
+  try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(_){}
+}
+function clearTagFilter(){ activeTag=null; render(); }
+function matchesActiveTag(a){
+  if(!activeTag) return true;
+  if(activeTag.type==='comp')  return (a.comp||[]).indexOf(activeTag.value)>=0;
+  if(activeTag.type==='angle') return (a.ang ||[]).indexOf(activeTag.value)>=0;
+  if(activeTag.type==='wl'){
+    var txt=(a.t+' '+a.s).toLowerCase();
+    return txt.indexOf(activeTag.value.toLowerCase())>=0;
+  }
+  return true;
+}
 var expanded={};
 CATS.forEach(function(c){ expanded[c.id]=true; });
 var TODAY=new Date();
@@ -1244,6 +1310,7 @@ function getFiltered(){
     if(region==='shortlist'){ if(!s[a.id]) return false; }
     else if(region!=='all' && a.r.indexOf(region)<0) return false;
     if(!passesperiod(a.iso)) return false;
+    if(!matchesActiveTag(a)) return false;
     if(!filter) return true;
     var txt=(a.t+" "+a.s+" "+(a.src||"")).toLowerCase();
     return txt.indexOf(filter.toLowerCase())>=0;
@@ -1336,22 +1403,36 @@ function computeSummary(items){
 
 function renderSmartSummary(items, isShortlist){
   var s=computeSummary(items);
+  var isActive=function(type,val){ return activeTag && activeTag.type===type && activeTag.value===val; };
   var compHtml = s.topComp.length
     ? s.topComp.map(function(c){
         var def=COMPETITORS.find(function(x){return x.label===c.k;});
         var col=def?def.color:'#6E867C';
-        return '<span class="chip-comp" style="background:'+col+'">'+esc(c.k)+' ·'+c.n+'</span>';
+        var on=isActive('comp',c.k);
+        return '<button type="button" class="chip-comp'+(on?' is-active':'')+'" style="background:'+col+'" '+
+               'data-tag-filter="comp" data-tag-value="'+esc(c.k)+'" '+
+               'aria-pressed="'+on+'" title="'+(on?'Clear filter':'Filter by '+esc(c.k))+'">'+
+               esc(c.k)+' ·'+c.n+'</button>';
       }).join('')
     : '<span style="color:var(--mute);font-size:12px">none detected</span>';
   var angHtml = s.topAng.length
     ? s.topAng.map(function(a){
         var def=PRODUCT_ANGLES.find(function(x){return x.id===a.k;});
-        return def ? '<span class="chip-angle" style="background:'+def.color+'">'+esc(def.label)+' ·'+a.n+'</span>' : '';
+        if(!def) return '';
+        var on=isActive('angle',a.k);
+        return '<button type="button" class="chip-angle'+(on?' is-active':'')+'" style="background:'+def.color+'" '+
+               'data-tag-filter="angle" data-tag-value="'+esc(a.k)+'" '+
+               'aria-pressed="'+on+'" title="'+(on?'Clear filter':'Filter by '+esc(def.label))+'">'+
+               esc(def.label)+' ·'+a.n+'</button>';
       }).join('')
     : '<span style="color:var(--mute);font-size:12px">none detected</span>';
   var wlHtml = s.topWl.length
     ? s.topWl.map(function(w){
-        return '<span class="chip-wl">'+esc(w.k)+' ·'+w.n+'</span>';
+        var on=isActive('wl',w.k);
+        return '<button type="button" class="chip-wl'+(on?' is-active':'')+'" '+
+               'data-tag-filter="wl" data-tag-value="'+esc(w.k)+'" '+
+               'aria-pressed="'+on+'" title="'+(on?'Clear filter':'Filter by "'+esc(w.k)+'"')+'">'+
+               esc(w.k)+' ·'+w.n+'</button>';
       }).join('')
     : '';
 
@@ -1452,27 +1533,40 @@ function renderCard(a,cat,shortlist){
     scoreBadge='<span class="score-badge '+tier+'" title="Germains relevance score: '+a.gs+'">'+label+'</span>';
   }
 
-  // #4 Competitor chips (filter to at most 3 to avoid visual noise)
+  var isActive=function(type,val){ return activeTag && activeTag.type===type && activeTag.value===val; };
+
+  // #4 Competitor chips (clickable filter) — cap at 3 to avoid visual noise
   var compChips = (a.comp||[]).slice(0,3).map(function(label){
     var c=COMPETITORS.find(function(x){return x.label===label;});
     var col=c?c.color:'#6E867C';
-    return '<span class="chip-comp" style="background:'+col+'" title="Mentions '+esc(label)+'">'+esc(label)+'</span>';
+    var on=isActive('comp',label);
+    return '<button type="button" class="chip-comp'+(on?' is-active':'')+'" style="background:'+col+'" '+
+           'data-tag-filter="comp" data-tag-value="'+esc(label)+'" '+
+           'aria-pressed="'+on+'" title="'+(on?'Clear filter':'Filter by '+esc(label))+'">'+esc(label)+'</button>';
   }).join('');
 
   // #7 Product-angle chips
   var angChips = (a.ang||[]).map(function(id){
     var ang=PRODUCT_ANGLES.find(function(x){return x.id===id;});
-    return ang ? '<span class="chip-angle" style="background:'+ang.color+'" title="Germains product angle: '+esc(ang.label)+'">'+esc(ang.label)+'</span>' : '';
+    if(!ang) return '';
+    var on=isActive('angle',id);
+    return '<button type="button" class="chip-angle'+(on?' is-active':'')+'" style="background:'+ang.color+'" '+
+           'data-tag-filter="angle" data-tag-value="'+esc(id)+'" '+
+           'aria-pressed="'+on+'" title="'+(on?'Clear filter':'Germains product angle: '+esc(ang.label))+'">'+esc(ang.label)+'</button>';
   }).join('');
 
   // #13 Watchlist chip — computed at render time (user can edit list anytime)
   var wlHits=detectWatchlist(a.t,a.s);
   var wlChips = wlHits.slice(0,2).map(function(kw){
-    return '<span class="chip-wl" title="Watchlist keyword">'+esc(kw)+'</span>';
+    var on=isActive('wl',kw);
+    return '<button type="button" class="chip-wl'+(on?' is-active':'')+'" '+
+           'data-tag-filter="wl" data-tag-value="'+esc(kw)+'" '+
+           'aria-pressed="'+on+'" title="'+(on?'Clear filter':'Watchlist: filter by "'+esc(kw)+'"')+'">'+esc(kw)+'</button>';
   }).join('');
 
+  var dimClass = activeTag ? ' tags-dimmed' : '';
   var tagsRow = (compChips||angChips||wlChips)
-    ? '<div class="card-tags-row">'+wlChips+compChips+angChips+'</div>'
+    ? '<div class="card-tags-row'+dimClass+'">'+wlChips+compChips+angChips+'</div>'
     : '';
 
   return '<article class="card'+(starred?' in-shortlist':'')+'" data-aid="'+esc(a.id)+'">'+
@@ -1507,13 +1601,41 @@ function renderSkeletons(){
   return '<div class="cat-cards" style="margin-left:8px">'+h+'</div>';
 }
 
+/* Active tag-filter banner — shown above the summary/watchlist whenever
+ * a chip has been clicked. Gives the user an obvious "you're now viewing a
+ * subset" affordance plus a one-click Clear. */
+function renderTagFilterBar(items){
+  if(!activeTag) return '';
+  var label='', swatchStyle='background:var(--accent)';
+  if(activeTag.type==='comp'){
+    var c=COMPETITORS.find(function(x){return x.label===activeTag.value;});
+    label='Competitor: '+activeTag.value;
+    if(c) swatchStyle='background:'+c.color;
+  } else if(activeTag.type==='angle'){
+    var ang=PRODUCT_ANGLES.find(function(x){return x.id===activeTag.value;});
+    label='Germains angle: '+(ang?ang.label:activeTag.value);
+    if(ang) swatchStyle='background:'+ang.color;
+  } else if(activeTag.type==='wl'){
+    label='Watchlist: "'+activeTag.value+'"';
+    swatchStyle='background:#E5B94A;color:#2a2418';
+  }
+  return '<div class="tag-filter-bar" role="status" aria-live="polite">'+
+           '<span class="tag-filter-label">Filtered by</span>'+
+           '<span class="tag-filter-value" style="'+swatchStyle+'">'+esc(label)+'</span>'+
+           '<span style="color:var(--mute);font-weight:500;font-size:11.5px;">'+items.length+' match'+(items.length===1?'':'es')+'</span>'+
+           '<button type="button" class="tag-filter-clear" data-tag-clear="1" aria-label="Clear tag filter">'+
+             icon('icon-close')+' Clear</button>'+
+         '</div>';
+}
+
 function render(){
   var items=getFiltered();
   renderStats(items);
 
   // #1 Shortlist — flat view, no category grouping
   if(region==='shortlist'){
-    var html=renderSmartSummary(items,true);
+    var html=renderTagFilterBar(items);
+    html+=renderSmartSummary(items,true);
     html+=renderWatchlistPanel();
     if(!items.length){
       html+='<div class="shortlist-empty">'+icon('icon-star')+
@@ -1535,8 +1657,9 @@ function render(){
     return;
   }
 
-  // #2 Smart summary block + #13 watchlist panel
-  var html=renderSmartSummary(items,false);
+  // #2 Smart summary block + #13 watchlist panel (preceded by the tag-filter banner)
+  var html=renderTagFilterBar(items);
+  html+=renderSmartSummary(items,false);
   html+=renderWatchlistPanel();
 
   // Collect per-category counts for #8 trend tracking
@@ -1952,8 +2075,22 @@ document.getElementById("periods").addEventListener("click",function(e){
 var searchHandler=debounce(function(val){ filter=val; renderWithSpinner(); },220);
 document.getElementById("search").addEventListener("input",function(e){ searchHandler(e.target.value); });
 
-// Category expand/collapse + shortlist star + watchlist remove + AI summary — delegated
+// Category expand/collapse + shortlist star + watchlist remove + AI summary + tag filter — delegated
 document.getElementById("content").addEventListener("click",function(e){
+  // Clickable chip → set/toggle tag filter
+  var tagBtn=e.target.closest("[data-tag-filter]");
+  if(tagBtn){
+    e.preventDefault(); e.stopPropagation();
+    setTagFilter(tagBtn.getAttribute("data-tag-filter"), tagBtn.getAttribute("data-tag-value"));
+    return;
+  }
+  // Clear the active tag filter (banner button)
+  var tagClear=e.target.closest("[data-tag-clear]");
+  if(tagClear){
+    e.preventDefault(); e.stopPropagation();
+    clearTagFilter();
+    return;
+  }
   // #1 star toggle
   var starBtn=e.target.closest("[data-star]");
   if(starBtn){
