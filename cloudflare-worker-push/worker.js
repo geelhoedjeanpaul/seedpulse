@@ -144,6 +144,74 @@ export default {
         }
       }
 
+      // Per-article annotation (feature #1): returns {impact, soWhat} for each id.
+      // Body: { items: [{id,t,s,src,cat,comp,ang,gs}] }
+      // Response: { annotations: { [id]: {impact, soWhat} } }
+      // Uses KV as a 30-day cache so repeat calls are near-free.
+      if (url.pathname === '/annotate' && request.method === 'POST') {
+        if (!env.AI) return cors(json({ error: 'AI binding not configured' }, 503));
+        const body = await request.json().catch(() => ({}));
+        const items = Array.isArray(body?.items) ? body.items.slice(0, 30) : [];
+        if (items.length === 0) return cors(json({ annotations: {} }));
+
+        const out = {};
+        const toAnnotate = [];
+
+        // 1. Check KV cache first
+        for (const it of items) {
+          if (!it?.id) continue;
+          const cached = await env.SUBS.get('ann:' + it.id);
+          if (cached) { try { out[it.id] = JSON.parse(cached); } catch {} }
+          else toAnnotate.push(it);
+        }
+
+        // 2. Batch uncached items in groups of 5 to keep token counts small
+        const BATCH = 5;
+        for (let i = 0; i < toAnnotate.length; i += BATCH) {
+          const batch = toAnnotate.slice(i, i + BATCH);
+          const list = batch.map((a, idx) =>
+            `ARTICLE_${idx + 1}_ID: ${a.id}\nTITLE: ${String(a.t || '').slice(0, 200)}\nSUMMARY: ${String(a.s || '').slice(0, 220)}\nCOMPETITORS: ${(a.comp || []).join(', ') || 'none'}\nANGLES: ${(a.ang || []).join(', ') || 'none'}\nGERMAINS_SCORE: ${a.gs || 0}`
+          ).join('\n---\n');
+
+          const sys = 'You are a commercial analyst at Germains Seed Technology. For each article, classify commercial impact and write ONE sharp sentence on what it means for Germains. Germains sells seed priming, film coating, pelleting, seed hygiene and seed analytics. Be decisive and specific.';
+          const user = `For each of the ${batch.length} articles below, respond with a JSON array: [{"id":"...","impact":"opportunity|threat|watch|info","soWhat":"one sentence, max 25 words, no hedging"}]. Classify:\n- "opportunity": directly creates a sales/partnership angle for Germains\n- "threat": competitor move, regulation, or market shift that hurts us\n- "watch": relevant but developing, monitor it\n- "info": interesting context, low action value\n\nReturn ONLY the JSON array, no prose, no markdown fences.\n\n${list}`;
+
+          try {
+            const r = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+              messages: [
+                { role: 'system', content: sys },
+                { role: 'user', content: user }
+              ],
+              max_tokens: 600
+            });
+            const txt = (r?.response || r?.result?.response || '').trim();
+            // Extract JSON array from possibly messy output
+            const m = txt.match(/\[[\s\S]*\]/);
+            if (!m) continue;
+            let arr;
+            try { arr = JSON.parse(m[0]); } catch { continue; }
+            if (!Array.isArray(arr)) continue;
+
+            for (const rec of arr) {
+              if (!rec?.id) continue;
+              const match = batch.find(b => String(b.id) === String(rec.id));
+              if (!match) continue;
+              const impact = ['opportunity', 'threat', 'watch', 'info'].includes(rec.impact) ? rec.impact : 'info';
+              const soWhat = String(rec.soWhat || '').slice(0, 300);
+              if (!soWhat) continue;
+              const ann = { impact, soWhat };
+              out[match.id] = ann;
+              // Cache for 30 days
+              await env.SUBS.put('ann:' + match.id, JSON.stringify(ann), { expirationTtl: 60 * 60 * 24 * 30 });
+            }
+          } catch (e) {
+            // skip batch on error, client will retry next load
+          }
+        }
+
+        return cors(json({ annotations: out, cached: items.length - toAnnotate.length, generated: Object.keys(out).length - (items.length - toAnnotate.length) }));
+      }
+
       // Dev helper: manually fire the daily digest email (requires TRIGGER_KEY).
       if (url.pathname === '/trigger-digest' && request.method === 'GET') {
         if (url.searchParams.get('key') !== env.TRIGGER_KEY) return cors(json({ error: 'forbidden' }, 403));
@@ -402,16 +470,23 @@ async function runDailyDigest(env) {
     return;
   }
 
+  // Monday (UTC) gets the longer weekly one-pager; other days get the daily.
+  const now = new Date();
+  const isMonday = now.getUTCDay() === 1;
+  const lookbackDays = isMonday ? 7 : 2;
+  const topN = isMonday ? 25 : 15;
+
   // 1. Fetch + score feeds (reuse same pipeline as runCheck)
   const results = await Promise.all(FEEDS.map(fetchFeedSafe));
   const articles = results.flat();
   const byId = new Map();
   for (const a of articles) if (!byId.has(a.id)) byId.set(a.id, a);
+  const cutoffIso = new Date(Date.now() - lookbackDays * 86400_000).toISOString().slice(0, 10);
   const scored = [...byId.values()]
     .map(a => ({ ...a, gs: germainsScore(a.t, a.s) }))
-    .filter(a => a.gs > 0)
+    .filter(a => a.gs > 0 && (a.iso || '') >= cutoffIso)
     .sort((a, b) => b.gs - a.gs || (b.iso || '').localeCompare(a.iso || ''))
-    .slice(0, 15);
+    .slice(0, topN);
 
   if (scored.length === 0) {
     console.log('Daily digest skipped: no scoring articles today');
@@ -425,12 +500,14 @@ async function runDailyDigest(env) {
       const bulletList = scored.slice(0, 12).map((a, i) =>
         `${i + 1}. ${String(a.t || '').slice(0, 200)}${a.s ? ' — ' + String(a.s).slice(0, 160) : ''}`
       ).join('\n');
+      const windowLbl = isMonday ? 'this past week' : 'today';
+      const len = isMonday ? '5-7 sentences' : '3-5 sentences';
       const out = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
         messages: [
-          { role: 'system', content: 'You are a senior industry analyst at Germains Seed Technology. Write a crisp 3-5 sentence executive briefing. No headings, no bullets.' },
-          { role: 'user', content: `Summarise today\'s top seed-industry news for the Germains leadership team. Call out the single highest-impact item and any competitive move.\n\n${bulletList}` }
+          { role: 'system', content: 'You are a senior industry analyst at Germains Seed Technology. Write a crisp executive briefing for the commercial director. No headings, no bullets, no hedging.' },
+          { role: 'user', content: `Summarise ${windowLbl}'s top seed-industry news for Germains leadership. Call out the single highest-impact item, any competitive moves, and one recommended action. ${len}.\n\n${bulletList}` }
         ],
-        max_tokens: 320
+        max_tokens: isMonday ? 500 : 320
       });
       aiSummary = (out?.response || out?.result?.response || '').trim();
     } catch (e) {
@@ -438,10 +515,12 @@ async function runDailyDigest(env) {
     }
   }
 
-  // 3. Build the HTML email
-  const html = buildDigestHtml(scored, aiSummary);
+  // 3. Build the HTML email — weekly (Monday) is richer
+  const html = isMonday ? buildWeeklyDigestHtml(scored, aiSummary) : buildDigestHtml(scored, aiSummary);
   const today = new Date().toISOString().slice(0, 10);
-  const subject = `SeedPulse Daily — ${today} — ${scored.length} items (top score ${scored[0].gs})`;
+  const subject = isMonday
+    ? `SeedPulse Weekly — ${today} — ${scored.length} stories, top score ${scored[0].gs}`
+    : `SeedPulse Daily — ${today} — ${scored.length} items (top score ${scored[0].gs})`;
 
   // 4. Send via Resend
   const recipients = env.DIGEST_TO_EMAIL.split(',').map(s => s.trim()).filter(Boolean);
@@ -500,6 +579,85 @@ function buildDigestHtml(items, aiSummary) {
         ${rows}
         <tr><td style="padding:14px 20px;font-family:${SANS};font-size:11px;color:#8a7f6c;text-align:center;">
           Auto-generated by the SeedPulse Cloudflare Worker &middot; scored against Germains keyword dictionary.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
+/* ═══════════════════════ Weekly digest email (feature #10) ═══════════════════════
+ * Triggered on Mondays from the same cron slot. Richer layout: top 10 of the
+ * week, per-competitor mention tallies, and a longer AI executive briefing.
+ * Same email infra (Resend); different template.
+ */
+function buildWeeklyDigestHtml(items, aiSummary) {
+  const SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+  const SERIF = "'Georgia','Times New Roman',serif";
+  const esc = (s) => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+  // Tally competitor mentions across the week
+  const compTally = {};
+  items.forEach(a => {
+    const txt = ((a.t || '') + ' ' + (a.s || '')).toLowerCase();
+    ['Incotec','Croda','Syngenta','Bayer','BASF','Rijk Zwaan','Enza Zaden','Bejo','Sakata','Takii','Limagrain','Nunhems','Corteva','Vilmorin','Hazera','Advanta','East-West']
+      .forEach(c => { if (txt.indexOf(c.toLowerCase()) >= 0) compTally[c] = (compTally[c] || 0) + 1; });
+  });
+  const topComp = Object.entries(compTally).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const compBars = topComp.map(([name, n]) => {
+    const pct = Math.min(100, Math.round(n / Math.max(1, topComp[0][1]) * 100));
+    return `<tr><td style="padding:4px 0;font-family:${SANS};font-size:12px;color:#2a2418;width:110px;">${esc(name)}</td>
+      <td style="padding:4px 0;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+          <td style="background-color:#0A4A2A;height:10px;width:${pct}%;border-radius:2px;">&nbsp;</td>
+          <td style="padding-left:6px;font-family:${SANS};font-size:11px;color:#5b5244;white-space:nowrap;">${n}×</td>
+        </tr></table>
+      </td></tr>`;
+  }).join('');
+
+  const top10 = items.slice(0, 10);
+  const rows = top10.map((a, i) => `
+    <tr><td style="padding:14px 20px;border-bottom:1px solid #e8ddc9;">
+      <div style="font-family:${SERIF};font-size:11px;color:#8a6b2e;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">#${i + 1} &middot; Germains score ${a.gs}</div>
+      <div style="font-family:${SERIF};font-size:17px;font-weight:700;color:#0A4A2A;line-height:1.35;">
+        <a href="${esc(a.u)}" style="color:#0A4A2A;text-decoration:none;">${esc(a.t)}</a>
+      </div>
+      <div style="font-family:${SANS};font-size:13px;color:#5b5244;margin-top:6px;line-height:1.5;">${esc((a.s || '').slice(0, 280))}</div>
+      <div style="font-family:${SANS};font-size:11px;color:#8a7f6c;margin-top:6px;">${esc(a.src || '')} &middot; ${esc(a.iso || '')}</div>
+    </td></tr>`).join('');
+
+  const aiBlock = aiSummary ? `
+    <tr><td style="padding:22px 20px;background-color:#f5efe1;border-bottom:2px solid #0A4A2A;">
+      <div style="font-family:${SANS};font-size:11px;font-weight:700;letter-spacing:1px;color:#8a6b2e;text-transform:uppercase;margin-bottom:8px;">Executive Briefing — The Week Ahead</div>
+      <div style="font-family:${SERIF};font-size:15px;color:#2a2418;line-height:1.6;">${esc(aiSummary)}</div>
+    </td></tr>` : '';
+
+  const compBlock = compBars ? `
+    <tr><td style="padding:20px 20px;background-color:#fffaf0;border-bottom:1px solid #e8ddc9;">
+      <div style="font-family:${SANS};font-size:11px;font-weight:700;letter-spacing:1px;color:#8a6b2e;text-transform:uppercase;margin-bottom:10px;">Competitor Mentions This Week</div>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">${compBars}</table>
+    </td></tr>` : '';
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background-color:#faf6ec;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#faf6ec;">
+    <tr><td align="center" style="padding:24px 12px;">
+      <table role="presentation" width="680" cellpadding="0" cellspacing="0" border="0" style="max-width:680px;background-color:#fffaf0;border:1px solid #e8ddc9;border-radius:12px;overflow:hidden;">
+        <tr><td style="padding:24px 20px 14px 20px;background-color:#0A4A2A;">
+          <div style="font-family:${SERIF};font-size:11px;font-weight:700;letter-spacing:2px;color:#c9e0d4;text-transform:uppercase;">Monday One-Pager</div>
+          <div style="font-family:${SERIF};font-size:26px;font-weight:700;color:#fffaf0;margin-top:4px;">SeedPulse Weekly</div>
+          <div style="font-family:${SANS};font-size:12px;color:#c9e0d4;margin-top:4px;">${items.length} stories scored &middot; ${new Date().toISOString().slice(0, 10)}</div>
+        </td></tr>
+        ${aiBlock}
+        ${compBlock}
+        <tr><td style="padding:14px 20px 4px 20px;background-color:#fffaf0;">
+          <div style="font-family:${SANS};font-size:11px;font-weight:700;letter-spacing:1px;color:#8a6b2e;text-transform:uppercase;">Top 10 Stories of the Week</div>
+        </td></tr>
+        ${rows}
+        <tr><td style="padding:14px 20px;font-family:${SANS};font-size:11px;color:#8a7f6c;text-align:center;">
+          Auto-generated by the SeedPulse Cloudflare Worker &middot; Monday one-pager for Germains leadership.
         </td></tr>
       </table>
     </td></tr>
