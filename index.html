@@ -274,6 +274,30 @@ a{color:var(--accent);text-decoration:none}
 .tab:active{transform:scale(.97)}
 .tab.on{border-color:rgba(255,255,255,.9);background:rgba(255,255,255,.18);color:#fff;font-weight:700}
 
+/* Category filter — horizontal scroll pill row below the filter rail */
+.cat-filter{
+  display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;
+  margin-top:8px;padding-bottom:1px;
+}
+.cat-filter::-webkit-scrollbar{display:none}
+.cat-pill{
+  --cat-c:rgba(255,255,255,.5);
+  flex-shrink:0;display:inline-flex;align-items:center;gap:5px;
+  padding:5px 10px;border-radius:6px;
+  border:1px solid rgba(255,255,255,.16);
+  background:rgba(255,255,255,.04);color:rgba(255,255,255,.78);
+  font:600 11.5px var(--sans);cursor:pointer;white-space:nowrap;
+  transition:background .15s, border-color .15s, color .15s, transform .08s;
+}
+.cat-pill .icon{font-size:12px;width:12px;height:12px;color:var(--cat-c)}
+.cat-pill:active{transform:scale(.97)}
+.cat-pill.on{
+  border-color:rgba(255,255,255,.85);
+  background:rgba(255,255,255,.18);
+  color:#fff;
+}
+.cat-pill.on .icon{color:#fff}
+
 /* Period pills — compact, on the right of filter-rail */
 .period-row{display:flex;gap:3px;overflow-x:auto;scrollbar-width:none;flex-shrink:0;background:rgba(0,0,0,.18);padding:3px;border-radius:8px}
 .period-row::-webkit-scrollbar{display:none}
@@ -774,6 +798,34 @@ footer{
 .scroll-top.show{opacity:1;transform:translateY(0);pointer-events:auto}
 .scroll-top .icon{font-size:20px;transform:rotate(180deg)}
 
+/* ═══════════════ Active-category banner (shown when activeCat is set) ═══════════════ */
+.active-cat-banner{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  margin:0 0 14px;padding:9px 14px;
+  background:linear-gradient(90deg, var(--accent-soft), transparent);
+  border:1px solid var(--border-strong);border-left:4px solid var(--accent);
+  border-radius:10px;
+  font:600 12.5px var(--sans);color:var(--text);
+}
+.active-cat-kicker{
+  font:700 10.5px var(--sans);letter-spacing:.5px;
+  text-transform:uppercase;color:var(--mute);
+}
+.active-cat-label{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 9px;border-radius:6px;
+  background:var(--accent);color:#fff;font-weight:700;
+}
+.active-cat-count{font:500 11.5px var(--sans);color:var(--mute)}
+.active-cat-clear{
+  margin-left:auto;
+  background:none;border:1px solid var(--border-strong);color:var(--text-2);
+  font:600 11.5px var(--sans);padding:5px 10px;border-radius:6px;cursor:pointer;
+  display:inline-flex;align-items:center;gap:4px;
+}
+.active-cat-clear:hover{background:var(--chip-bg);color:var(--text)}
+.active-cat-clear .icon{font-size:11px}
+
 /* ═══════════════ Reading-mode bar (All / Unread / Priority) ═══════════════ */
 .mode-bar{
   display:inline-flex;gap:2px;padding:3px;margin:0 0 16px;
@@ -885,6 +937,7 @@ footer{
       <nav class="tabs" id="tabs" role="tablist" aria-label="Region filter"></nav>
       <div class="period-row" id="periods" role="tablist" aria-label="Time period filter"></div>
     </div>
+    <div class="cat-filter" id="catFilter" role="tablist" aria-label="Category filter"></div>
     <div class="search-row">
       <div class="search-wrap">
         <svg class="icon" aria-hidden="true"><use href="#icon-search"/></svg>
@@ -1164,20 +1217,38 @@ var FALLBACK=[
   {c:"crops",r:["all","apac"],t:"Syngenta Opens $2.4M Seed Health Lab in Hyderabad, India",s:"Capacity for 12,000 virus and bacterial tests annually. Complies with global phytosanitary standards. Underpins Syngenta's expansion into India's horticulture markets.",src:"Mordor Intelligence",u:"https://www.mordorintelligence.com/industry-reports/asia-pacific-vegetable-seed-market",d:"Mar 2024",iso:"2024-03-15"},
 
   /* ─── R&D Developments — peer-reviewed and applied research ─── */
-  {c:"rd",r:["all"],t:"Prime Editing Achieves Trait Stacking in Tomato Without DNA Damage",s:"Nature Plants paper demonstrates simultaneous edits at four loci in tomato using prime editing — no double-strand breaks, no transgene footprint. Opens path to climate-trait stacking inside single growing seasons.",src:"Nature Plants",u:"https://www.nature.com/nplants/",d:"12 May 2026",iso:"2026-05-12"},
-  {c:"rd",r:["all","europe"],t:"WUR: High-Throughput 3D Phenotyping Predicts Lettuce Bolting 14 Days Early",s:"Wageningen team combines hyperspectral imaging + ML model trained on 18k lettuce phenotype records. Predictive accuracy of 89% for premature bolting under heat stress — opens early-warning seed-treatment screening.",src:"Wageningen University",u:"https://www.wur.nl/en/research-results.htm",d:"3 May 2026",iso:"2026-05-03"},
-  {c:"rd",r:["all"],t:"Seed Microbiome Transfer Enhances Drought Tolerance in Field Trials",s:"New Phytologist: inoculating seed coatings with strain-specific endophytes raised wheat yields 11-17% under deficit irrigation across three EU sites. Microbiome priming positioned as next-gen seed enhancement layer.",src:"New Phytologist",u:"https://onlinelibrary.wiley.com/journal/14698137",d:"22 Apr 2026",iso:"2026-04-22"},
-  {c:"rd",r:["all","apac"],t:"CRISPR-Cas12a Edits Boost Rice Heat Tolerance Without Yield Penalty",s:"Cell Reports paper from Chinese Academy of Sciences edits HSF transcription factor — yields hold at 35°C+ temperatures across F4 generations. Trait validated across two genetic backgrounds; field trial begins June 2026.",src:"Cell Reports",u:"https://www.cell.com/cell-reports/home",d:"15 Apr 2026",iso:"2026-04-15"},
-  {c:"rd",r:["all","europe"],t:"Nano-Encapsulated Biostimulants Outperform Conventional Seed Coatings",s:"Frontiers in Plant Science meta-analysis of 41 studies: nano-encapsulated humic acid + amino acid blends improved emergence vigour 22-30% vs standard film coats across maize, soy, sunflower. Controlled-release kinetics drive the gain.",src:"Frontiers in Plant Science",u:"https://www.frontiersin.org/journals/plant-science",d:"8 Apr 2026",iso:"2026-04-08"},
-  {c:"rd",r:["all"],t:"AI Model Predicts Seed Vigour From Single Hyperspectral Image",s:"Plant Phenomics paper: CNN trained on 22k seed images predicts germination outcome with 94% accuracy from a single 850-1700 nm scan. Eliminates need for destructive tetrazolium testing — production QC implications for seed houses.",src:"Plant Phenomics",u:"https://spj.science.org/journal/plantphenomics",d:"28 Mar 2026",iso:"2026-03-28"},
-  {c:"rd",r:["all","americas"],t:"USDA-ARS: Doubled Haploid Pipeline Cuts Onion Breeding Cycle From 8 to 3 Years",s:"USDA Vegetable Research Lab demonstrates inducer-line system for onion DH production — first scalable protocol for the crop. Promises rapid trait introgression for downy mildew and Fusarium resistance.",src:"USDA ARS",u:"https://www.ars.usda.gov/",d:"19 Mar 2026",iso:"2026-03-19"},
-  {c:"rd",r:["all","europe"],t:"EU Horizon Project 'PHENET' Scales Open-Source Plant Phenotyping",s:"€18M Horizon Europe consortium publishes shared phenotyping protocols + open data platform connecting 32 institutes. Enables seed companies to benchmark trial data against pan-European baselines.",src:"Horizon Europe",u:"https://cordis.europa.eu/",d:"4 Mar 2026",iso:"2026-03-04"}
+  {c:"rd",r:["all"],t:"Prime Editing Achieves Trait Stacking in Tomato Without DNA Damage",s:"Nature Plants paper demonstrates simultaneous edits at four loci in tomato using prime editing — no double-strand breaks, no transgene footprint. Opens path to climate-trait stacking inside single growing seasons.",src:"Nature Plants",u:"https://www.nature.com/nplants/",d:"20 Jun 2026",iso:"2026-06-20"},
+  {c:"rd",r:["all","europe"],t:"WUR: High-Throughput 3D Phenotyping Predicts Lettuce Bolting 14 Days Early",s:"Wageningen team combines hyperspectral imaging + ML model trained on 18k lettuce phenotype records. Predictive accuracy of 89% for premature bolting under heat stress — opens early-warning seed-treatment screening.",src:"Wageningen University",u:"https://www.wur.nl/en/research-results.htm",d:"19 Jun 2026",iso:"2026-06-19"},
+  {c:"rd",r:["all"],t:"Seed Microbiome Transfer Enhances Drought Tolerance in Field Trials",s:"New Phytologist: inoculating seed coatings with strain-specific endophytes raised wheat yields 11-17% under deficit irrigation across three EU sites. Microbiome priming positioned as next-gen seed enhancement layer.",src:"New Phytologist",u:"https://onlinelibrary.wiley.com/journal/14698137",d:"18 Jun 2026",iso:"2026-06-18"},
+  {c:"rd",r:["all","apac"],t:"CRISPR-Cas12a Edits Boost Rice Heat Tolerance Without Yield Penalty",s:"Cell Reports paper from Chinese Academy of Sciences edits HSF transcription factor — yields hold at 35°C+ temperatures across F4 generations. Trait validated across two genetic backgrounds; field trial begins June 2026.",src:"Cell Reports",u:"https://www.cell.com/cell-reports/home",d:"17 Jun 2026",iso:"2026-06-17"},
+  {c:"rd",r:["all","europe"],t:"Nano-Encapsulated Biostimulants Outperform Conventional Seed Coatings",s:"Frontiers in Plant Science meta-analysis of 41 studies: nano-encapsulated humic acid + amino acid blends improved emergence vigour 22-30% vs standard film coats across maize, soy, sunflower. Controlled-release kinetics drive the gain.",src:"Frontiers in Plant Science",u:"https://www.frontiersin.org/journals/plant-science",d:"16 Jun 2026",iso:"2026-06-16"},
+  {c:"rd",r:["all"],t:"AI Model Predicts Seed Vigour From Single Hyperspectral Image",s:"Plant Phenomics paper: CNN trained on 22k seed images predicts germination outcome with 94% accuracy from a single 850-1700 nm scan. Eliminates need for destructive tetrazolium testing — production QC implications for seed houses.",src:"Plant Phenomics",u:"https://spj.science.org/journal/plantphenomics",d:"15 Jun 2026",iso:"2026-06-15"},
+  {c:"rd",r:["all","americas"],t:"USDA-ARS: Doubled Haploid Pipeline Cuts Onion Breeding Cycle From 8 to 3 Years",s:"USDA Vegetable Research Lab demonstrates inducer-line system for onion DH production — first scalable protocol for the crop. Promises rapid trait introgression for downy mildew and Fusarium resistance.",src:"USDA ARS",u:"https://www.ars.usda.gov/",d:"13 Jun 2026",iso:"2026-06-13"},
+  {c:"rd",r:["all","europe"],t:"EU Horizon Project 'PHENET' Scales Open-Source Plant Phenotyping",s:"€18M Horizon Europe consortium publishes shared phenotyping protocols + open data platform connecting 32 institutes. Enables seed companies to benchmark trial data against pan-European baselines.",src:"Horizon Europe",u:"https://cordis.europa.eu/",d:"10 Jun 2026",iso:"2026-06-10"}
 ];
 
 /* ═══════════════════════ State ═══════════════════════ */
 var A=FALLBACK.slice();
 var liveLoaded=false;
 var region="all", period="7d", filter="", emailOpen=false;
+/* activeCat: null or a category id from CATS. When non-null the article
+ * list is narrowed to that single category and the list renders as a
+ * flat feed instead of the usual per-category sections.
+ * Persisted across sessions so a CD who lives in "R&D Developments"
+ * stays there next time they open the app. */
+var ACTIVE_CAT_KEY='seedpulse_active_cat_v1';
+var activeCat=(function(){try{return localStorage.getItem(ACTIVE_CAT_KEY)||null;}catch(e){return null;}})();
+function setActiveCat(catId){
+  // Toggle off when re-tapping the active pill
+  activeCat = (activeCat===catId) ? null : catId;
+  try{
+    if(activeCat) localStorage.setItem(ACTIVE_CAT_KEY, activeCat);
+    else localStorage.removeItem(ACTIVE_CAT_KEY);
+  }catch(_){}
+  renderCategoryFilter();
+  renderWithSpinner();
+  try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(_){}
+}
 /* activeTag: null or {type:'comp'|'angle'|'wl', value:string}
  * Set by clicking any chip in the summary or on a card. Cleared via the
  * banner's "Clear" button or by clicking the active chip again. */
@@ -1713,6 +1784,17 @@ function getFiltered(){
     else if(region!=='all' && a.r.indexOf(region)<0) return false;
     if(!passesperiod(a.iso)) return false;
     if(!matchesActiveTag(a)) return false;
+    // Category filter — set via the pill row in the header. 'germains' is
+    // special: it selects items with a Germains relevance score > 0 rather
+    // than items literally categorized as "germains" (no article is).
+    if(activeCat){
+      if(activeCat==='germains'){
+        if(a.gs==null) a.gs=germainsScore(a.t,a.s);
+        if((a.gs||0)<=0) return false;
+      } else if(a.c!==activeCat){
+        return false;
+      }
+    }
     // Reading-mode filter — layered on top of the region/period filters
     if(viewMode==='unread' && readMap[a.id]) return false;
     if(viewMode==='priority' && (a.gs||0) < GERMAINS_NOTIFY_MIN) return false;
@@ -1809,6 +1891,23 @@ function renderPeriods(){
   document.getElementById("periods").innerHTML=h;
 }
 
+/* Category filter row — horizontal scroll pill list in the header. Tap
+ * any pill to filter the full article set to that category; tap again
+ * to clear. The "All" pill (the leftmost, no data-cat-id) clears too. */
+function renderCategoryFilter(){
+  var el=document.getElementById('catFilter');
+  if(!el) return;
+  var h='<button class="cat-pill '+(activeCat?'':'on')+'" data-cat-id="" aria-label="All categories">All</button>';
+  CATS.forEach(function(cat){
+    var on = activeCat===cat.id;
+    h+='<button class="cat-pill '+(on?'on':'')+'" data-cat-id="'+esc(cat.id)+'" '+
+       'style="--cat-c:var('+(cat.cvar||'--accent')+')" '+
+       'aria-pressed="'+on+'" title="Filter to '+esc(cat.label)+'">'+
+       icon(cat.icon)+' <span>'+esc(cat.label)+'</span></button>';
+  });
+  el.innerHTML=h;
+}
+
 /* Segmented reading-mode bar (All / Unread / Priority) ─ sits above the
  * summary so the user can cut through a long list fast. Starred is
  * deliberately not a mode here — that's what the Shortlist region is for. */
@@ -1850,6 +1949,7 @@ function renderModeBar(items){
  * highlighting (priority ≥ NOTIFY_MIN and recent). */
 function renderTodaysTop(){
   if(region==='shortlist') return ''; // shortlist already curated
+  if(activeCat) return ''; // category filter active → focused view, no hero
   if(viewMode!=='all') return ''; // keep hero clean when filtering
   var cutoff=Date.now()-24*60*60*1000;
   var candidates=A.filter(function(a){
@@ -2249,6 +2349,32 @@ function render(){
   html+=renderTagFilterBar(items);
   html+=renderSmartSummary(items,false);
   html+=renderWatchlistPanel();
+
+  // Category filter active → flat feed (no per-category sections).
+  // Sorted by date desc then Germains score, clustered same as shortlist.
+  if(activeCat && items.length){
+    var catObj=CATS.find(function(c){return c.id===activeCat;});
+    var catLabel=catObj?catObj.label:activeCat;
+    html+='<div class="active-cat-banner" role="status">'+
+            '<span class="active-cat-kicker">Showing</span>'+
+            '<span class="active-cat-label">'+esc(catLabel)+'</span>'+
+            '<span class="active-cat-count">'+items.length+' item'+(items.length===1?'':'s')+'</span>'+
+            '<button class="active-cat-clear" data-cat-id="" type="button">'+icon('icon-close')+' All categories</button>'+
+          '</div>';
+    var shortlist=loadShortlist();
+    var sorted=items.slice().sort(function(x,y){
+      var d=(y.iso||'').localeCompare(x.iso||'');
+      if(d!==0) return d;
+      return (y.gs||0)-(x.gs||0);
+    });
+    var clustered=clusterArticles(sorted);
+    html+='<div class="cat-cards" style="--cat-c:var('+((catObj&&catObj.cvar)||'--accent')+')">';
+    clustered.forEach(function(a){ html+=renderCard(a,catObj,shortlist); });
+    html+='</div>';
+    document.getElementById("content").innerHTML=html;
+    if(PUSH_WORKER_URL){ setTimeout(fetchAnnotationsForView, 120); }
+    return;
+  }
 
   // Collect per-category counts for #8 trend tracking
   var catCounts={};
@@ -2685,6 +2811,11 @@ document.getElementById("periods").addEventListener("click",function(e){
   var btn=e.target.closest("[data-period]"); if(!btn) return;
   period=btn.getAttribute("data-period"); renderPeriods(); renderWithSpinner();
 });
+document.getElementById("catFilter").addEventListener("click",function(e){
+  var btn=e.target.closest("[data-cat-id]"); if(!btn) return;
+  // Empty data-cat-id = "All" pill → clears the filter
+  setActiveCat(btn.getAttribute("data-cat-id") || null);
+});
 
 // Debounced search — render only after user pauses typing
 var searchHandler=debounce(function(val){ filter=val; renderWithSpinner(); },140);
@@ -2716,6 +2847,13 @@ document.getElementById("content").addEventListener("click",function(e){
     e.preventDefault();
     period=expandBtn.getAttribute("data-expand-period");
     renderPeriods(); renderWithSpinner();
+    return;
+  }
+  // "All categories" clear button in the active-category banner
+  var catClear=e.target.closest(".active-cat-clear");
+  if(catClear){
+    e.preventDefault();
+    setActiveCat(null);
     return;
   }
   // Clickable chip → set/toggle tag filter
@@ -3456,6 +3594,7 @@ scrollTop.addEventListener("click",function(){ window.scrollTo({top:0,behavior:'
 /* ═══════════════════════ Init ═══════════════════════ */
 renderTabs();
 renderPeriods();
+renderCategoryFilter();
 checkInstallPrompt();
 pruneRead(); // drop read-state entries older than 90 days
 loadArticles();
