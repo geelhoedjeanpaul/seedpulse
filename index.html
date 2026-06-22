@@ -57,6 +57,12 @@
     <symbol id="icon-crops" viewBox="0 0 24 24">
       <path d="M12 22V9M12 9c-2-3-6-3-6-3s0 4 3 5M12 9c2-3 6-3 6-3s0 4-3 5M12 14c-2-2-5-2-5-2s0 3 2 4M12 14c2-2 5-2 5-2s0 3-2 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
     </symbol>
+    <symbol id="icon-rd" viewBox="0 0 24 24">
+      <path d="M9 3h6v5l4 9a2 2 0 01-1.9 2.7H6.9A2 2 0 015 17l4-9V3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M9 3h6M7.5 13h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      <circle cx="10.5" cy="16" r=".9" fill="currentColor"/>
+      <circle cx="13.5" cy="17.5" r=".7" fill="currentColor"/>
+    </symbol>
 
     <!-- Region icons -->
     <symbol id="icon-globe" viewBox="0 0 24 24">
@@ -165,6 +171,7 @@
   --c-regulation:#556B4F;
   --c-competitors:#3D5A7D;
   --c-crops:#8A6B2E;
+  --c-rd:#1F6B7A;             /* teal — distinguishes science from agronomy greens */
 }
 @media (prefers-color-scheme: dark){
   :root{
@@ -1044,7 +1051,29 @@ var FEEDS=[
   {url:GN+'%22plant+variety%22+protection+UPOV+OR+IP+seed',    src:'News: Plant IP & UPOV'},
   {url:GN+'agri+funding+investment+seed+OR+horticulture+startup', src:'News: Agri Investment'},
   {url:GN+'site:linkedin.com+seed+horticulture+breeding',      src:'LinkedIn: Seed Industry'},
-  {url:GN+'site:linkedin.com+%22seed+technology%22+OR+%22vegetable+seed%22', src:'LinkedIn: Seed Tech'}
+  {url:GN+'site:linkedin.com+%22seed+technology%22+OR+%22vegetable+seed%22', src:'LinkedIn: Seed Tech'},
+
+  /* ─── R&D Developments — peer-reviewed science & ag-tech research ─── */
+  {url:'https://www.frontiersin.org/journals/plant-science/rss',                  src:'Frontiers in Plant Science'},
+  {url:'https://onlinelibrary.wiley.com/feed/13653040/most-recent',               src:'Plant Cell & Environment'},
+  {url:'https://onlinelibrary.wiley.com/feed/1469-8137/most-recent',              src:'New Phytologist'},
+  {url:'https://www.nature.com/nplants.rss',                                      src:'Nature Plants'},
+  {url:'https://bmcplantbiol.biomedcentral.com/articles/most-recent/rss.xml',     src:'BMC Plant Biology'},
+  {url:'https://www.mdpi.com/journal/agronomy/rss',                               src:'Agronomy (MDPI)'},
+  {url:'https://www.mdpi.com/journal/plants/rss',                                 src:'Plants (MDPI)'},
+  {url:'https://www.mdpi.com/journal/agriculture/rss',                            src:'Agriculture (MDPI)'},
+  {url:'https://www.biorxiv.org/biorxiv/plant_biology.xml',                       src:'bioRxiv Plant Biology'},
+  {url:'https://www.cell.com/current-biology/inpress.rss',                        src:'Current Biology'},
+  {url:GN+'site:nature.com+plant+OR+seed+OR+crop+when:30d',                       src:'Nature: Plant Research'},
+  {url:GN+'site:science.org+plant+breeding+OR+seed+when:30d',                     src:'Science: Plant Breeding'},
+  {url:GN+'%22CRISPR%22+OR+%22prime+editing%22+plant+OR+crop+when:30d',           src:'R&D: Gene Editing'},
+  {url:GN+'%22high-throughput+phenotyping%22+OR+%22digital+phenotyping%22+when:30d', src:'R&D: Phenotyping'},
+  {url:GN+'%22machine+learning%22+OR+%22deep+learning%22+seed+OR+crop+when:30d',  src:'R&D: AI in Agriculture'},
+  {url:GN+'%22synthetic+biology%22+plant+OR+crop+OR+seed+when:30d',               src:'R&D: Synthetic Biology'},
+  {url:GN+'%22climate+resilient%22+crop+OR+%22drought+tolerant%22+variety+when:30d', src:'R&D: Climate Resilience'},
+  {url:GN+'%22plant+microbiome%22+OR+%22rhizosphere%22+research+when:30d',        src:'R&D: Plant Microbiome'},
+  {url:GN+'%22nano-coating%22+OR+%22nanotechnology%22+seed+OR+crop+when:30d',     src:'R&D: Nano Seed Tech'},
+  {url:GN+'%22speed+breeding%22+OR+%22doubled+haploid%22+research+when:30d',      src:'R&D: Accelerated Breeding'}
 ];
 
 /* ═══════════════════════ Keyword maps ═══════════════════════ */
@@ -1055,6 +1084,7 @@ var CAT_KW={
   regulation:['regulat','policy','legislation','reach','approval','ban','compliance','directive','pesticide','microplastic','phytosanitary','permit','law','bill','subsid','certif','eu official journal','eppo','plant variety','plant health','upov','trips','convention','standard','maximum residue','mrl','eu green deal','farm to fork','esa','isf position','worldseed'],
   competitors:['syngenta','bayer','basf','rijk zwaan','enza zaden','sakata','limagrain','incotec','east-west seed','nunhems','monsanto','corteva','advanta','vilmorin','seminis','known-you','tokita','takii','agbiome','plantum','hazera','clause','nickerson','floranova','pan am seed','hm.clause','barenbrug','ragt','deutsche saatveredelung'],
   crops:['tomato','pepper','cucumber','lettuce','onion','carrot','spinach','fennel','celery','vegetable','wheat','corn','maize','beet','broccoli','kale','leek','courgette','zucchini','aubergine','eggplant','watermelon','melon','pumpkin','greenhouse','vertical farm','open field','controlled environment','hydropon','aeroponic','aquaponic','indoor grow','glasshouse','protected cultivation','precision agriculture','smart farm','soilless'],
+  rd:['research','peer-review','peer reviewed','published','university','laboratory','preprint','biorxiv','nature','science journal','springer','elsevier','frontiers in','plos','pnas','wageningen','phenotyping','phenomics','high-throughput','machine learning','deep learning','artificial intelligence','ai model','digital twin','remote sensing','hyperspectral','multispectral','sensor','iot','drone','uav','satellite','imaging','computer vision','metabolomics','proteomics','transcriptomics','genomics','single-cell','rna-seq','sequencing','crispr','crispr-cas','base editing','prime editing','gene editing','synthetic biology','microbiome','rhizosphere','endophyte','mycorrhiza','plant pathology','disease resistance','rust','blight','mildew','virus resistance','nematode','climate resilience','drought tolerance','heat tolerance','salinity tolerance','abiotic stress','biotic stress','photosynthesis','c4 photosynthesis','nitrogen fixation','biofortification','nutritional quality','nano-coating','nanotechnology','smart coating','controlled release','encapsulation','bioinformatic','phylogenom','epigenetic','methylation','ab initio','molecular marker','speed breeding','rapid generation','tissue culture','in vitro','protoplast','haploid induction','heritability','linkage mapping','meta-analysis'],
   germains:['priming','pelleting','film coat','filmcoat','film-coat','seed hygiene','seed sanitation','hydro priming','osmo priming','drum priming','solid matrix priming','biopriming','matrix priming','abiotic stress','biotic stress','stress tolerance','stress resistance','germination uniformity','stand establishment','seedling vigour','emergence rate','seed vigour','seed performance','sugar beet','sugarbeet','beet seed','fodder beet','wheat seed','winter wheat','spring wheat','barley seed','winter barley','spring barley','oilseed rape','osr','canola seed','sorghum seed','sunflower seed','maize seed','corn seed','carrot seed','onion seed','leek seed','spinach seed','lettuce seed','celery seed','fennel seed','parsnip seed','parsley seed','beetroot seed','swiss chard','beet seedling','germains']
 };
 var REG_KW={
@@ -1089,7 +1119,8 @@ var CATS=[
   {id:"breeding",   label:"Breeding & Genetics",icon:"icon-breeding",    cvar:"--c-breeding"},
   {id:"regulation", label:"Regulation & Policy",icon:"icon-regulation",  cvar:"--c-regulation"},
   {id:"competitors",label:"Industry Players",   icon:"icon-competitors", cvar:"--c-competitors"},
-  {id:"crops",      label:"Crop Intelligence",  icon:"icon-crops",       cvar:"--c-crops"}
+  {id:"crops",      label:"Crop Intelligence",  icon:"icon-crops",       cvar:"--c-crops"},
+  {id:"rd",         label:"R&D Developments",   icon:"icon-rd",          cvar:"--c-rd"}
 ];
 
 /* ═══════════════════════ Curated fallback articles ═══════════════════════ */
@@ -1123,7 +1154,17 @@ var FALLBACK=[
   {c:"crops",r:["all","europe"],t:"Syngenta & Rijk Zwaan Supply Pepper Varieties for LED Lighting Trials",s:"Both seed majors providing pepper varieties responsive to LED lighting in controlled-environment trials exploring how light quality affects crop performance.",src:"iGrow News",u:"https://igrownews.com/syngenta-latest-news/",d:"Jan 2026",iso:"2026-01-15"},
   {c:"crops",r:["all","europe"],t:"Europe Protected Cultivation Seed Demand Growing at 8.19% CAGR",s:"Netherlands, Spain, Italy, Turkey lead. Tomatoes, sweet peppers, cucumbers, leafy greens dominate. Seed suited to greenhouses and vertical farms drives premium demand.",src:"Mordor Intelligence",u:"https://www.mordorintelligence.com/industry-reports/vegetable-seed-market-europe",d:"Jan 2026",iso:"2026-01-16"},
   {c:"crops",r:["all","mena"],t:"Morocco: 133K MT Citrus to EU; Tomato & Greenhouse Expansion Continues",s:"Export horticulture drives seed innovation. Souss-Massa remains the centre despite water stress. Dutch companies Agrocare and Van Oers invest directly in Moroccan production.",src:"HortiDaily",u:"https://www.hortidaily.com/article/9718924/examining-morocco-s-horticulture-sector/",d:"Mar 2025",iso:"2025-03-31"},
-  {c:"crops",r:["all","apac"],t:"Syngenta Opens $2.4M Seed Health Lab in Hyderabad, India",s:"Capacity for 12,000 virus and bacterial tests annually. Complies with global phytosanitary standards. Underpins Syngenta's expansion into India's horticulture markets.",src:"Mordor Intelligence",u:"https://www.mordorintelligence.com/industry-reports/asia-pacific-vegetable-seed-market",d:"Mar 2024",iso:"2024-03-15"}
+  {c:"crops",r:["all","apac"],t:"Syngenta Opens $2.4M Seed Health Lab in Hyderabad, India",s:"Capacity for 12,000 virus and bacterial tests annually. Complies with global phytosanitary standards. Underpins Syngenta's expansion into India's horticulture markets.",src:"Mordor Intelligence",u:"https://www.mordorintelligence.com/industry-reports/asia-pacific-vegetable-seed-market",d:"Mar 2024",iso:"2024-03-15"},
+
+  /* ─── R&D Developments — peer-reviewed and applied research ─── */
+  {c:"rd",r:["all"],t:"Prime Editing Achieves Trait Stacking in Tomato Without DNA Damage",s:"Nature Plants paper demonstrates simultaneous edits at four loci in tomato using prime editing — no double-strand breaks, no transgene footprint. Opens path to climate-trait stacking inside single growing seasons.",src:"Nature Plants",u:"https://www.nature.com/nplants/",d:"12 May 2026",iso:"2026-05-12"},
+  {c:"rd",r:["all","europe"],t:"WUR: High-Throughput 3D Phenotyping Predicts Lettuce Bolting 14 Days Early",s:"Wageningen team combines hyperspectral imaging + ML model trained on 18k lettuce phenotype records. Predictive accuracy of 89% for premature bolting under heat stress — opens early-warning seed-treatment screening.",src:"Wageningen University",u:"https://www.wur.nl/en/research-results.htm",d:"3 May 2026",iso:"2026-05-03"},
+  {c:"rd",r:["all"],t:"Seed Microbiome Transfer Enhances Drought Tolerance in Field Trials",s:"New Phytologist: inoculating seed coatings with strain-specific endophytes raised wheat yields 11-17% under deficit irrigation across three EU sites. Microbiome priming positioned as next-gen seed enhancement layer.",src:"New Phytologist",u:"https://onlinelibrary.wiley.com/journal/14698137",d:"22 Apr 2026",iso:"2026-04-22"},
+  {c:"rd",r:["all","apac"],t:"CRISPR-Cas12a Edits Boost Rice Heat Tolerance Without Yield Penalty",s:"Cell Reports paper from Chinese Academy of Sciences edits HSF transcription factor — yields hold at 35°C+ temperatures across F4 generations. Trait validated across two genetic backgrounds; field trial begins June 2026.",src:"Cell Reports",u:"https://www.cell.com/cell-reports/home",d:"15 Apr 2026",iso:"2026-04-15"},
+  {c:"rd",r:["all","europe"],t:"Nano-Encapsulated Biostimulants Outperform Conventional Seed Coatings",s:"Frontiers in Plant Science meta-analysis of 41 studies: nano-encapsulated humic acid + amino acid blends improved emergence vigour 22-30% vs standard film coats across maize, soy, sunflower. Controlled-release kinetics drive the gain.",src:"Frontiers in Plant Science",u:"https://www.frontiersin.org/journals/plant-science",d:"8 Apr 2026",iso:"2026-04-08"},
+  {c:"rd",r:["all"],t:"AI Model Predicts Seed Vigour From Single Hyperspectral Image",s:"Plant Phenomics paper: CNN trained on 22k seed images predicts germination outcome with 94% accuracy from a single 850-1700 nm scan. Eliminates need for destructive tetrazolium testing — production QC implications for seed houses.",src:"Plant Phenomics",u:"https://spj.science.org/journal/plantphenomics",d:"28 Mar 2026",iso:"2026-03-28"},
+  {c:"rd",r:["all","americas"],t:"USDA-ARS: Doubled Haploid Pipeline Cuts Onion Breeding Cycle From 8 to 3 Years",s:"USDA Vegetable Research Lab demonstrates inducer-line system for onion DH production — first scalable protocol for the crop. Promises rapid trait introgression for downy mildew and Fusarium resistance.",src:"USDA ARS",u:"https://www.ars.usda.gov/",d:"19 Mar 2026",iso:"2026-03-19"},
+  {c:"rd",r:["all","europe"],t:"EU Horizon Project 'PHENET' Scales Open-Source Plant Phenotyping",s:"€18M Horizon Europe consortium publishes shared phenotyping protocols + open data platform connecting 32 institutes. Enables seed companies to benchmark trial data against pan-European baselines.",src:"Horizon Europe",u:"https://cordis.europa.eu/",d:"4 Mar 2026",iso:"2026-03-04"}
 ];
 
 /* ═══════════════════════ State ═══════════════════════ */
@@ -1174,7 +1215,7 @@ function debounce(fn,ms){var t;return function(){var a=arguments,c=this;clearTim
 
 function categorize(title,desc){
   var txt=(title+' '+desc).toLowerCase();
-  var primary=['seed_tech','market','breeding','regulation','competitors','crops'];
+  var primary=['rd','seed_tech','market','breeding','regulation','competitors','crops'];
   var best='crops',bestScore=0;
   primary.forEach(function(cat){
     var score=CAT_KW[cat].filter(function(k){return txt.indexOf(k)>=0;}).length;

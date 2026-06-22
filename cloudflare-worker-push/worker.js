@@ -57,7 +57,16 @@ const FEEDS = [
   GN + 'microplastic+seed+coating+OR+%22seed+treatment%22+when:30d',
   GN + 'biologicals+biocontrol+seed+biostimulant+when:30d',
   GN + 'Syngenta+OR+%22Rijk+Zwaan%22+OR+%22Enza+Zaden%22+seed+news+when:30d',
-  GN + 'germains+seed+technology+when:30d'
+  GN + 'germains+seed+technology+when:30d',
+  // R&D Developments — peer-reviewed and applied research
+  'https://www.frontiersin.org/journals/plant-science/rss',
+  'https://www.nature.com/nplants.rss',
+  'https://www.mdpi.com/journal/agronomy/rss',
+  GN + '%22CRISPR%22+OR+%22prime+editing%22+plant+OR+crop+when:30d',
+  GN + '%22high-throughput+phenotyping%22+OR+%22digital+phenotyping%22+when:30d',
+  GN + '%22machine+learning%22+seed+OR+crop+when:30d',
+  GN + '%22climate+resilient%22+crop+OR+%22drought+tolerant%22+variety+when:30d',
+  GN + '%22plant+microbiome%22+OR+%22rhizosphere%22+research+when:30d'
 ];
 
 const CAT_KW_GERMAINS = ['priming','pelleting','film coat','filmcoat','film-coat','seed hygiene','seed sanitation','hydro priming','osmo priming','drum priming','solid matrix priming','biopriming','matrix priming','abiotic stress','biotic stress','stress tolerance','stress resistance','germination uniformity','stand establishment','seedling vigour','emergence rate','seed vigour','seed performance','sugar beet','sugarbeet','beet seed','fodder beet','wheat seed','winter wheat','spring wheat','barley seed','winter barley','spring barley','oilseed rape','osr','canola seed','sorghum seed','sunflower seed','maize seed','corn seed','carrot seed','onion seed','leek seed','spinach seed','lettuce seed','celery seed','fennel seed','parsnip seed','parsley seed','beetroot seed','swiss chard','beet seedling','germains'];
