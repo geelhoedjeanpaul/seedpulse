@@ -3090,76 +3090,106 @@ async function generateBriefing(opts){
   // Repaint modal if it's open so the refresh button spins
   if(opts.inModal) refreshBriefingModalIfOpen();
 
+  var workerBase = PUSH_WORKER_URL.replace(/\/$/,'');
+
   try{
     var items=briefingScopeItems();
     if(items.length===0){ _briefingRegenInFlight=false; return; }
 
-    // Make sure we have annotations for as many high-priority items as possible
-    // before we pick threats/opps. /annotate is cached server-side so this is cheap.
-    var anns=loadAnnotations();
-    var needAnn = items
-      .filter(function(a){ return (a.gs||0) >= GERMAINS_NOTIFY_MIN && !(anns[a.id] && anns[a.id].soWhat); })
-      .slice(0,20);
-    if(needAnn.length){
-      try{
-        var res=await fetch(PUSH_WORKER_URL.replace(/\/$/,'')+'/annotate',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ items: needAnn.map(function(a){
-            return { id:a.id, t:a.t, s:(a.s||'').slice(0,220), src:a.src, cat:a.c, gs:a.gs||0, comp:a.comp||[], ang:a.ang||[] };
-          })})
-        });
-        if(res.ok){
-          var data=await res.json();
-          if(data.annotations) mergeAnnotations(data.annotations);
-          anns=loadAnnotations();
-        }
-      }catch(e){ /* keep going — briefing still useful without */ }
-    }
-
-    // Classify
-    var withAnn=items.filter(function(a){ return anns[a.id] && anns[a.id].soWhat; });
-    var threats=withAnn
-      .filter(function(a){return anns[a.id].impact==='threat';})
-      .sort(function(x,y){return (y.gs||0)-(x.gs||0);})
-      .slice(0,3)
-      .map(function(a){ return { t:a.t, u:a.u, src:a.src, iso:a.iso, gs:a.gs||0, soWhat:anns[a.id].soWhat }; });
-    var opps=withAnn
-      .filter(function(a){return anns[a.id].impact==='opportunity';})
-      .sort(function(x,y){return (y.gs||0)-(x.gs||0);})
-      .slice(0,3)
-      .map(function(a){ return { t:a.t, u:a.u, src:a.src, iso:a.iso, gs:a.gs||0, soWhat:anns[a.id].soWhat }; });
-
-    // Competitor tally
+    // Competitor tally (pure synchronous work — do it up-front so partial
+    // snapshots after annotate finishes are already complete)
     var compTally={};
     items.forEach(function(a){ (a.comp||[]).forEach(function(c){ compTally[c]=(compTally[c]||0)+1; }); });
     var topComp=Object.keys(compTally).map(function(k){ return {k:k,n:compTally[k]}; })
       .sort(function(x,y){ return y.n-x.n; }).slice(0,6);
 
-    // Exec summary — ask the model for a punchy 4-6 sentence briefing
-    var execSummary='';
-    try{
-      var payload={
-        context:'Write the executive briefing for the Germains commercial director for this week. Lead with the single most important item. Be decisive; no hedging. Name companies and technologies.',
-        items: items.slice(0,30).map(function(a){
-          return { t:a.t, s:(a.s||'').slice(0,200), src:a.src, gs:a.gs||0, comp:a.comp||[], ang:a.ang||[] };
-        })
-      };
-      var sumRes=await fetch(PUSH_WORKER_URL.replace(/\/$/,'')+'/ai-summary',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(payload)
-      });
-      if(sumRes.ok){
-        var sumData=await sumRes.json();
-        execSummary = sumData.summary || '';
-      }
-    }catch(e){ /* keep going */ }
+    // Pick the top items that need annotation. Briefing only ever displays
+    // 3 threats + 3 opps, so 10 candidates is enough to populate both —
+    // anything more is wasted /annotate work. Lower N = faster /annotate.
+    var anns=loadAnnotations();
+    var needAnn = items
+      .filter(function(a){ return (a.gs||0) >= GERMAINS_NOTIFY_MIN && !(anns[a.id] && anns[a.id].soWhat); })
+      .sort(function(x,y){ return (y.gs||0)-(x.gs||0); })
+      .slice(0,10);
 
-    // Save snapshot
+    // Annotate + summary in PARALLEL. The summary call doesn't depend on
+    // annotation results (it gets raw items), so there's no reason to
+    // serialize them — running both at once roughly halves wall time.
+    var annotatePromise = needAnn.length
+      ? fetch(workerBase+'/annotate',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ items: needAnn.map(function(a){
+            return { id:a.id, t:a.t, s:(a.s||'').slice(0,180), src:a.src, cat:a.c, gs:a.gs||0, comp:a.comp||[], ang:a.ang||[] };
+          })})
+        }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
+      : Promise.resolve(null);
+
+    var summaryPromise = fetch(workerBase+'/ai-summary',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        context:'Weekly briefing for the Germains commercial director. Lead with the single most important item. Be decisive; no hedging. Name companies and technologies.',
+        items: items.slice(0,15).map(function(a){
+          return { t:a.t, s:(a.s||'').slice(0,180), src:a.src, gs:a.gs||0, comp:a.comp||[], ang:a.ang||[] };
+        })
+      })
+    }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
+
+    // As soon as annotations land, write a partial snapshot so the modal
+    // can already show threats/opps/competitor bars while we still wait
+    // for the (usually slower) exec summary.
+    annotatePromise.then(function(data){
+      if(!data || !data.annotations) return;
+      mergeAnnotations(data.annotations);
+      var localAnns=loadAnnotations();
+      var withAnn=items.filter(function(a){ return localAnns[a.id] && localAnns[a.id].soWhat; });
+      var threats=withAnn
+        .filter(function(a){return localAnns[a.id].impact==='threat';})
+        .sort(function(x,y){return (y.gs||0)-(x.gs||0);})
+        .slice(0,3)
+        .map(function(a){ return { t:a.t, u:a.u, src:a.src, iso:a.iso, gs:a.gs||0, soWhat:localAnns[a.id].soWhat }; });
+      var opps=withAnn
+        .filter(function(a){return localAnns[a.id].impact==='opportunity';})
+        .sort(function(x,y){return (y.gs||0)-(x.gs||0);})
+        .slice(0,3)
+        .map(function(a){ return { t:a.t, u:a.u, src:a.src, iso:a.iso, gs:a.gs||0, soWhat:localAnns[a.id].soWhat }; });
+      var existing=loadBriefingCache();
+      saveBriefingCache({
+        ts: (existing && existing.ts) || Date.now(),
+        execSummary: (existing && existing.execSummary) || '',
+        threats: threats,
+        opps: opps,
+        topComp: topComp,
+        scope: { days:7, region:'all', items: items.length }
+      });
+      if(opts.inModal) refreshBriefingModalIfOpen();
+    });
+
+    // Wait for both to settle, then write the final snapshot.
+    var results=await Promise.all([annotatePromise, summaryPromise]);
+    var annData=results[0], sumData=results[1];
+
+    // Re-derive threats/opps from the now-merged annotations (annotatePromise
+    // may have written a partial earlier, but doing it again is cheap and
+    // guarantees the cache reflects the final state).
+    if(annData && annData.annotations) mergeAnnotations(annData.annotations);
+    var anns2=loadAnnotations();
+    var withAnn=items.filter(function(a){ return anns2[a.id] && anns2[a.id].soWhat; });
+    var threats=withAnn
+      .filter(function(a){return anns2[a.id].impact==='threat';})
+      .sort(function(x,y){return (y.gs||0)-(x.gs||0);})
+      .slice(0,3)
+      .map(function(a){ return { t:a.t, u:a.u, src:a.src, iso:a.iso, gs:a.gs||0, soWhat:anns2[a.id].soWhat }; });
+    var opps=withAnn
+      .filter(function(a){return anns2[a.id].impact==='opportunity';})
+      .sort(function(x,y){return (y.gs||0)-(x.gs||0);})
+      .slice(0,3)
+      .map(function(a){ return { t:a.t, u:a.u, src:a.src, iso:a.iso, gs:a.gs||0, soWhat:anns2[a.id].soWhat }; });
+
     saveBriefingCache({
       ts: Date.now(),
-      execSummary: execSummary,
+      execSummary: (sumData && sumData.summary) || '',
       threats: threats,
       opps: opps,
       topComp: topComp,

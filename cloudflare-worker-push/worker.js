@@ -127,23 +127,29 @@ export default {
       if (url.pathname === '/ai-summary' && request.method === 'POST') {
         if (!env.AI) return cors(json({ error: 'AI binding not configured' }, 503));
         const body = await request.json().catch(() => ({}));
-        const items = Array.isArray(body?.items) ? body.items.slice(0, 20) : [];
+        // Cap at 15 — the model only needs enough breadth to identify the
+        // top item + a competitive angle; extra rows lengthen the prompt
+        // without improving the summary.
+        const items = Array.isArray(body?.items) ? body.items.slice(0, 15) : [];
         if (items.length === 0) return cors(json({ error: 'No items provided' }, 400));
-        const context = (body.context || '').toString().slice(0, 500);
+        const context = (body.context || '').toString().slice(0, 400);
+        // Tighter prompt — fewer tokens per article, less work for the model.
         const bulletList = items.map((a, i) =>
-          `${i + 1}. [${a.cat || '?'}] ${String(a.t || '').slice(0, 200)}` +
-          (a.s ? ` — ${String(a.s).slice(0, 200)}` : '') +
+          `${i + 1}. [${a.cat || '?'}] ${String(a.t || '').slice(0, 160)}` +
+          (a.s ? ` — ${String(a.s).slice(0, 140)}` : '') +
           (a.src ? ` (${a.src})` : '')
         ).join('\n');
-        const sys = 'You are a senior industry analyst at Germains Seed Technology, a global leader in seed priming, pelleting, film coating, and seed hygiene. You write crisp, executive-level briefings for the Germains leadership team. Focus on what matters commercially: competitive moves, new treatment/coating technology, regulatory shifts, market demand signals, M&A, and scientific advances in priming/coating/biologicals. Be specific; name companies and technologies. Never invent facts.';
-        const user = `Summarise the following ${items.length} articles into a 4-6 sentence executive briefing for Germains. Highlight (a) the single most important item for Germains' business, (b) any competitive threat or opportunity, and (c) one recommended action. Plain prose, no bullet points, no headings.${context ? `\n\nExtra context: ${context}` : ''}\n\nArticles:\n${bulletList}`;
+        const sys = 'You are a senior analyst at Germains Seed Technology (seed priming, pelleting, film coating, seed hygiene). Write crisp executive briefings for the leadership team. Be specific; name companies and technologies. Never invent facts.';
+        const user = `Write a 4-5 sentence executive briefing from these ${items.length} articles. Cover (a) the single most important item for Germains, (b) a competitive threat or opportunity, (c) one recommended action. Plain prose, no bullets, no headings.${context ? `\n\nContext: ${context}` : ''}\n\nArticles:\n${bulletList}`;
         try {
           const out = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
             messages: [
               { role: 'system', content: sys },
               { role: 'user', content: user }
             ],
-            max_tokens: 400
+            // 260 tokens ≈ 5 dense sentences. Lower cap = faster TTFT and
+            // forces the model to be concise.
+            max_tokens: 260
           });
           const summary = (out?.response || out?.result?.response || '').trim();
           if (!summary) return cors(json({ error: 'Empty AI response' }, 502));
@@ -160,47 +166,56 @@ export default {
       if (url.pathname === '/annotate' && request.method === 'POST') {
         if (!env.AI) return cors(json({ error: 'AI binding not configured' }, 503));
         const body = await request.json().catch(() => ({}));
-        const items = Array.isArray(body?.items) ? body.items.slice(0, 30) : [];
+        const items = Array.isArray(body?.items) ? body.items.slice(0, 20) : [];
         if (items.length === 0) return cors(json({ annotations: {} }));
 
         const out = {};
-        const toAnnotate = [];
 
-        // 1. Check KV cache first
-        for (const it of items) {
-          if (!it?.id) continue;
-          const cached = await env.SUBS.get('ann:' + it.id);
-          if (cached) { try { out[it.id] = JSON.parse(cached); } catch {} }
-          else toAnnotate.push(it);
+        // 1. Check KV cache for all items in parallel. The old code awaited
+        //    each get() in a loop — at 30-50 ms per round-trip that added up
+        //    to several seconds for 20 items.
+        const validItems = items.filter(it => it?.id);
+        const cachedRaw = await Promise.all(
+          validItems.map(it => env.SUBS.get('ann:' + it.id))
+        );
+        const toAnnotate = [];
+        for (let i = 0; i < validItems.length; i++) {
+          const raw = cachedRaw[i];
+          if (raw) { try { out[validItems[i].id] = JSON.parse(raw); } catch {} }
+          else toAnnotate.push(validItems[i]);
         }
 
-        // 2. Batch uncached items in groups of 5 to keep token counts small
-        const BATCH = 5;
-        for (let i = 0; i < toAnnotate.length; i += BATCH) {
-          const batch = toAnnotate.slice(i, i + BATCH);
+        // 2. Build batches of 4 and run them ALL in parallel. Workers AI
+        //    handles concurrent inference fine; sequential batching was
+        //    leaving the model idle most of the time.
+        const BATCH = 4;
+        const batches = [];
+        for (let i = 0; i < toAnnotate.length; i += BATCH) batches.push(toAnnotate.slice(i, i + BATCH));
+
+        const sys = 'You are a commercial analyst at Germains Seed Technology (seed priming, film coating, pelleting, hygiene, analytics). Classify each article and write ONE decisive sentence on what it means for Germains.';
+
+        const batchResults = await Promise.all(batches.map(async (batch) => {
           const list = batch.map((a, idx) =>
-            `ARTICLE_${idx + 1}_ID: ${a.id}\nTITLE: ${String(a.t || '').slice(0, 200)}\nSUMMARY: ${String(a.s || '').slice(0, 220)}\nCOMPETITORS: ${(a.comp || []).join(', ') || 'none'}\nANGLES: ${(a.ang || []).join(', ') || 'none'}\nGERMAINS_SCORE: ${a.gs || 0}`
+            `ID:${a.id}\nT:${String(a.t || '').slice(0, 160)}\nS:${String(a.s || '').slice(0, 160)}\nC:${(a.comp || []).join(',') || '-'}\nG:${a.gs || 0}`
           ).join('\n---\n');
-
-          const sys = 'You are a commercial analyst at Germains Seed Technology. For each article, classify commercial impact and write ONE sharp sentence on what it means for Germains. Germains sells seed priming, film coating, pelleting, seed hygiene and seed analytics. Be decisive and specific.';
-          const user = `For each of the ${batch.length} articles below, respond with a JSON array: [{"id":"...","impact":"opportunity|threat|watch|info","soWhat":"one sentence, max 25 words, no hedging"}]. Classify:\n- "opportunity": directly creates a sales/partnership angle for Germains\n- "threat": competitor move, regulation, or market shift that hurts us\n- "watch": relevant but developing, monitor it\n- "info": interesting context, low action value\n\nReturn ONLY the JSON array, no prose, no markdown fences.\n\n${list}`;
-
+          const user = `Return ONLY a JSON array, no prose: [{"id":"...","impact":"opportunity|threat|watch|info","soWhat":"<=25 words, no hedging"}]\n- opportunity: sales/partnership angle\n- threat: competitor/regulatory/market harm\n- watch: developing, monitor\n- info: context only\n\n${list}`;
           try {
             const r = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
               messages: [
                 { role: 'system', content: sys },
                 { role: 'user', content: user }
               ],
-              max_tokens: 600
+              // 4 items × ~30 word sentence + JSON scaffolding ≈ 260 tokens.
+              // 320 leaves headroom without bloating generation time.
+              max_tokens: 320
             });
             const txt = (r?.response || r?.result?.response || '').trim();
-            // Extract JSON array from possibly messy output
             const m = txt.match(/\[[\s\S]*\]/);
-            if (!m) continue;
+            if (!m) return [];
             let arr;
-            try { arr = JSON.parse(m[0]); } catch { continue; }
-            if (!Array.isArray(arr)) continue;
-
+            try { arr = JSON.parse(m[0]); } catch { return []; }
+            if (!Array.isArray(arr)) return [];
+            const recs = [];
             for (const rec of arr) {
               if (!rec?.id) continue;
               const match = batch.find(b => String(b.id) === String(rec.id));
@@ -208,17 +223,31 @@ export default {
               const impact = ['opportunity', 'threat', 'watch', 'info'].includes(rec.impact) ? rec.impact : 'info';
               const soWhat = String(rec.soWhat || '').slice(0, 300);
               if (!soWhat) continue;
-              const ann = { impact, soWhat };
-              out[match.id] = ann;
-              // Cache for 30 days
-              await env.SUBS.put('ann:' + match.id, JSON.stringify(ann), { expirationTtl: 60 * 60 * 24 * 30 });
+              recs.push({ id: match.id, ann: { impact, soWhat } });
             }
+            return recs;
           } catch (e) {
-            // skip batch on error, client will retry next load
+            return []; // skip batch on error, client will retry next load
+          }
+        }));
+
+        // 3. Collect annotations and write to KV in parallel.
+        const kvWrites = [];
+        for (const recs of batchResults) {
+          for (const { id, ann } of recs) {
+            out[id] = ann;
+            kvWrites.push(env.SUBS.put('ann:' + id, JSON.stringify(ann), { expirationTtl: 60 * 60 * 24 * 30 }));
           }
         }
+        // Defer KV writes so the HTTP response returns immediately — the
+        // client doesn't care whether persistence has flushed yet.
+        if (kvWrites.length) ctx.waitUntil(Promise.all(kvWrites));
 
-        return cors(json({ annotations: out, cached: items.length - toAnnotate.length, generated: Object.keys(out).length - (items.length - toAnnotate.length) }));
+        return cors(json({
+          annotations: out,
+          cached: validItems.length - toAnnotate.length,
+          generated: kvWrites.length
+        }));
       }
 
       // Dev helper: manually fire the daily digest email (requires TRIGGER_KEY).
