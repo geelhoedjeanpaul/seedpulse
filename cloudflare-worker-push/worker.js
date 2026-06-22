@@ -129,7 +129,7 @@ export default {
         const sys = 'You are a senior industry analyst at Germains Seed Technology, a global leader in seed priming, pelleting, film coating, and seed hygiene. You write crisp, executive-level briefings for the Germains leadership team. Focus on what matters commercially: competitive moves, new treatment/coating technology, regulatory shifts, market demand signals, M&A, and scientific advances in priming/coating/biologicals. Be specific; name companies and technologies. Never invent facts.';
         const user = `Summarise the following ${items.length} articles into a 4-6 sentence executive briefing for Germains. Highlight (a) the single most important item for Germains' business, (b) any competitive threat or opportunity, and (c) one recommended action. Plain prose, no bullet points, no headings.${context ? `\n\nExtra context: ${context}` : ''}\n\nArticles:\n${bulletList}`;
         try {
-          const out = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+          const out = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
             messages: [
               { role: 'system', content: sys },
               { role: 'user', content: user }
@@ -138,7 +138,7 @@ export default {
           });
           const summary = (out?.response || out?.result?.response || '').trim();
           if (!summary) return cors(json({ error: 'Empty AI response' }, 502));
-          return cors(json({ summary, model: '@cf/meta/llama-3.1-8b-instruct', count: items.length }));
+          return cors(json({ summary, model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast', count: items.length }));
         } catch (e) {
           return cors(json({ error: 'AI error: ' + String(e?.message || e) }, 502));
         }
@@ -177,7 +177,7 @@ export default {
           const user = `For each of the ${batch.length} articles below, respond with a JSON array: [{"id":"...","impact":"opportunity|threat|watch|info","soWhat":"one sentence, max 25 words, no hedging"}]. Classify:\n- "opportunity": directly creates a sales/partnership angle for Germains\n- "threat": competitor move, regulation, or market shift that hurts us\n- "watch": relevant but developing, monitor it\n- "info": interesting context, low action value\n\nReturn ONLY the JSON array, no prose, no markdown fences.\n\n${list}`;
 
           try {
-            const r = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+            const r = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
               messages: [
                 { role: 'system', content: sys },
                 { role: 'user', content: user }
@@ -502,7 +502,7 @@ async function runDailyDigest(env) {
       ).join('\n');
       const windowLbl = isMonday ? 'this past week' : 'today';
       const len = isMonday ? '5-7 sentences' : '3-5 sentences';
-      const out = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+      const out = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
         messages: [
           { role: 'system', content: 'You are a senior industry analyst at Germains Seed Technology. Write a crisp executive briefing for the commercial director. No headings, no bullets, no hedging.' },
           { role: 'user', content: `Summarise ${windowLbl}'s top seed-industry news for Germains leadership. Call out the single highest-impact item, any competitive moves, and one recommended action. ${len}.\n\n${bulletList}` }
