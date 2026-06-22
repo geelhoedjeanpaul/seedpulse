@@ -21,6 +21,9 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Preconnect to the push worker so the first /annotate call doesn't pay TCP+TLS handshake -->
+<link rel="preconnect" href="https://seedpulse-push.geelhoedjeanpaul.workers.dev" crossorigin>
+<link rel="dns-prefetch" href="https://api.rss2json.com">
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700;8..60,900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
@@ -336,7 +339,7 @@ main{max-width:760px;margin:0 auto;padding:18px 16px calc(24px + var(--safe-b))}
 .live-dot.done::before{background:var(--mute);animation:none}
 
 /* Category section — thin divider + tracked caps label (Germains editorial) */
-.cat-section{margin-bottom:18px}
+.cat-section{margin-bottom:18px;content-visibility:auto;contain-intrinsic-size:0 600px}
 .cat-btn{
   display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;
   padding:10px 0 8px;text-align:left;cursor:pointer;
@@ -408,6 +411,10 @@ main{max-width:760px;margin:0 auto;padding:18px 16px calc(24px + var(--safe-b))}
   padding:13px 15px 12px 18px;box-shadow:var(--shadow-sm);
   border:1px solid var(--border);
   transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease, opacity .2s ease;
+  /* Skip layout/paint for offscreen cards. ~200 px placeholder matches
+   * the typical compact card height so the scrollbar stays accurate. */
+  content-visibility:auto;
+  contain-intrinsic-size:0 200px;
 }
 .card::before{
   content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
@@ -1294,13 +1301,30 @@ function normalizeItem(item,srcName){
   };
 }
 
+/* ═══════════════════════ Storage helpers ═══════════════════════
+ * Each loader was parsing JSON from localStorage on every call — and
+ * renderCard() calls them once per card AND once per chip. With 200 cards
+ * each having ~5 competitor chips, the old code parsed localStorage 1000+
+ * times per render. We memoize each blob in memory and invalidate on
+ * write — turning a JSON.parse storm into O(1) lookups. */
+var _memCache={}; // {key:string -> parsed value}
+function lsGet(key, def){
+  if(_memCache[key]!==undefined) return _memCache[key];
+  try{
+    var raw=localStorage.getItem(key);
+    _memCache[key] = raw ? JSON.parse(raw) : def;
+  }catch(e){ _memCache[key]=def; }
+  return _memCache[key];
+}
+function lsSet(key, val){
+  _memCache[key]=val;
+  try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){}
+}
+
 /* ═══════════════════════ Shortlist / Watchlist / Trends storage ═══════════════════════ */
 // #1 Shortlist — user-starred articles
-function loadShortlist(){
-  try{ return JSON.parse(localStorage.getItem(SHORTLIST_KEY)||'{}'); }
-  catch(e){ return {}; }
-}
-function saveShortlist(s){ try{ localStorage.setItem(SHORTLIST_KEY,JSON.stringify(s)); }catch(e){} }
+function loadShortlist(){ return lsGet(SHORTLIST_KEY, {}); }
+function saveShortlist(s){ lsSet(SHORTLIST_KEY, s); }
 function toggleShortlist(id){
   var s=loadShortlist();
   if(s[id]) delete s[id]; else s[id]=Date.now();
@@ -1310,8 +1334,8 @@ function toggleShortlist(id){
 function shortlistIds(){ return Object.keys(loadShortlist()); }
 
 // Read state — tracks which article IDs the user has tapped through to
-function loadRead(){ try{ return JSON.parse(localStorage.getItem(READ_KEY)||'{}'); }catch(e){ return {}; } }
-function saveRead(m){ try{ localStorage.setItem(READ_KEY,JSON.stringify(m)); }catch(e){} }
+function loadRead(){ return lsGet(READ_KEY, {}); }
+function saveRead(m){ lsSet(READ_KEY, m); }
 function markRead(id){ var m=loadRead(); if(!m[id]){ m[id]=Date.now(); saveRead(m); } }
 function isRead(id){ return !!loadRead()[id]; }
 // Prune old entries occasionally so the blob doesn't grow unbounded
@@ -1324,11 +1348,8 @@ function pruneRead(){
 }
 
 // #13 Watchlist — user-defined alert keywords
-function loadWatchlist(){
-  try{ return JSON.parse(localStorage.getItem(WATCHLIST_KEY)||'[]'); }
-  catch(e){ return []; }
-}
-function saveWatchlist(arr){ try{ localStorage.setItem(WATCHLIST_KEY,JSON.stringify(arr)); }catch(e){} }
+function loadWatchlist(){ return lsGet(WATCHLIST_KEY, []); }
+function saveWatchlist(arr){ lsSet(WATCHLIST_KEY, arr); }
 function addWatchlistKeyword(kw){
   kw=(kw||'').trim(); if(!kw) return;
   var list=loadWatchlist();
@@ -1342,16 +1363,13 @@ function removeWatchlistKeyword(kw){
 
 // #8 Trend snapshots — compare current counts to previous snapshot
 // Snapshot is rotated weekly so we always compare "this week" vs "last week"
-function loadTrendSnapshot(){
-  try{ return JSON.parse(localStorage.getItem(TREND_SNAPSHOT_KEY)||'null'); }
-  catch(e){ return null; }
-}
+function loadTrendSnapshot(){ return lsGet(TREND_SNAPSHOT_KEY, null); }
 function maybeUpdateTrendSnapshot(catCounts){
   var prev=loadTrendSnapshot();
   var now=Date.now();
   var WEEK=7*24*60*60*1000;
   if(!prev || (now - prev.ts) > WEEK){
-    try{ localStorage.setItem(TREND_SNAPSHOT_KEY, JSON.stringify({ts:now, counts:catCounts})); }catch(e){}
+    lsSet(TREND_SNAPSHOT_KEY, {ts:now, counts:catCounts});
   }
 }
 function trendDelta(catId, currentCount){
@@ -1373,11 +1391,8 @@ var RELATIONSHIP_TYPES=[
   {id:'partner',    label:'Partner',    color:'#6B4A8A', icon:'icon-link'},
   {id:'prospect',   label:'Prospect',   color:'#4A7D3D', icon:'icon-sprout'}
 ];
-function loadRelationships(){
-  try{ return JSON.parse(localStorage.getItem(RELATIONSHIPS_KEY)||'{}'); }
-  catch(e){ return {}; }
-}
-function saveRelationships(r){ try{ localStorage.setItem(RELATIONSHIPS_KEY,JSON.stringify(r)); }catch(e){} }
+function loadRelationships(){ return lsGet(RELATIONSHIPS_KEY, {}); }
+function saveRelationships(r){ lsSet(RELATIONSHIPS_KEY, r); }
 function getRelationship(companyLabel){
   var r=loadRelationships();
   return r[companyLabel] || 'competitor';
@@ -1394,11 +1409,8 @@ function relationshipDef(type){
 /* #1 Annotations — AI-generated {impact, soWhat} per article id.
  * Cached client-side in localStorage (so a page reload feels instant) and
  * server-side in KV (so a fresh install benefits from prior annotations). */
-function loadAnnotations(){
-  try{ return JSON.parse(localStorage.getItem(ANNOTATIONS_KEY)||'{}'); }
-  catch(e){ return {}; }
-}
-function saveAnnotations(m){ try{ localStorage.setItem(ANNOTATIONS_KEY,JSON.stringify(m)); }catch(e){} }
+function loadAnnotations(){ return lsGet(ANNOTATIONS_KEY, {}); }
+function saveAnnotations(m){ lsSet(ANNOTATIONS_KEY, m); }
 function getAnnotation(id){
   var m=loadAnnotations();
   return m[id] || null;
@@ -1440,7 +1452,10 @@ function formatBriefingAge(ts){
 function fetchFeed(feed){
   // Use self-hosted proxy if configured; otherwise rss2json free tier.
   var base = PROXY_URL ? PROXY_URL : RSS2JSON;
-  return fetch(base+encodeURIComponent(feed.url),{cache:'no-store'})
+  // Drop the explicit cache:'no-store' — the service worker already applies
+  // stale-while-revalidate with a 1 h TTL, and bypassing the HTTP cache
+  // forced a fresh network round-trip even when SW had a fresh copy.
+  return fetch(base+encodeURIComponent(feed.url))
     .then(function(r){return r.json();})
     .then(function(data){
       if(data.status!=='ok'||!Array.isArray(data.items)) return [];
@@ -1452,12 +1467,18 @@ function fetchFeedWithTimeout(feed){
   return Promise.race([fetchFeed(feed),timeout]);
 }
 function batchedFetch(feeds,size){
+  // Use push instead of concat to avoid allocating a new array per batch.
+  // For 70 feeds × ~10 items each that's a ~1 ms saving — not huge, but
+  // also reduces GC pressure during the initial fetch storm.
   var results=[];
   function next(i){
     if(i>=feeds.length) return Promise.resolve(results);
     var batch=feeds.slice(i,i+size);
     return Promise.all(batch.map(fetchFeedWithTimeout)).then(function(br){
-      br.forEach(function(r){results=results.concat(r);});
+      for(var b=0;b<br.length;b++){
+        var arr=br[b];
+        for(var j=0;j<arr.length;j++) results.push(arr[j]);
+      }
       return next(i+size);
     });
   }
@@ -2299,7 +2320,9 @@ function renderAll(){renderTabs();renderPeriods();render();}
 function renderWithSpinner(){
   var el=document.getElementById("content");
   el.innerHTML='<div class="content-spinner"><div class="ring"></div><p>Loading…</p></div>';
-  requestAnimationFrame(function(){setTimeout(render,120);});
+  // Just one rAF — gives the spinner one paint frame, then re-renders.
+  // The old 120 ms setTimeout was perceptual lag with no functional benefit.
+  requestAnimationFrame(function(){ requestAnimationFrame(render); });
 }
 
 function buildReport(){
@@ -2573,7 +2596,7 @@ function loadArticles(){
   // If cache is fresh, skip the network fetch on this launch — still check notifications
   if(usedCache){ checkAndNotify(); updateBellUI(); updateBriefingIndicator(); setTimeout(function(){ maybeGenerateBriefing({}); }, 10000); return; }
 
-  batchedFetch(FEEDS,4).then(function(fresh){
+  batchedFetch(FEEDS,8).then(function(fresh){
     fresh=dedupe(fresh.filter(function(a){return a.t;}));
     if(fresh.length>0){
       var titleMap={};
@@ -2664,7 +2687,7 @@ document.getElementById("periods").addEventListener("click",function(e){
 });
 
 // Debounced search — render only after user pauses typing
-var searchHandler=debounce(function(val){ filter=val; renderWithSpinner(); },220);
+var searchHandler=debounce(function(val){ filter=val; renderWithSpinner(); },140);
 document.getElementById("search").addEventListener("input",function(e){ searchHandler(e.target.value); });
 
 // Category expand/collapse + shortlist star + watchlist remove + AI summary + tag filter — delegated
@@ -2723,7 +2746,7 @@ document.getElementById("content").addEventListener("click",function(e){
     var card=starBtn.closest('.card');
     if(card) card.classList.toggle('in-shortlist', now);
     // If we're currently viewing the shortlist and the user just un-starred → re-render to remove
-    if(region==='shortlist' && !now) setTimeout(render,180);
+    if(region==='shortlist' && !now) requestAnimationFrame(render);
     return;
   }
   // #13 watchlist remove

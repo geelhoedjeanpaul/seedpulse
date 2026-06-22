@@ -1,6 +1,8 @@
-// SeedPulse service worker v6 — SWR caches + notifications + Web Push
-const SHELL_CACHE = 'seedpulse-shell-v6';
-const API_CACHE   = 'seedpulse-api-v6';
+// SeedPulse service worker v7 — SWR caches + notifications + Web Push
+// v7: bumped after perf pass (memoized storage, content-visibility, parallel
+// briefing fetches). Bump forces clients to reinstall and pick up new HTML.
+const SHELL_CACHE = 'seedpulse-shell-v7';
+const API_CACHE   = 'seedpulse-api-v7';
 
 // Push Worker URL — set at build/deploy time; empty means push disabled.
 // The index.html writes this into a property on the SW registration after
