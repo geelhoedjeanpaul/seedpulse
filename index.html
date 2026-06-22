@@ -274,29 +274,71 @@ a{color:var(--accent);text-decoration:none}
 .tab:active{transform:scale(.97)}
 .tab.on{border-color:rgba(255,255,255,.9);background:rgba(255,255,255,.18);color:#fff;font-weight:700}
 
-/* Category filter — horizontal scroll pill row below the filter rail */
-.cat-filter{
-  display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;
-  margin-top:8px;padding-bottom:1px;
-}
-.cat-filter::-webkit-scrollbar{display:none}
-.cat-pill{
-  --cat-c:rgba(255,255,255,.5);
-  flex-shrink:0;display:inline-flex;align-items:center;gap:5px;
-  padding:5px 10px;border-radius:6px;
-  border:1px solid rgba(255,255,255,.16);
-  background:rgba(255,255,255,.04);color:rgba(255,255,255,.78);
+/* Category filter — compact dropdown trigger + popover with multi-select */
+.cat-filter-wrap{position:relative;flex-shrink:0}
+.cat-filter-trigger{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 10px;border-radius:7px;
+  border:1px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.06);color:rgba(255,255,255,.85);
   font:600 11.5px var(--sans);cursor:pointer;white-space:nowrap;
-  transition:background .15s, border-color .15s, color .15s, transform .08s;
+  transition:background .15s, border-color .15s;
 }
-.cat-pill .icon{font-size:12px;width:12px;height:12px;color:var(--cat-c)}
-.cat-pill:active{transform:scale(.97)}
-.cat-pill.on{
-  border-color:rgba(255,255,255,.85);
-  background:rgba(255,255,255,.18);
-  color:#fff;
+.cat-filter-trigger:hover{background:rgba(255,255,255,.14)}
+.cat-filter-trigger .icon{font-size:12px;width:12px;height:12px}
+.cat-filter-trigger > .icon:last-child{margin-left:1px;transition:transform .15s}
+.cat-filter-trigger.open > .icon:last-child{transform:rotate(180deg)}
+.cat-filter-trigger.on{border-color:rgba(255,255,255,.85);background:rgba(255,255,255,.18);color:#fff}
+.cat-trig-label{max-width:140px;overflow:hidden;text-overflow:ellipsis}
+.cat-trig-count{
+  font:700 10px var(--sans);padding:1px 6px;border-radius:9px;
+  background:var(--gold);color:#1A1408;letter-spacing:.3px;
 }
-.cat-pill.on .icon{color:#fff}
+.cat-filter-menu{
+  display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:120;
+  min-width:240px;max-width:280px;
+  background:var(--surface);color:var(--text);
+  border:1px solid var(--border);border-radius:10px;
+  box-shadow:var(--shadow-lg);
+  padding:6px;
+}
+.cat-filter-menu.show{display:block;animation:catMenuIn .12s ease-out}
+@keyframes catMenuIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.cat-menu-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 10px 8px;margin-bottom:2px;
+  border-bottom:1px solid var(--border);
+  font:700 10.5px var(--sans);letter-spacing:1px;text-transform:uppercase;color:var(--mute);
+}
+.cat-menu-clear{
+  font:600 11px var(--sans);background:none;border:0;color:var(--accent);
+  cursor:pointer;padding:2px 6px;border-radius:4px;
+}
+.cat-menu-clear:hover{background:var(--chip-bg)}
+.cat-menu-row{
+  display:flex;align-items:center;gap:8px;width:100%;
+  padding:8px 10px;border-radius:6px;border:0;
+  background:transparent;color:var(--text);
+  font:500 13px var(--sans);text-align:left;cursor:pointer;
+  transition:background .12s;
+}
+.cat-menu-row:hover{background:var(--chip-bg)}
+.cat-menu-row.on{background:var(--accent-soft);color:var(--text)}
+.cat-menu-check{
+  width:18px;height:18px;display:flex;align-items:center;justify-content:center;
+  border-radius:4px;border:1.5px solid var(--border-strong);
+  background:var(--surface);flex-shrink:0;
+}
+.cat-menu-row.on .cat-menu-check{background:var(--accent);border-color:var(--accent);color:#fff}
+.cat-menu-check .icon{font-size:12px;width:12px;height:12px}
+.cat-menu-icon{
+  width:22px;height:22px;border-radius:5px;
+  display:flex;align-items:center;justify-content:center;
+  background:color-mix(in srgb, var(--cat-c) 14%, transparent);
+  color:var(--cat-c);flex-shrink:0;
+}
+.cat-menu-icon .icon{font-size:13px;width:13px;height:13px}
+.cat-menu-label{flex:1;font-weight:600;color:var(--text)}
 
 /* Period pills — compact, on the right of filter-rail */
 .period-row{display:flex;gap:3px;overflow-x:auto;scrollbar-width:none;flex-shrink:0;background:rgba(0,0,0,.18);padding:3px;border-radius:8px}
@@ -816,6 +858,20 @@ footer{
   padding:3px 9px;border-radius:6px;
   background:var(--accent);color:#fff;font-weight:700;
 }
+.active-cat-pills{display:flex;flex-wrap:wrap;gap:5px}
+.active-cat-pill{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 8px 3px 7px;border-radius:5px;
+  background:color-mix(in srgb, var(--cat-c, var(--accent)) 16%, transparent);
+  border:1px solid color-mix(in srgb, var(--cat-c, var(--accent)) 28%, transparent);
+  color:var(--text);font:600 11.5px var(--sans);cursor:pointer;
+  transition:background .12s;
+}
+.active-cat-pill:hover{background:color-mix(in srgb, var(--cat-c, var(--accent)) 26%, transparent)}
+.active-cat-pill .icon{font-size:11px;width:11px;height:11px;color:var(--cat-c, var(--accent))}
+.active-cat-pill .active-cat-x{display:inline-flex;opacity:.55;margin-left:1px}
+.active-cat-pill:hover .active-cat-x{opacity:1}
+.active-cat-more{font:500 11px var(--sans);color:var(--mute);margin-left:2px}
 .active-cat-count{font:500 11.5px var(--sans);color:var(--mute)}
 .active-cat-clear{
   margin-left:auto;
@@ -936,8 +992,13 @@ footer{
     <div class="filter-rail">
       <nav class="tabs" id="tabs" role="tablist" aria-label="Region filter"></nav>
       <div class="period-row" id="periods" role="tablist" aria-label="Time period filter"></div>
+      <div class="cat-filter-wrap">
+        <button type="button" class="cat-filter-trigger" id="catFilterTrigger"
+                aria-haspopup="menu" aria-expanded="false" aria-controls="catFilterMenu"
+                title="Filter by category"></button>
+        <div class="cat-filter-menu" id="catFilterMenu" role="menu" aria-label="Category filter"></div>
+      </div>
     </div>
-    <div class="cat-filter" id="catFilter" role="tablist" aria-label="Category filter"></div>
     <div class="search-row">
       <div class="search-wrap">
         <svg class="icon" aria-hidden="true"><use href="#icon-search"/></svg>
@@ -1231,23 +1292,43 @@ var FALLBACK=[
 var A=FALLBACK.slice();
 var liveLoaded=false;
 var region="all", period="7d", filter="", emailOpen=false;
-/* activeCat: null or a category id from CATS. When non-null the article
- * list is narrowed to that single category and the list renders as a
- * flat feed instead of the usual per-category sections.
- * Persisted across sessions so a CD who lives in "R&D Developments"
- * stays there next time they open the app. */
-var ACTIVE_CAT_KEY='seedpulse_active_cat_v1';
-var activeCat=(function(){try{return localStorage.getItem(ACTIVE_CAT_KEY)||null;}catch(e){return null;}})();
-function setActiveCat(catId){
-  // Toggle off when re-tapping the active pill
-  activeCat = (activeCat===catId) ? null : catId;
+/* activeCats: array of category ids from CATS that are currently
+ * selected. Empty array = show all categories. Persisted across sessions.
+ * The variable name used to be singular (activeCat) when this was a
+ * single-select; the v2 key + multi-select implementation supersedes it. */
+var ACTIVE_CAT_KEY='seedpulse_active_cats_v2';
+var activeCats=(function(){
   try{
-    if(activeCat) localStorage.setItem(ACTIVE_CAT_KEY, activeCat);
-    else localStorage.removeItem(ACTIVE_CAT_KEY);
-  }catch(_){}
-  renderCategoryFilter();
+    var raw=localStorage.getItem(ACTIVE_CAT_KEY);
+    if(raw){
+      var arr=JSON.parse(raw);
+      if(Array.isArray(arr)) return arr.filter(function(x){return typeof x==='string';});
+    }
+    // Migrate legacy v1 single-select if present
+    var legacy=localStorage.getItem('seedpulse_active_cat_v1');
+    if(legacy){
+      localStorage.removeItem('seedpulse_active_cat_v1');
+      return [legacy];
+    }
+  }catch(e){}
+  return [];
+})();
+function isCatActive(catId){ return activeCats.indexOf(catId)>=0; }
+function toggleCat(catId){
+  var i=activeCats.indexOf(catId);
+  if(i>=0) activeCats.splice(i,1); else activeCats.push(catId);
+  try{ localStorage.setItem(ACTIVE_CAT_KEY, JSON.stringify(activeCats)); }catch(_){}
+  // Update both the trigger button and the open dropdown panel in place
+  renderCategoryTrigger();
+  renderCategoryMenu();
   renderWithSpinner();
-  try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(_){}
+}
+function clearCats(){
+  activeCats=[];
+  try{ localStorage.removeItem(ACTIVE_CAT_KEY); }catch(_){}
+  renderCategoryTrigger();
+  renderCategoryMenu();
+  renderWithSpinner();
 }
 /* activeTag: null or {type:'comp'|'angle'|'wl', value:string}
  * Set by clicking any chip in the summary or on a card. Cleared via the
@@ -1784,16 +1865,23 @@ function getFiltered(){
     else if(region!=='all' && a.r.indexOf(region)<0) return false;
     if(!passesperiod(a.iso)) return false;
     if(!matchesActiveTag(a)) return false;
-    // Category filter — set via the pill row in the header. 'germains' is
-    // special: it selects items with a Germains relevance score > 0 rather
-    // than items literally categorized as "germains" (no article is).
-    if(activeCat){
-      if(activeCat==='germains'){
+    // Category filter — multi-select via the dropdown in the header.
+    // 'germains' is special: it selects items with a Germains relevance
+    // score > 0 rather than literal c === 'germains' (no item is). Empty
+    // selection = all categories pass through.
+    if(activeCats.length){
+      var wantsGermains = activeCats.indexOf('germains')>=0;
+      var passes=false;
+      if(wantsGermains){
         if(a.gs==null) a.gs=germainsScore(a.t,a.s);
-        if((a.gs||0)<=0) return false;
-      } else if(a.c!==activeCat){
-        return false;
+        if((a.gs||0)>0) passes=true;
       }
+      if(!passes){
+        for(var ci=0;ci<activeCats.length;ci++){
+          if(activeCats[ci]!=='germains' && a.c===activeCats[ci]){ passes=true; break; }
+        }
+      }
+      if(!passes) return false;
     }
     // Reading-mode filter — layered on top of the region/period filters
     if(viewMode==='unread' && readMap[a.id]) return false;
@@ -1891,21 +1979,65 @@ function renderPeriods(){
   document.getElementById("periods").innerHTML=h;
 }
 
-/* Category filter row — horizontal scroll pill list in the header. Tap
- * any pill to filter the full article set to that category; tap again
- * to clear. The "All" pill (the leftmost, no data-cat-id) clears too. */
-function renderCategoryFilter(){
-  var el=document.getElementById('catFilter');
+/* Category filter — compact dropdown trigger + popover panel with
+ * checkboxes. Saves vertical space vs a wrap-around pill row and supports
+ * multi-select. Trigger sits inline next to the period pills. */
+function renderCategoryTrigger(){
+  var el=document.getElementById('catFilterTrigger');
   if(!el) return;
-  var h='<button class="cat-pill '+(activeCat?'':'on')+'" data-cat-id="" aria-label="All categories">All</button>';
-  CATS.forEach(function(cat){
-    var on = activeCat===cat.id;
-    h+='<button class="cat-pill '+(on?'on':'')+'" data-cat-id="'+esc(cat.id)+'" '+
-       'style="--cat-c:var('+(cat.cvar||'--accent')+')" '+
-       'aria-pressed="'+on+'" title="Filter to '+esc(cat.label)+'">'+
-       icon(cat.icon)+' <span>'+esc(cat.label)+'</span></button>';
-  });
-  el.innerHTML=h;
+  var n=activeCats.length;
+  var label = n===0 ? 'All categories'
+            : n===1 ? (CATS.find(function(c){return c.id===activeCats[0];})||{label:''}).label
+            : n+' categories';
+  el.classList.toggle('on', n>0);
+  el.innerHTML =
+    icon('icon-crops')+
+    '<span class="cat-trig-label">'+esc(label)+'</span>'+
+    (n>0 ? '<span class="cat-trig-count">'+n+'</span>' : '')+
+    icon('icon-chevron-down');
+  el.setAttribute('aria-expanded', el.classList.contains('open')?'true':'false');
+}
+function renderCategoryMenu(){
+  var el=document.getElementById('catFilterMenu');
+  if(!el) return;
+  var rows=CATS.map(function(cat){
+    var on=isCatActive(cat.id);
+    return '<button class="cat-menu-row'+(on?' on':'')+'" data-cat-id="'+esc(cat.id)+'" '+
+           'style="--cat-c:var('+(cat.cvar||'--accent')+')" '+
+           'role="menuitemcheckbox" aria-checked="'+on+'">'+
+             '<span class="cat-menu-check">'+(on?icon('icon-check'):'')+'</span>'+
+             '<span class="cat-menu-icon">'+icon(cat.icon)+'</span>'+
+             '<span class="cat-menu-label">'+esc(cat.label)+'</span>'+
+           '</button>';
+  }).join('');
+  el.innerHTML =
+    '<div class="cat-menu-head">'+
+      '<span>Filter by category</span>'+
+      (activeCats.length ? '<button class="cat-menu-clear" data-cat-clear-all type="button">Clear all</button>' : '')+
+    '</div>'+
+    rows;
+}
+function openCategoryMenu(){
+  var trig=document.getElementById('catFilterTrigger');
+  var menu=document.getElementById('catFilterMenu');
+  if(!trig||!menu) return;
+  renderCategoryMenu();
+  menu.classList.add('show');
+  trig.classList.add('open');
+  trig.setAttribute('aria-expanded','true');
+}
+function closeCategoryMenu(){
+  var trig=document.getElementById('catFilterTrigger');
+  var menu=document.getElementById('catFilterMenu');
+  if(!trig||!menu) return;
+  menu.classList.remove('show');
+  trig.classList.remove('open');
+  trig.setAttribute('aria-expanded','false');
+}
+function toggleCategoryMenu(){
+  var menu=document.getElementById('catFilterMenu');
+  if(menu && menu.classList.contains('show')) closeCategoryMenu();
+  else openCategoryMenu();
 }
 
 /* Segmented reading-mode bar (All / Unread / Priority) ─ sits above the
@@ -1949,7 +2081,7 @@ function renderModeBar(items){
  * highlighting (priority ≥ NOTIFY_MIN and recent). */
 function renderTodaysTop(){
   if(region==='shortlist') return ''; // shortlist already curated
-  if(activeCat) return ''; // category filter active → focused view, no hero
+  if(activeCats.length) return ''; // category filter active → focused view, no hero
   if(viewMode!=='all') return ''; // keep hero clean when filtering
   var cutoff=Date.now()-24*60*60*1000;
   var candidates=A.filter(function(a){
@@ -2352,14 +2484,30 @@ function render(){
 
   // Category filter active → flat feed (no per-category sections).
   // Sorted by date desc then Germains score, clustered same as shortlist.
-  if(activeCat && items.length){
-    var catObj=CATS.find(function(c){return c.id===activeCat;});
-    var catLabel=catObj?catObj.label:activeCat;
+  if(activeCats.length && items.length){
+    // Banner label: single category shows its full name; multi-select
+    // shows the first one + "+N more" so the chrome stays compact.
+    var firstCat=CATS.find(function(c){return c.id===activeCats[0];});
+    var firstLabel=firstCat?firstCat.label:activeCats[0];
+    var bannerLabel = activeCats.length===1
+      ? esc(firstLabel)
+      : esc(firstLabel)+' <span class="active-cat-more">+'+(activeCats.length-1)+' more</span>';
+    // Pill list of currently selected categories so the user can drop one
+    // individually without re-opening the dropdown.
+    var pills=activeCats.map(function(cid){
+      var c=CATS.find(function(x){return x.id===cid;});
+      return '<button class="active-cat-pill" data-cat-id="'+esc(cid)+'" type="button" '+
+             'style="--cat-c:var('+((c&&c.cvar)||'--accent')+')" '+
+             'title="Remove '+esc(c?c.label:cid)+'">'+
+               icon(c?c.icon:'icon-crops')+' '+esc(c?c.label:cid)+
+               ' <span class="active-cat-x">'+icon('icon-close')+'</span>'+
+             '</button>';
+    }).join('');
     html+='<div class="active-cat-banner" role="status">'+
             '<span class="active-cat-kicker">Showing</span>'+
-            '<span class="active-cat-label">'+esc(catLabel)+'</span>'+
+            '<div class="active-cat-pills">'+pills+'</div>'+
             '<span class="active-cat-count">'+items.length+' item'+(items.length===1?'':'s')+'</span>'+
-            '<button class="active-cat-clear" data-cat-id="" type="button">'+icon('icon-close')+' All categories</button>'+
+            '<button class="active-cat-clear" data-cat-clear-all type="button">'+icon('icon-close')+' Clear</button>'+
           '</div>';
     var shortlist=loadShortlist();
     var sorted=items.slice().sort(function(x,y){
@@ -2368,8 +2516,15 @@ function render(){
       return (y.gs||0)-(x.gs||0);
     });
     var clustered=clusterArticles(sorted);
-    html+='<div class="cat-cards" style="--cat-c:var('+((catObj&&catObj.cvar)||'--accent')+')">';
-    clustered.forEach(function(a){ html+=renderCard(a,catObj,shortlist); });
+    // Cards get the *first* selected category's color as the accent —
+    // mixed selections inherit the first one for visual consistency.
+    html+='<div class="cat-cards" style="--cat-c:var('+((firstCat&&firstCat.cvar)||'--accent')+')">';
+    clustered.forEach(function(a){
+      // When the article belongs to one of the selected cats, pass that
+      // cat into renderCard so the Germains badge logic works correctly.
+      var owner=CATS.find(function(c){return c.id===a.c;}) || firstCat;
+      html+=renderCard(a,owner,shortlist);
+    });
     html+='</div>';
     document.getElementById("content").innerHTML=html;
     if(PUSH_WORKER_URL){ setTimeout(fetchAnnotationsForView, 120); }
@@ -2811,10 +2966,27 @@ document.getElementById("periods").addEventListener("click",function(e){
   var btn=e.target.closest("[data-period]"); if(!btn) return;
   period=btn.getAttribute("data-period"); renderPeriods(); renderWithSpinner();
 });
-document.getElementById("catFilter").addEventListener("click",function(e){
-  var btn=e.target.closest("[data-cat-id]"); if(!btn) return;
-  // Empty data-cat-id = "All" pill → clears the filter
-  setActiveCat(btn.getAttribute("data-cat-id") || null);
+// Category dropdown: trigger opens the popover, popover handles row toggles + clear
+document.getElementById("catFilterTrigger").addEventListener("click",function(e){
+  e.stopPropagation();
+  toggleCategoryMenu();
+});
+document.getElementById("catFilterMenu").addEventListener("click",function(e){
+  e.stopPropagation();
+  if(e.target.closest("[data-cat-clear-all]")){ clearCats(); return; }
+  var row=e.target.closest("[data-cat-id]");
+  if(row){ toggleCat(row.getAttribute("data-cat-id")); }
+});
+// Close on outside click or Escape
+document.addEventListener("click",function(e){
+  var menu=document.getElementById("catFilterMenu");
+  if(menu && menu.classList.contains("show") && !e.target.closest(".cat-filter-wrap")) closeCategoryMenu();
+});
+document.addEventListener("keydown",function(e){
+  if(e.key==="Escape"){
+    var menu=document.getElementById("catFilterMenu");
+    if(menu && menu.classList.contains("show")) closeCategoryMenu();
+  }
 });
 
 // Debounced search — render only after user pauses typing
@@ -2849,11 +3021,17 @@ document.getElementById("content").addEventListener("click",function(e){
     renderPeriods(); renderWithSpinner();
     return;
   }
-  // "All categories" clear button in the active-category banner
-  var catClear=e.target.closest(".active-cat-clear");
-  if(catClear){
+  // Active-cat banner — "Clear" button drops all selected categories
+  if(e.target.closest("[data-cat-clear-all]")){
     e.preventDefault();
-    setActiveCat(null);
+    clearCats();
+    return;
+  }
+  // Active-cat banner — pill click removes that one category from the set
+  var catPill=e.target.closest(".active-cat-pill[data-cat-id]");
+  if(catPill){
+    e.preventDefault();
+    toggleCat(catPill.getAttribute("data-cat-id"));
     return;
   }
   // Clickable chip → set/toggle tag filter
@@ -3594,7 +3772,7 @@ scrollTop.addEventListener("click",function(){ window.scrollTo({top:0,behavior:'
 /* ═══════════════════════ Init ═══════════════════════ */
 renderTabs();
 renderPeriods();
-renderCategoryFilter();
+renderCategoryTrigger();
 checkInstallPrompt();
 pruneRead(); // drop read-state entries older than 90 days
 loadArticles();

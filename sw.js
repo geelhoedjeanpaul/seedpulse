@@ -1,9 +1,9 @@
-// SeedPulse service worker v8 — SWR caches + notifications + Web Push
-// v8: category-as-filter feature + recent R&D fallback dates. Bump forces
-// clients to reinstall and pick up the new HTML so the cat-filter pill row
-// renders immediately on next launch.
-const SHELL_CACHE = 'seedpulse-shell-v8';
-const API_CACHE   = 'seedpulse-api-v8';
+// SeedPulse service worker v9 — SWR caches + notifications + Web Push
+// v9: category filter is now a multi-select dropdown (was inline pill row).
+// Bump forces clients to reinstall and pick up the new HTML so the new
+// trigger button + popover renders immediately on next launch.
+const SHELL_CACHE = 'seedpulse-shell-v9';
+const API_CACHE   = 'seedpulse-api-v9';
 
 // Push Worker URL — set at build/deploy time; empty means push disabled.
 // The index.html writes this into a property on the SW registration after
