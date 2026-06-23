@@ -257,10 +257,18 @@ a{color:var(--accent);text-decoration:none}
 .hdr-actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
 .hdr-badge{display:none} /* retired — replaced by subtitle kicker */
 
-/* Filter rail — regions + period on one horizontal scroll row */
-.filter-rail{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+/* Filter rail — two-row layout so regions get the full width and don't
+ * compete with period + category-dropdown for space. Old single-row
+ * layout squeezed Asia-Pacific/Americas/Shortlist off-screen on phones. */
+.filter-rail{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.filter-rail-row{display:flex;align-items:center;gap:8px;min-width:0}
 .tabs{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding-bottom:1px;flex:1;min-width:0}
 .tabs::-webkit-scrollbar{display:none}
+/* Mask gradient on right edge cues horizontal scroll without clipping */
+.tabs{
+  -webkit-mask-image:linear-gradient(90deg, #000 0, #000 calc(100% - 24px), transparent 100%);
+          mask-image:linear-gradient(90deg, #000 0, #000 calc(100% - 24px), transparent 100%);
+}
 .tab{
   flex-shrink:0;display:inline-flex;align-items:center;gap:5px;
   padding:6px 11px;border-radius:7px;
@@ -273,6 +281,13 @@ a{color:var(--accent);text-decoration:none}
 .tab .icon{font-size:13px;width:13px;height:13px}
 .tab:active{transform:scale(.97)}
 .tab.on{border-color:rgba(255,255,255,.9);background:rgba(255,255,255,.18);color:#fff;font-weight:700}
+/* On narrow phones tighten padding so all 6 regions fit without scroll;
+ * the "All Regions" label gets truncated to "All" since the icon (a globe)
+ * already communicates the meaning. */
+@media (max-width:420px){
+  .tab{padding:5px 9px;font-size:11.5px;gap:4px}
+  .tab .icon{font-size:12px;width:12px;height:12px}
+}
 
 /* Category filter — compact dropdown trigger + popover with multi-select */
 .cat-filter-wrap{position:relative;flex-shrink:0}
@@ -296,11 +311,14 @@ a{color:var(--accent);text-decoration:none}
 }
 .cat-filter-menu{
   display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:120;
-  min-width:240px;max-width:280px;
+  /* Cap to viewport width on phones so the menu never clips off the left edge.
+   * 32 px accounts for header horizontal padding + 8 px breathing room. */
+  min-width:220px;max-width:min(300px, calc(100vw - 32px));
   background:var(--surface);color:var(--text);
   border:1px solid var(--border);border-radius:10px;
   box-shadow:var(--shadow-lg);
   padding:6px;
+  max-height:min(70vh, 460px);overflow-y:auto;
 }
 .cat-filter-menu.show{display:block;animation:catMenuIn .12s ease-out}
 @keyframes catMenuIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
@@ -340,9 +358,19 @@ a{color:var(--accent);text-decoration:none}
 .cat-menu-icon .icon{font-size:13px;width:13px;height:13px}
 .cat-menu-label{flex:1;font-weight:600;color:var(--text)}
 
-/* Period pills — compact, on the right of filter-rail */
-.period-row{display:flex;gap:3px;overflow-x:auto;scrollbar-width:none;flex-shrink:0;background:rgba(0,0,0,.18);padding:3px;border-radius:8px}
+.filter-rail-row-2{justify-content:space-between;gap:8px}
+/* Period pills — compact, share row 2 with the category dropdown */
+.period-row{
+  display:flex;gap:3px;overflow-x:auto;scrollbar-width:none;
+  flex:1;min-width:0;
+  background:rgba(0,0,0,.18);padding:3px;border-radius:8px;
+}
 .period-row::-webkit-scrollbar{display:none}
+/* Inner mask hint so users see there's more content when periods scroll */
+.period-row{
+  -webkit-mask-image:linear-gradient(90deg, #000 0, #000 calc(100% - 18px), transparent 100%);
+          mask-image:linear-gradient(90deg, #000 0, #000 calc(100% - 18px), transparent 100%);
+}
 .pill{
   flex-shrink:0;padding:5px 10px;border-radius:5px;
   border:0;background:transparent;color:rgba(255,255,255,.72);
@@ -351,6 +379,9 @@ a{color:var(--accent);text-decoration:none}
 }
 .pill:active{transform:scale(.96)}
 .pill.on{background:rgba(255,255,255,.22);color:#fff}
+@media (max-width:420px){
+  .pill{padding:4px 8px;font-size:11px}
+}
 
 /* Search row — full width below filter rail */
 .search-row{display:flex;gap:6px;align-items:center}
@@ -376,6 +407,10 @@ a{color:var(--accent);text-decoration:none}
 }
 .btn-email:hover{background:rgba(255,255,255,.16)}
 .btn-email .icon{font-size:14px}
+@media (max-width:380px){
+  .btn-email{padding:7px 8px;font-size:0;gap:0}
+  .btn-email .icon{font-size:14px}
+}
 
 .email-panel{
   margin-top:12px;background:rgba(0,0,0,.2);border-radius:12px;padding:14px 16px;
@@ -608,6 +643,10 @@ button.chip-comp.is-active, button.chip-angle.is-active, button.chip-wl.is-activ
 .briefing-overlay{position:fixed;inset:0;z-index:1000;background:rgba(20,16,8,.78);backdrop-filter:blur(6px);display:none;align-items:flex-start;justify-content:center;padding:36px 14px;overflow-y:auto}
 .briefing-overlay.show{display:flex}
 .briefing-card{width:100%;max-width:780px;background:var(--bg);border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.4);padding:28px 32px 32px;position:relative;animation:briefIn .24s ease}
+@media (max-width:480px){
+  .briefing-overlay{padding:18px 8px}
+  .briefing-card{padding:22px 18px 22px}
+}
 @keyframes briefIn{ from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
 .briefing-close{position:absolute;top:14px;right:14px;background:none;border:0;cursor:pointer;color:var(--mute);padding:6px;border-radius:6px;line-height:0}
 .briefing-close:hover{background:var(--chip-bg);color:var(--text)}
@@ -644,6 +683,12 @@ button.chip-comp.is-active, button.chip-angle.is-active, button.chip-wl.is-activ
 .header-brief-btn .icon{font-size:13px;width:13px;height:13px}
 .header-brief-btn .brief-fresh-dot{position:absolute;top:-3px;right:-3px;width:8px;height:8px;border-radius:50%;background:var(--accent);border:2px solid var(--hdr-1);display:none}
 .header-brief-btn.has-fresh .brief-fresh-dot{display:block}
+/* Drop the "Brief" text on very narrow phones — the document icon
+ * still communicates the action and the gold pill keeps it prominent. */
+@media (max-width:380px){
+  .header-brief-btn{padding:7px 8px;gap:0;font-size:0}
+  .header-brief-btn .icon{font-size:14px;width:14px;height:14px}
+}
 
 .brief-age{font:400 11.5px var(--sans);color:var(--mute);margin-left:6px}
 .brief-age-stale{color:#B6482D}
@@ -661,6 +706,10 @@ button.chip-comp.is-active, button.chip-angle.is-active, button.chip-wl.is-activ
 .settings-overlay{position:fixed;inset:0;z-index:1000;background:rgba(20,16,8,.78);backdrop-filter:blur(6px);display:none;align-items:flex-start;justify-content:center;padding:36px 14px;overflow-y:auto}
 .settings-overlay.show{display:flex}
 .settings-card{width:100%;max-width:560px;background:var(--bg);border-radius:12px;padding:24px 26px;position:relative;box-shadow:0 24px 60px rgba(0,0,0,.4)}
+@media (max-width:480px){
+  .settings-overlay{padding:18px 8px}
+  .settings-card{padding:20px 16px}
+}
 .settings-card h3{margin:0 0 4px;font:700 18px var(--serif);color:var(--text)}
 .settings-card .settings-intro{font:400 12.5px var(--sans);color:var(--mute);margin-bottom:18px;line-height:1.5}
 .relations-table{width:100%;border-collapse:collapse}
@@ -901,6 +950,10 @@ footer{
   background:var(--border);color:var(--mute);line-height:1.5;
 }
 .mode-btn.on .mode-count{background:var(--accent);color:#fff}
+@media (max-width:380px){
+  .mode-btn{padding:6px 10px;font-size:11.5px;gap:4px}
+  .mode-btn .icon{font-size:12px;width:12px;height:12px}
+}
 
 /* ═══════════════ Today's Top hero strip ═══════════════ */
 .tt-hero{margin:0 0 20px}
@@ -990,13 +1043,21 @@ footer{
       </div>
     </div>
     <div class="filter-rail">
-      <nav class="tabs" id="tabs" role="tablist" aria-label="Region filter"></nav>
-      <div class="period-row" id="periods" role="tablist" aria-label="Time period filter"></div>
-      <div class="cat-filter-wrap">
-        <button type="button" class="cat-filter-trigger" id="catFilterTrigger"
-                aria-haspopup="menu" aria-expanded="false" aria-controls="catFilterMenu"
-                title="Filter by category"></button>
-        <div class="cat-filter-menu" id="catFilterMenu" role="menu" aria-label="Category filter"></div>
+      <!-- Row 1: regions get the full width so every option is reachable
+           without horizontal scroll competition. -->
+      <div class="filter-rail-row">
+        <nav class="tabs" id="tabs" role="tablist" aria-label="Region filter"></nav>
+      </div>
+      <!-- Row 2: period pills + category dropdown. The pill group is
+           naturally compact; the dropdown trigger sits to its right. -->
+      <div class="filter-rail-row filter-rail-row-2">
+        <div class="period-row" id="periods" role="tablist" aria-label="Time period filter"></div>
+        <div class="cat-filter-wrap">
+          <button type="button" class="cat-filter-trigger" id="catFilterTrigger"
+                  aria-haspopup="menu" aria-expanded="false" aria-controls="catFilterMenu"
+                  title="Filter by category"></button>
+          <div class="cat-filter-menu" id="catFilterMenu" role="menu" aria-label="Category filter"></div>
+        </div>
       </div>
     </div>
     <div class="search-row">
