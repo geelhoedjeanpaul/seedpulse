@@ -1,9 +1,9 @@
-// SeedPulse service worker v10 — SWR caches + notifications + Web Push
-// v10: header layout pass — regions get their own full-width row so all
-// six options are reachable without sharing space with period pills + the
-// category dropdown. Mobile breakpoints tighten tab/pill/button padding.
-const SHELL_CACHE = 'seedpulse-shell-v10';
-const API_CACHE   = 'seedpulse-api-v10';
+// SeedPulse service worker v11 — SWR caches + notifications + Web Push
+// v11: relationship-aware Smart Summary. Companies group under their
+// actual relationship (Customer / Partner / Prospect / Competitor) with
+// matching chip color, instead of being lumped under "Competitors".
+const SHELL_CACHE = 'seedpulse-shell-v11';
+const API_CACHE   = 'seedpulse-api-v11';
 
 // Push Worker URL — set at build/deploy time; empty means push disabled.
 // The index.html writes this into a property on the SW registration after

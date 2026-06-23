@@ -2201,11 +2201,21 @@ function computeSummary(items){
     if(a.gs==null) a.gs=germainsScore(a.t,a.s);
     return a.gs >= GERMAINS_NOTIFY_MIN;
   });
-  // Tally competitor mentions
+  // Tally company mentions, then bucket by the user's relationship setting
+  // so the summary block honors Settings (Rijk Zwaan as a customer should
+  // NOT appear under "Competitors").
   var compTally={};
   items.forEach(function(a){(a.comp||[]).forEach(function(c){compTally[c]=(compTally[c]||0)+1;});});
   var topComp=Object.keys(compTally).map(function(k){return {k:k,n:compTally[k]};})
-    .sort(function(x,y){return y.n-x.n;}).slice(0,5);
+    .sort(function(x,y){return y.n-x.n;}).slice(0,10);
+  // Group: { customer:[{k,n}], competitor:[...], partner:[...], prospect:[...] }
+  var compByRel={customer:[],competitor:[],partner:[],prospect:[]};
+  topComp.forEach(function(c){
+    var rel=getRelationship(c.k);
+    (compByRel[rel] || compByRel.competitor).push(c);
+  });
+  // Cap each bucket to 5 chips so the summary block doesn't blow up.
+  Object.keys(compByRel).forEach(function(k){ compByRel[k]=compByRel[k].slice(0,5); });
   // Tally product angles
   var angTally={};
   items.forEach(function(a){(a.ang||[]).forEach(function(c){angTally[c]=(angTally[c]||0)+1;});});
@@ -2229,6 +2239,7 @@ function computeSummary(items){
     highPri:highPri.length,
     shortlistCount:Object.keys(s).length,
     topComp:topComp,
+    compByRel:compByRel,
     topAng:topAng,
     topWl:topWl
   };
@@ -2237,17 +2248,40 @@ function computeSummary(items){
 function renderSmartSummary(items, isShortlist){
   var s=computeSummary(items);
   var isActive=function(type,val){ return activeTag && activeTag.type===type && activeTag.value===val; };
-  var compHtml = s.topComp.length
-    ? s.topComp.map(function(c){
-        var def=COMPETITORS.find(function(x){return x.label===c.k;});
-        var col=def?def.color:'#6E867C';
-        var on=isActive('comp',c.k);
-        return '<button type="button" class="chip-comp'+(on?' is-active':'')+'" style="background:'+col+'" '+
-               'data-tag-filter="comp" data-tag-value="'+esc(c.k)+'" '+
-               'aria-pressed="'+on+'" title="'+(on?'Clear filter':'Filter by '+esc(c.k))+'">'+
-               esc(c.k)+' ·'+c.n+'</button>';
-      }).join('')
-    : '<span style="color:var(--mute);font-size:12px">none detected</span>';
+  // Build one row per non-empty relationship bucket, with chips colored
+  // by relationship — NOT by the static COMPETITORS palette. This honors
+  // Settings (Rijk Zwaan as customer → green customer row + color, etc).
+  var renderRelChips=function(arr, relId){
+    var relDef=relationshipDef(relId);
+    return arr.map(function(c){
+      var on=isActive('comp',c.k);
+      return '<button type="button" class="chip-comp'+(on?' is-active':'')+'" style="background:'+relDef.color+'" '+
+             'data-tag-filter="comp" data-tag-value="'+esc(c.k)+'" '+
+             'aria-pressed="'+on+'" title="'+(on?'Clear filter':esc(c.k)+' — '+relDef.label)+'">'+
+             esc(c.k)+' ·'+c.n+'</button>';
+    }).join('');
+  };
+  // Ordered rendering: Customers first (most important to surface), then
+  // Partners, Prospects, then Competitors last.
+  var relOrder=[
+    {id:'customer',   label:'Customers'},
+    {id:'partner',    label:'Partners'},
+    {id:'prospect',   label:'Prospects'},
+    {id:'competitor', label:'Competitors'}
+  ];
+  var compRows='';
+  var anyCompany=false;
+  relOrder.forEach(function(r){
+    var arr=s.compByRel[r.id]||[];
+    if(!arr.length) return;
+    anyCompany=true;
+    compRows+='<div class="summary-row"><span class="summary-label">'+r.label+'</span>'+
+              '<span class="summary-value summary-chips">'+renderRelChips(arr, r.id)+'</span></div>';
+  });
+  if(!anyCompany){
+    compRows='<div class="summary-row"><span class="summary-label">Companies</span>'+
+             '<span class="summary-value"><span style="color:var(--mute);font-size:12px">none detected</span></span></div>';
+  }
   var angHtml = s.topAng.length
     ? s.topAng.map(function(a){
         var def=PRODUCT_ANGLES.find(function(x){return x.id===a.k;});
@@ -2277,8 +2311,7 @@ function renderSmartSummary(items, isShortlist){
       (isShortlist?'in shortlist':'articles (score ≥ 3)')+
       (s.shortlistCount&&!isShortlist?' · <b>'+s.shortlistCount+'</b> starred total':'')+
       '</span></div>'+
-    '<div class="summary-row"><span class="summary-label">Competitors</span>'+
-      '<span class="summary-value summary-chips">'+compHtml+'</span></div>'+
+    compRows+
     '<div class="summary-row"><span class="summary-label">Product angles</span>'+
       '<span class="summary-value summary-chips">'+angHtml+'</span></div>'+
     (wlHtml?'<div class="summary-row"><span class="summary-label">Watchlist hits</span>'+
@@ -3421,7 +3454,9 @@ function buildBriefingHtml(){
 
     ((cache.topComp && cache.topComp.length) ?
       '<div class="brief-section">'+
-        '<h4>'+icon('icon-trending-up')+' Competitor Activity</h4>'+
+        // Neutral heading — not every company in the tally is a competitor;
+        // each row labels its actual relationship (Customer / Partner / etc.)
+        '<h4>'+icon('icon-trending-up')+' Industry Activity</h4>'+
         cache.topComp.map(function(c){
           // Relationship type may have changed since the briefing was generated — read live
           var relId=getRelationship(c.k);
