@@ -121,6 +121,44 @@ export default {
         return cors(json({ subscribers: list.keys.length }));
       }
 
+      // ─── Per-user settings sync (relationships + watchlist) ────────────
+      // The client owns a `clientId` (UUID v4, generated once and persisted
+      // in localStorage). It's the only identifier we keep; no email, no
+      // login. KV stores `prefs:<clientId>` → { relationships, watchlist,
+      // updatedAt }. Quotas are trivial (under 1 KB per user).
+      //
+      // GET  /relationships?clientId=…  → { relationships, watchlist, updatedAt }
+      // PUT  /relationships             → { clientId, relationships, watchlist }
+      //                                   → { ok:true, updatedAt }
+      if (url.pathname === '/relationships' && request.method === 'GET') {
+        const clientId = url.searchParams.get('clientId') || '';
+        if (!isValidClientId(clientId)) return cors(json({ error: 'missing/invalid clientId' }, 400));
+        const raw = await env.SUBS.get('prefs:' + clientId);
+        return cors(json(raw ? JSON.parse(raw) : { relationships: {}, watchlist: [], updatedAt: 0 }));
+      }
+      if (url.pathname === '/relationships' && (request.method === 'PUT' || request.method === 'POST')) {
+        const body = await request.json().catch(() => ({}));
+        const clientId = String(body?.clientId || '');
+        if (!isValidClientId(clientId)) return cors(json({ error: 'missing/invalid clientId' }, 400));
+        // Drop unrecognised relationship values to keep the blob clean
+        const allowed = new Set(['customer', 'partner', 'prospect', 'competitor']);
+        const inRel = body?.relationships && typeof body.relationships === 'object' ? body.relationships : {};
+        const relationships = {};
+        for (const k of Object.keys(inRel).slice(0, 500)) {
+          if (allowed.has(inRel[k])) relationships[String(k).slice(0, 80)] = inRel[k];
+        }
+        // Watchlist: array of strings (each ≤ 60 chars), max 50 items
+        const wlIn = Array.isArray(body?.watchlist) ? body.watchlist : [];
+        const watchlist = wlIn.slice(0, 50).map(x => String(x).slice(0, 60)).filter(Boolean);
+        const updatedAt = Date.now();
+        const payload = { relationships, watchlist, updatedAt };
+        // KV writes are ~10 ms; ctx.waitUntil lets us return immediately
+        ctx.waitUntil(env.SUBS.put('prefs:' + clientId, JSON.stringify(payload), {
+          // No expiry — user prefs should outlive any cache pruning
+        }));
+        return cors(json({ ok: true, updatedAt }));
+      }
+
       // AI-powered executive summary (feature #10)
       // Body: { context?: string, items: [{t, s, u, src, cat}] }
       // Uses Cloudflare Workers AI (Llama 3.1 8B). Requires [ai] binding.
@@ -506,6 +544,12 @@ function b64url(bytes) {
   let s = '';
   for (const b of bytes) s += String.fromCharCode(b);
   return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// Restrict client identifiers to UUID v4-like strings so the prefs:<id>
+// KV namespace can't be polluted with arbitrary keys.
+function isValidClientId(s) {
+  return typeof s === 'string' && /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(s);
 }
 
 function json(body, status = 200) {

@@ -1,9 +1,9 @@
-// SeedPulse service worker v15 — SWR caches + notifications + Web Push
-// v15: Commercial briefing fix — per-item AI annotation, new "action"
-// field, single-item JSON prompt instead of fragile batched arrays.
-// Triggers on any high-priority article regardless of category.
-const SHELL_CACHE = 'seedpulse-shell-v15';
-const API_CACHE   = 'seedpulse-api-v15';
+// SeedPulse service worker v16 — SWR caches + notifications + Web Push
+// v16: Cloud-sync per-user Settings (relationships + watchlist) keyed by
+// a stable anonymous UUID stored client-side. Survives PWA reinstall,
+// "Clear website data", and switches between devices.
+const SHELL_CACHE = 'seedpulse-shell-v16';
+const API_CACHE   = 'seedpulse-api-v16';
 
 // Push Worker URL — set at build/deploy time; empty means push disabled.
 // The index.html writes this into a property on the SW registration after
