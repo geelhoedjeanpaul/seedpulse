@@ -1,9 +1,9 @@
-// SeedPulse service worker v11 — SWR caches + notifications + Web Push
-// v11: relationship-aware Smart Summary. Companies group under their
-// actual relationship (Customer / Partner / Prospect / Competitor) with
-// matching chip color, instead of being lumped under "Competitors".
-const SHELL_CACHE = 'seedpulse-shell-v11';
-const API_CACHE   = 'seedpulse-api-v11';
+// SeedPulse service worker v12 — SWR caches + notifications + Web Push
+// v12: Smart Summary "Companies in coverage" redesign — each relationship
+// group is now a titled block with icon + colored heading instead of a
+// thin gray label that users glossed over.
+const SHELL_CACHE = 'seedpulse-shell-v12';
+const API_CACHE   = 'seedpulse-api-v12';
 
 // Push Worker URL — set at build/deploy time; empty means push disabled.
 // The index.html writes this into a property on the SW registration after

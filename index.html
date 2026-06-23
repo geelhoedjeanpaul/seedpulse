@@ -771,6 +771,45 @@ button.chip-comp.is-active, button.chip-angle.is-active, button.chip-wl.is-activ
 .summary-value{font:500 13px var(--sans);color:var(--text)}
 .summary-value b{color:var(--accent);font-weight:700}
 .summary-chips{display:inline-flex;gap:5px;flex-wrap:wrap}
+
+/* ─── Companies in coverage — grouped by relationship (Customer / Partner / Prospect / Competitor) ─── */
+.summary-subhead{
+  font:700 11px var(--sans);letter-spacing:.6px;text-transform:uppercase;
+  color:var(--mute);margin:10px 0 8px;
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+}
+.summary-subhead .icon{font-size:13px;width:13px;height:13px;color:var(--accent)}
+.summary-subhead-hint{
+  font:500 10.5px var(--sans);letter-spacing:.3px;text-transform:none;
+  color:var(--light);margin-left:auto;
+}
+.rel-groups{display:flex;flex-direction:column;gap:8px}
+.rel-group{
+  --rel-c:var(--mute);
+  background:var(--surface);
+  border:1px solid var(--border);border-left:4px solid var(--rel-c);
+  border-radius:8px;padding:9px 12px;
+}
+.rel-group-head{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.rel-group-icon{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:22px;border-radius:6px;
+  background:color-mix(in srgb, var(--rel-c) 18%, transparent);
+  color:var(--rel-c);flex-shrink:0;
+}
+.rel-group-icon .icon{font-size:13px;width:13px;height:13px}
+.rel-group-title{
+  font:700 12px var(--sans);letter-spacing:.4px;text-transform:uppercase;
+  color:var(--rel-c);flex:1;
+}
+.rel-group-count{
+  font:500 10.5px var(--sans);color:var(--mute);
+}
+.rel-group-chips{display:flex;gap:5px;flex-wrap:wrap}
+.rel-empty{
+  padding:10px 12px;border-radius:8px;background:var(--chip-bg);
+  font:italic 400 12px var(--sans);color:var(--mute);
+}
 .summary-btn-ai{
   display:inline-flex;align-items:center;gap:5px;font:700 11px var(--sans);
   padding:6px 12px;border-radius:6px;border:1px solid var(--border-strong);
@@ -2248,9 +2287,10 @@ function computeSummary(items){
 function renderSmartSummary(items, isShortlist){
   var s=computeSummary(items);
   var isActive=function(type,val){ return activeTag && activeTag.type===type && activeTag.value===val; };
-  // Build one row per non-empty relationship bucket, with chips colored
-  // by relationship — NOT by the static COMPETITORS palette. This honors
-  // Settings (Rijk Zwaan as customer → green customer row + color, etc).
+  // Build one block per non-empty relationship bucket. Each block has
+  // its own header (icon + relationship name + color) and a chip row
+  // below it — much clearer than cramming the relationship name into
+  // a 88-px gray label cell where users glossed over it.
   var renderRelChips=function(arr, relId){
     var relDef=relationshipDef(relId);
     return arr.map(function(c){
@@ -2269,18 +2309,31 @@ function renderSmartSummary(items, isShortlist){
     {id:'prospect',   label:'Prospects'},
     {id:'competitor', label:'Competitors'}
   ];
-  var compRows='';
+  var compBlocks='';
   var anyCompany=false;
   relOrder.forEach(function(r){
     var arr=s.compByRel[r.id]||[];
     if(!arr.length) return;
     anyCompany=true;
-    compRows+='<div class="summary-row"><span class="summary-label">'+r.label+'</span>'+
-              '<span class="summary-value summary-chips">'+renderRelChips(arr, r.id)+'</span></div>';
+    var def=relationshipDef(r.id);
+    compBlocks+='<div class="rel-group rel-group-'+r.id+'" style="--rel-c:'+def.color+'">'+
+                  '<div class="rel-group-head">'+
+                    '<span class="rel-group-icon">'+icon(def.icon)+'</span>'+
+                    '<span class="rel-group-title">'+esc(r.label)+'</span>'+
+                    '<span class="rel-group-count">'+arr.length+' mentioned</span>'+
+                  '</div>'+
+                  '<div class="rel-group-chips">'+renderRelChips(arr, r.id)+'</div>'+
+                '</div>';
   });
+  var companiesSection;
   if(!anyCompany){
-    compRows='<div class="summary-row"><span class="summary-label">Companies</span>'+
-             '<span class="summary-value"><span style="color:var(--mute);font-size:12px">none detected</span></span></div>';
+    companiesSection =
+      '<div class="summary-subhead">'+icon('icon-competitors')+' Companies in coverage</div>'+
+      '<div class="rel-empty">No competitor or partner names detected in the current view.</div>';
+  } else {
+    companiesSection =
+      '<div class="summary-subhead">'+icon('icon-competitors')+' Companies in coverage <span class="summary-subhead-hint">grouped by your Settings → Relationships</span></div>'+
+      '<div class="rel-groups">'+compBlocks+'</div>';
   }
   var angHtml = s.topAng.length
     ? s.topAng.map(function(a){
@@ -2311,7 +2364,7 @@ function renderSmartSummary(items, isShortlist){
       (isShortlist?'in shortlist':'articles (score ≥ 3)')+
       (s.shortlistCount&&!isShortlist?' · <b>'+s.shortlistCount+'</b> starred total':'')+
       '</span></div>'+
-    compRows+
+    companiesSection+
     '<div class="summary-row"><span class="summary-label">Product angles</span>'+
       '<span class="summary-value summary-chips">'+angHtml+'</span></div>'+
     (wlHtml?'<div class="summary-row"><span class="summary-label">Watchlist hits</span>'+
