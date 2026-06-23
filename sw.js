@@ -1,9 +1,9 @@
-// SeedPulse service worker v12 — SWR caches + notifications + Web Push
-// v12: Smart Summary "Companies in coverage" redesign — each relationship
-// group is now a titled block with icon + colored heading instead of a
-// thin gray label that users glossed over.
-const SHELL_CACHE = 'seedpulse-shell-v12';
-const API_CACHE   = 'seedpulse-api-v12';
+// SeedPulse service worker v13 — SWR caches + notifications + Web Push
+// v13: Product angles + Watchlist hits now use the same subhead-and-chip-row
+// rhythm as the relationship groups so the whole Smart Summary stack reads
+// consistently.
+const SHELL_CACHE = 'seedpulse-shell-v13';
+const API_CACHE   = 'seedpulse-api-v13';
 
 // Push Worker URL — set at build/deploy time; empty means push disabled.
 // The index.html writes this into a property on the SW registration after

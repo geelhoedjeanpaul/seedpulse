@@ -806,6 +806,7 @@ button.chip-comp.is-active, button.chip-angle.is-active, button.chip-wl.is-activ
   font:500 10.5px var(--sans);color:var(--mute);
 }
 .rel-group-chips{display:flex;gap:5px;flex-wrap:wrap}
+.chip-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:4px}
 .rel-empty{
   padding:10px 12px;border-radius:8px;background:var(--chip-bg);
   font:italic 400 12px var(--sans);color:var(--mute);
@@ -2365,10 +2366,21 @@ function renderSmartSummary(items, isShortlist){
       (s.shortlistCount&&!isShortlist?' · <b>'+s.shortlistCount+'</b> starred total':'')+
       '</span></div>'+
     companiesSection+
-    '<div class="summary-row"><span class="summary-label">Product angles</span>'+
-      '<span class="summary-value summary-chips">'+angHtml+'</span></div>'+
-    (wlHtml?'<div class="summary-row"><span class="summary-label">Watchlist hits</span>'+
-      '<span class="summary-value summary-chips">'+wlHtml+'</span></div>':'')+
+    // Product angles — match the relationship-group rhythm with a labelled
+    // subhead + standalone chip row, so the whole summary block reads as
+    // a consistent vertical stack instead of mixing two row styles.
+    '<div class="summary-subhead">'+icon('icon-target')+' Germains product angles'+
+      (s.topAng.length?'<span class="summary-subhead-hint">'+s.topAng.length+' detected</span>':'')+
+    '</div>'+
+    (s.topAng.length
+      ? '<div class="chip-row">'+angHtml+'</div>'
+      : '<div class="rel-empty">No product angles detected in the current view.</div>')+
+    (wlHtml
+      ? '<div class="summary-subhead">'+icon('icon-eye')+' Watchlist hits'+
+          '<span class="summary-subhead-hint">'+s.topWl.length+' keyword'+(s.topWl.length===1?'':'s')+'</span>'+
+        '</div>'+
+        '<div class="chip-row">'+wlHtml+'</div>'
+      : '')+
     // #10 AI summary button — enabled when push worker URL configured
     (PUSH_WORKER_URL?'<button class="summary-btn-ai" id="aiSumBtn">'+icon('icon-sparkles')+' Summarize for leadership</button>':'')+
     // #9 Free-form "Ask SeedPulse" — type a question about the current view
