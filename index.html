@@ -598,8 +598,8 @@ button.chip-comp.is-active, button.chip-angle.is-active, button.chip-wl.is-activ
 }
 .tag-filter-bar .tag-filter-clear:hover{background:var(--chip-bg)}
 
-/* ─── #1 Impact pill + So-what line ─── */
-.impact-row{display:flex;align-items:flex-start;gap:8px;margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--chip-bg);border-left:3px solid var(--mute)}
+/* ─── #1 Commercial briefing block — Impact + So-what + Suggested action ─── */
+.impact-row{display:flex;flex-direction:column;gap:6px;margin-top:8px;padding:10px 12px;border-radius:8px;background:var(--chip-bg);border-left:3px solid var(--mute)}
 .impact-row.imp-opportunity{background:#E8F4E8;border-left-color:#3D8B3D}
 .impact-row.imp-threat{background:#FDECEA;border-left-color:#B6482D}
 .impact-row.imp-watch{background:#FDF4E3;border-left-color:#D98B30}
@@ -609,13 +609,31 @@ button.chip-comp.is-active, button.chip-angle.is-active, button.chip-wl.is-activ
   .impact-row.imp-threat{background:#3A1E1A;border-left-color:#D4664B}
   .impact-row.imp-watch{background:#3A2E1A;border-left-color:#E5A660}
 }
+.impact-head{display:flex;align-items:center;gap:8px}
 .impact-pill{flex-shrink:0;display:inline-flex;align-items:center;gap:3px;font:700 9px var(--sans);letter-spacing:.6px;text-transform:uppercase;padding:3px 7px;border-radius:10px;color:#fff;line-height:1.2}
 .impact-pill.imp-opportunity{background:#3D8B3D}
 .impact-pill.imp-threat{background:#B6482D}
 .impact-pill.imp-watch{background:#D98B30}
 .impact-pill.imp-info{background:#6E867C}
-.so-what{font:italic 500 12.5px var(--serif);color:var(--text);line-height:1.45;flex:1 1 auto}
-.so-what-pending{font:italic 400 12px var(--sans);color:var(--mute);margin-top:6px}
+.impact-kicker{
+  font:700 9.5px var(--sans);letter-spacing:.9px;text-transform:uppercase;
+  color:var(--mute);
+}
+.so-what{font:italic 500 12.5px/1.5 var(--serif);color:var(--text)}
+.ann-action{
+  display:flex;align-items:flex-start;gap:5px;
+  font:500 12px/1.45 var(--sans);color:var(--text-2);
+  padding-top:6px;border-top:1px dashed color-mix(in srgb, currentColor 28%, transparent);
+}
+.ann-action .icon{font-size:13px;width:13px;height:13px;color:var(--accent);flex-shrink:0;margin-top:2px}
+.ann-action-label{font-weight:700;color:var(--accent);margin-right:3px}
+.so-what-pending{
+  display:flex;align-items:center;gap:5px;
+  margin-top:8px;padding:9px 12px;border-radius:8px;
+  background:var(--chip-bg);border-left:3px solid var(--mute);
+  font:italic 400 12.5px var(--sans);color:var(--mute);
+}
+.so-what-pending .icon{font-size:14px;width:14px;height:14px;animation:pulse 1.6s ease-in-out infinite}
 
 /* ─── #3 Story cluster ─── */
 .cluster-expand{display:inline-flex;align-items:center;gap:3px;margin-top:6px;font:600 11px var(--sans);color:var(--accent);background:none;border:0;cursor:pointer;padding:3px 0}
@@ -2616,18 +2634,28 @@ function renderCard(a,cat,shortlist){
     ? '<div class="card-tags-row'+dimClass+'">'+wlChips+compChips+angChips+'</div>'
     : '';
 
-  // #1 Impact pill + So-what line — shown when annotation exists for this article
+  // #1 Commercial briefing block — Impact pill + So-what + Suggested action.
+  // Renders whenever an annotation exists, OR a placeholder for any
+  // high-priority article (regardless of category) so the briefing fires
+  // not just in the Germains-Relevant section but also in cluster /
+  // shortlist views where `cat` may be null.
   var ann = getAnnotation(a.id);
   var impactRow = '';
   if(ann && ann.soWhat){
     var pillLabel={opportunity:'Opportunity',threat:'Threat',watch:'Watch',info:'Info'}[ann.impact]||'Info';
+    var actionHtml = ann.action
+      ? '<div class="ann-action">'+icon('icon-target')+' <span class="ann-action-label">Suggested action:</span> '+esc(ann.action)+'</div>'
+      : '';
     impactRow =
       '<div class="impact-row imp-'+esc(ann.impact)+'">'+
-        '<span class="impact-pill imp-'+esc(ann.impact)+'">'+esc(pillLabel)+'</span>'+
-        '<span class="so-what">'+esc(ann.soWhat)+'</span>'+
+        '<div class="impact-head">'+
+          '<span class="impact-pill imp-'+esc(ann.impact)+'">'+esc(pillLabel)+'</span>'+
+          '<span class="impact-kicker">Commercial briefing</span>'+
+        '</div>'+
+        '<div class="so-what">'+esc(ann.soWhat)+'</div>'+
+        actionHtml+
       '</div>';
-  } else if(cat && cat.id==='germains' && (a.gs||0) >= GERMAINS_NOTIFY_MIN){
-    // Placeholder while the AI annotation is being fetched (only for high-priority)
+  } else if((a.gs||0) >= GERMAINS_NOTIFY_MIN){
     impactRow = '<div class="so-what-pending" data-await-ann="'+esc(a.id)+'">'+icon('icon-sparkles')+' Generating commercial briefing…</div>';
   }
 
@@ -3478,7 +3506,9 @@ async function fetchAnnotationsForView(){
     var data=await res.json();
     var anns=data.annotations||{};
     mergeAnnotations(anns);
-    // Update the DOM in place for every card whose annotation just landed
+    // Update the DOM in place for every card whose annotation just landed.
+    // Markup must mirror renderCard so visited cards look identical to
+    // freshly-rendered ones.
     Object.keys(anns).forEach(function(id){
       var ann=anns[id];
       var card=document.querySelector('.card[data-aid="'+CSS.escape(id)+'"]');
@@ -3487,10 +3517,17 @@ async function fetchAnnotationsForView(){
       if(!placeholder) return;
       var pillLabel={opportunity:'Opportunity',threat:'Threat',watch:'Watch',info:'Info'}[ann.impact]||'Info';
       var esc2=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
+      var actionHtml = ann.action
+        ? '<div class="ann-action">'+icon('icon-target')+' <span class="ann-action-label">Suggested action:</span> '+esc2(ann.action)+'</div>'
+        : '';
       placeholder.outerHTML =
         '<div class="impact-row imp-'+esc2(ann.impact)+'">'+
-          '<span class="impact-pill imp-'+esc2(ann.impact)+'">'+esc2(pillLabel)+'</span>'+
-          '<span class="so-what">'+esc2(ann.soWhat)+'</span>'+
+          '<div class="impact-head">'+
+            '<span class="impact-pill imp-'+esc2(ann.impact)+'">'+esc2(pillLabel)+'</span>'+
+            '<span class="impact-kicker">Commercial briefing</span>'+
+          '</div>'+
+          '<div class="so-what">'+esc2(ann.soWhat)+'</div>'+
+          actionHtml+
         '</div>';
     });
   }catch(e){
@@ -3514,6 +3551,7 @@ function shareArticle(id){
     ''
   ];
   if(ann && ann.soWhat) lines.push('Why it matters to Germains ('+impact+'): '+ann.soWhat, '');
+  if(ann && ann.action) lines.push('Suggested action: '+ann.action, '');
   if(a.u) lines.push(a.u);
   if(a.src) lines.push('Source: '+a.src+(a.d?' · '+a.d:''));
   lines.push('', '— Shared via SeedPulse');
@@ -4074,7 +4112,7 @@ document.getElementById("csvBtn").addEventListener("click",function(){
     if(/[",\n\r]/.test(s)) return '"'+s.replace(/"/g,'""')+'"';
     return s;
   };
-  var headers=['Date','Title','Source','Category','Region(s)','Germains Score','Competitors','Relationships','Product Angles','Impact','So What','URL'];
+  var headers=['Date','Title','Source','Category','Region(s)','Germains Score','Competitors','Relationships','Product Angles','Impact','So What','Suggested Action','URL'];
   var lines=[headers.join(',')];
   items.forEach(function(a){
     var ann=anns[a.id]||{};
@@ -4086,7 +4124,7 @@ document.getElementById("csvBtn").addEventListener("click",function(){
       a.gs||0,
       comps.join('|'), compRels.join('|'),
       (a.ang||[]).join('|'),
-      ann.impact||'', ann.soWhat||'',
+      ann.impact||'', ann.soWhat||'', ann.action||'',
       a.u||''
     ].map(esc).join(','));
   });

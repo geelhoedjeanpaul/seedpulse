@@ -159,10 +159,15 @@ export default {
         }
       }
 
-      // Per-article annotation (feature #1): returns {impact, soWhat} for each id.
+      // Per-article annotation (feature #1): returns {impact, soWhat, action}
       // Body: { items: [{id,t,s,src,cat,comp,ang,gs}] }
-      // Response: { annotations: { [id]: {impact, soWhat} } }
+      // Response: { annotations: { [id]: {impact, soWhat, action} } }
       // Uses KV as a 30-day cache so repeat calls are near-free.
+      //
+      // KV prefix is "ann2:" — bumped from "ann:" because the response
+      // shape grew (added `action`) and old cached records would render
+      // without the suggested-action line. Old "ann:" keys expire on
+      // their TTL and get garbage-collected.
       if (url.pathname === '/annotate' && request.method === 'POST') {
         if (!env.AI) return cors(json({ error: 'AI binding not configured' }, 503));
         const body = await request.json().catch(() => ({}));
@@ -170,13 +175,12 @@ export default {
         if (items.length === 0) return cors(json({ annotations: {} }));
 
         const out = {};
+        const errors = []; // surfaced in response for debugging
 
-        // 1. Check KV cache for all items in parallel. The old code awaited
-        //    each get() in a loop — at 30-50 ms per round-trip that added up
-        //    to several seconds for 20 items.
+        // 1. Parallel KV cache lookup
         const validItems = items.filter(it => it?.id);
         const cachedRaw = await Promise.all(
-          validItems.map(it => env.SUBS.get('ann:' + it.id))
+          validItems.map(it => env.SUBS.get('ann2:' + it.id))
         );
         const toAnnotate = [];
         for (let i = 0; i < validItems.length; i++) {
@@ -185,59 +189,85 @@ export default {
           else toAnnotate.push(validItems[i]);
         }
 
-        // 2. Build batches of 4 and run them ALL in parallel. Workers AI
-        //    handles concurrent inference fine; sequential batching was
-        //    leaving the model idle most of the time.
-        const BATCH = 4;
-        const batches = [];
-        for (let i = 0; i < toAnnotate.length; i += BATCH) batches.push(toAnnotate.slice(i, i + BATCH));
+        // 2. Single-item AI calls run in PARALLEL. Switched from batched
+        //    JSON arrays because the model frequently dropped or
+        //    misformatted IDs in array output, leaving the placeholder
+        //    stuck on "Generating commercial briefing…". One item per
+        //    call → simpler schema, more reliable JSON, easier to debug.
+        const sys = 'You are a senior commercial analyst at Germains Seed Technology — a global leader in seed priming, film coating, pelleting, seed hygiene, and seed analytics. You write decisive, plain-prose briefings for the commercial director. Never invent facts. Name specific companies and technologies. No hedging.';
 
-        const sys = 'You are a commercial analyst at Germains Seed Technology (seed priming, film coating, pelleting, hygiene, analytics). Classify each article and write ONE decisive sentence on what it means for Germains.';
+        const annResults = await Promise.all(toAnnotate.map(async (a) => {
+          // Single-item JSON-only prompt. Three concrete fields the model
+          // can fill in independently — much easier to produce than a
+          // batched array of objects keyed by id.
+          const user =
+`Classify this article and write a brief commercial briefing for Germains.
 
-        const batchResults = await Promise.all(batches.map(async (batch) => {
-          const list = batch.map((a, idx) =>
-            `ID:${a.id}\nT:${String(a.t || '').slice(0, 160)}\nS:${String(a.s || '').slice(0, 160)}\nC:${(a.comp || []).join(',') || '-'}\nG:${a.gs || 0}`
-          ).join('\n---\n');
-          const user = `Return ONLY a JSON array, no prose: [{"id":"...","impact":"opportunity|threat|watch|info","soWhat":"<=25 words, no hedging"}]\n- opportunity: sales/partnership angle\n- threat: competitor/regulatory/market harm\n- watch: developing, monitor\n- info: context only\n\n${list}`;
+Article title: ${String(a.t || '').slice(0, 220)}
+Summary: ${String(a.s || '').slice(0, 280)}
+Source: ${a.src || 'unknown'}
+Competitors mentioned: ${(a.comp || []).join(', ') || 'none'}
+Germains relevance score: ${a.gs || 0}/10
+
+Respond with ONLY a JSON object, no markdown fences, no prose around it:
+{
+  "impact": "opportunity" | "threat" | "watch" | "info",
+  "soWhat": "1-2 short sentences (<=40 words) on what this means specifically for Germains' commercial position",
+  "action": "1 short sentence (<=25 words) starting with a verb suggesting a concrete action Germains should take"
+}
+
+Impact definitions:
+- opportunity: directly creates a sales, partnership, or product angle for Germains
+- threat: a competitor move, regulation, or market shift that hurts Germains
+- watch: relevant trend, monitor; not actionable yet
+- info: context only
+
+Return the JSON object now.`;
+
           try {
             const r = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
               messages: [
                 { role: 'system', content: sys },
                 { role: 'user', content: user }
               ],
-              // 4 items × ~30 word sentence + JSON scaffolding ≈ 260 tokens.
-              // 320 leaves headroom without bloating generation time.
-              max_tokens: 320
+              max_tokens: 220
             });
-            const txt = (r?.response || r?.result?.response || '').trim();
-            const m = txt.match(/\[[\s\S]*\]/);
-            if (!m) return [];
-            let arr;
-            try { arr = JSON.parse(m[0]); } catch { return []; }
-            if (!Array.isArray(arr)) return [];
-            const recs = [];
-            for (const rec of arr) {
-              if (!rec?.id) continue;
-              const match = batch.find(b => String(b.id) === String(rec.id));
-              if (!match) continue;
-              const impact = ['opportunity', 'threat', 'watch', 'info'].includes(rec.impact) ? rec.impact : 'info';
-              const soWhat = String(rec.soWhat || '').slice(0, 300);
-              if (!soWhat) continue;
-              recs.push({ id: match.id, ann: { impact, soWhat } });
+            // Workers AI response shape varies by model and version. Cover
+            // every plausible field, coerce to string, then look for JSON.
+            const txt = String(
+              (r && typeof r.response === 'string' && r.response) ||
+              (r && r.result && typeof r.result.response === 'string' && r.result.response) ||
+              (r && typeof r.text === 'string' && r.text) ||
+              (r && r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content) ||
+              ''
+            ).trim();
+            if (!txt) {
+              errors.push({ id: a.id, err: 'no-text', shape: Object.keys(r || {}).join(',') });
+              return null;
             }
-            return recs;
+            // Tolerate ```json fences or leading/trailing prose
+            const m = txt.match(/\{[\s\S]*\}/);
+            if (!m) { errors.push({ id: a.id, err: 'no-json', preview: txt.slice(0, 80) }); return null; }
+            let obj;
+            try { obj = JSON.parse(m[0]); }
+            catch (e) { errors.push({ id: a.id, err: 'parse-fail', preview: m[0].slice(0, 80) }); return null; }
+            const impact = ['opportunity', 'threat', 'watch', 'info'].includes(obj.impact) ? obj.impact : 'info';
+            const soWhat = String(obj.soWhat || '').trim().slice(0, 320);
+            const action = String(obj.action || '').trim().slice(0, 180);
+            if (!soWhat) { errors.push({ id: a.id, err: 'empty-soWhat' }); return null; }
+            return { id: a.id, ann: { impact, soWhat, action } };
           } catch (e) {
-            return []; // skip batch on error, client will retry next load
+            errors.push({ id: a.id, err: 'ai-error', msg: String(e?.message || e).slice(0, 120) });
+            return null;
           }
         }));
 
-        // 3. Collect annotations and write to KV in parallel.
+        // 3. Collect annotations and queue KV writes
         const kvWrites = [];
-        for (const recs of batchResults) {
-          for (const { id, ann } of recs) {
-            out[id] = ann;
-            kvWrites.push(env.SUBS.put('ann:' + id, JSON.stringify(ann), { expirationTtl: 60 * 60 * 24 * 30 }));
-          }
+        for (const r of annResults) {
+          if (!r) continue;
+          out[r.id] = r.ann;
+          kvWrites.push(env.SUBS.put('ann2:' + r.id, JSON.stringify(r.ann), { expirationTtl: 60 * 60 * 24 * 30 }));
         }
         // Defer KV writes so the HTTP response returns immediately — the
         // client doesn't care whether persistence has flushed yet.
@@ -246,7 +276,8 @@ export default {
         return cors(json({
           annotations: out,
           cached: validItems.length - toAnnotate.length,
-          generated: kvWrites.length
+          generated: kvWrites.length,
+          errors: errors.length ? errors : undefined
         }));
       }
 

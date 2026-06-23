@@ -1,9 +1,9 @@
-// SeedPulse service worker v14 — SWR caches + notifications + Web Push
-// v14: Unclassified relationship default + bulk-classify in Settings +
-// CSV export + keyboard shortcuts. Bump forces clients to reload so the
-// new default never silently treats unset companies as competitors.
-const SHELL_CACHE = 'seedpulse-shell-v14';
-const API_CACHE   = 'seedpulse-api-v14';
+// SeedPulse service worker v15 — SWR caches + notifications + Web Push
+// v15: Commercial briefing fix — per-item AI annotation, new "action"
+// field, single-item JSON prompt instead of fragile batched arrays.
+// Triggers on any high-priority article regardless of category.
+const SHELL_CACHE = 'seedpulse-shell-v15';
+const API_CACHE   = 'seedpulse-api-v15';
 
 // Push Worker URL — set at build/deploy time; empty means push disabled.
 // The index.html writes this into a property on the SW registration after
