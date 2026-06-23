@@ -811,6 +811,43 @@ button.chip-comp.is-active, button.chip-angle.is-active, button.chip-wl.is-activ
   padding:10px 12px;border-radius:8px;background:var(--chip-bg);
   font:italic 400 12px var(--sans);color:var(--mute);
 }
+/* Unclassified group gets a softer dashed border + explanatory note +
+ * "Classify in Settings →" CTA so the user knows it's a default state
+ * they should resolve rather than an intentional bucket. */
+.rel-group-unset{border-style:dashed;background:var(--chip-bg)}
+.rel-group-note{
+  font:500 11.5px var(--sans);color:var(--mute);margin:0 0 7px;
+  display:flex;align-items:center;gap:5px;line-height:1.4;
+}
+.rel-group-note .icon{font-size:12px;width:12px;height:12px;color:var(--gold);flex-shrink:0}
+.rel-group-cta{
+  display:inline-flex;align-items:center;gap:5px;
+  margin-top:8px;padding:6px 11px;border-radius:6px;
+  border:1px solid var(--border-strong);background:var(--surface);
+  color:var(--text);font:600 11.5px var(--sans);cursor:pointer;
+  transition:background .12s;
+}
+.rel-group-cta:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.rel-group-cta .icon{font-size:12px;width:12px;height:12px}
+/* Unclassified pill in the Settings table */
+.rel-pill.on-unclassified{background:#E4E8E5;color:#3D4A3A;border-color:#A0AC9C}
+@media(prefers-color-scheme:dark){
+  .rel-pill.on-unclassified{background:#26302A;color:#B6C9BF;border-color:#3A4E3E}
+}
+/* Bulk-classify row in Settings */
+.settings-bulk{
+  margin:0 0 14px;padding:10px 12px;border-radius:8px;
+  background:color-mix(in srgb, var(--gold) 12%, var(--chip-bg));
+  border:1px solid color-mix(in srgb, var(--gold) 30%, var(--border));
+  display:flex;flex-direction:column;gap:8px;
+}
+.settings-bulk-label{
+  font:600 12px var(--sans);color:var(--text);
+  display:flex;align-items:center;gap:5px;
+}
+.settings-bulk-label .icon{font-size:13px;width:13px;height:13px;color:var(--gold)}
+.settings-bulk-pills{display:flex;gap:5px;flex-wrap:wrap}
+.rel-row-unset td:first-child{color:var(--mute);font-style:italic}
 .summary-btn-ai{
   display:inline-flex;align-items:center;gap:5px;font:700 11px var(--sans);
   padding:6px 12px;border-radius:6px;border:1px solid var(--border-strong);
@@ -1048,6 +1085,41 @@ footer{
 }
 .tt-cta .icon{font-size:11px}
 
+/* ═══════════════ Keyboard navigation focus + help overlay ═══════════════ */
+.card.kbd-focus, .tt-card.kbd-focus{
+  outline:2px solid var(--accent);outline-offset:2px;
+  box-shadow:0 0 0 4px var(--accent-soft), var(--shadow-md);
+}
+.kbd-help-overlay{
+  position:fixed;inset:0;z-index:2000;
+  background:rgba(20,16,8,.78);backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;padding:18px;
+}
+.kbd-help-card{
+  position:relative;width:100%;max-width:440px;
+  background:var(--bg);color:var(--text);
+  border-radius:14px;padding:24px 28px 26px;
+  box-shadow:var(--shadow-lg);
+}
+.kbd-help-card h3{font:700 18px var(--serif);margin:0 0 14px}
+.kbd-help-card dl{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:0}
+.kbd-help-card dt{display:flex;gap:4px;align-items:center}
+.kbd-help-card dd{font:500 13px var(--sans);color:var(--text-2);margin:0;align-self:center}
+.kbd-help-card kbd{
+  display:inline-block;min-width:22px;text-align:center;
+  font:700 11px var(--sans);
+  padding:3px 7px;border-radius:5px;
+  background:var(--surface);border:1px solid var(--border-strong);
+  color:var(--text);box-shadow:0 1px 0 var(--border-strong);
+}
+.kbd-help-close{
+  position:absolute;top:12px;right:12px;
+  background:none;border:0;cursor:pointer;color:var(--mute);
+  padding:6px;border-radius:6px;line-height:0;
+}
+.kbd-help-close:hover{background:var(--chip-bg);color:var(--text)}
+.kbd-help-close .icon{font-size:18px}
+
 /* ═══════════════ Animations ═══════════════ */
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -1114,6 +1186,7 @@ footer{
       <div class="email-btns">
         <button class="btn-primary" id="mailtoBtn"><svg class="icon" aria-hidden="true"><use href="#icon-mail"/></svg> Open in Mail</button>
         <button class="btn-secondary" id="copyBtn"><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg> <span>Copy Report</span></button>
+        <button class="btn-secondary" id="csvBtn" title="Download the filtered article set as CSV"><svg class="icon" aria-hidden="true"><use href="#icon-install"/></svg> CSV</button>
       </div>
     </div>
   </div>
@@ -1635,28 +1708,50 @@ function trendDelta(catId, currentCount){
   return { pct:pct, dir: pct>0?'up':'down' };
 }
 
-/* #6 Relationships — classify each competitor as customer/competitor/partner/prospect.
- * Chip colors + sort order use this. Defaults to 'competitor' for all so the
- * app works out of the box. User edits via the Settings gear. */
+/* #6 Relationships — classify each company as customer/partner/prospect/
+ * competitor. The default is "unclassified" (gray) — NOT "competitor" —
+ * so unset companies stop polluting the Competitors group. The user has
+ * to explicitly tag each company in Settings; until they do, the company
+ * shows up in its own Unclassified group with a one-tap classify CTA.
+ *
+ * Order in RELATIONSHIP_TYPES is the rendering order in Smart Summary. */
 var RELATIONSHIP_TYPES=[
-  {id:'customer',   label:'Customer',   color:'#1E6B88', icon:'icon-handshake'},
-  {id:'competitor', label:'Competitor', color:'#B6482D', icon:'icon-swords'},
-  {id:'partner',    label:'Partner',    color:'#6B4A8A', icon:'icon-link'},
-  {id:'prospect',   label:'Prospect',   color:'#4A7D3D', icon:'icon-sprout'}
+  {id:'customer',     label:'Customer',     color:'#1E6B88', icon:'icon-handshake'},
+  {id:'partner',      label:'Partner',      color:'#6B4A8A', icon:'icon-link'},
+  {id:'prospect',     label:'Prospect',     color:'#4A7D3D', icon:'icon-sprout'},
+  {id:'competitor',   label:'Competitor',   color:'#B6482D', icon:'icon-swords'},
+  {id:'unclassified', label:'Unclassified', color:'#6E867C', icon:'icon-empty'}
 ];
 function loadRelationships(){ return lsGet(RELATIONSHIPS_KEY, {}); }
 function saveRelationships(r){ lsSet(RELATIONSHIPS_KEY, r); }
 function getRelationship(companyLabel){
   var r=loadRelationships();
-  return r[companyLabel] || 'competitor';
+  // Default is the explicit "unclassified" bucket — never silently
+  // assume a company is a competitor.
+  return r[companyLabel] || 'unclassified';
 }
 function setRelationship(companyLabel, type){
   var r=loadRelationships();
-  r[companyLabel]=type;
+  if(type==='unclassified') delete r[companyLabel];
+  else r[companyLabel]=type;
   saveRelationships(r);
 }
 function relationshipDef(type){
-  return RELATIONSHIP_TYPES.find(function(x){return x.id===type;}) || RELATIONSHIP_TYPES[1];
+  return RELATIONSHIP_TYPES.find(function(x){return x.id===type;}) || RELATIONSHIP_TYPES[4];
+}
+// Bulk-set: mark all currently-unclassified companies in the COMPETITORS
+// list as a single relationship in one operation. Lets the user "Mark
+// all remaining as Competitor" once they've classified their key
+// customers/partners/prospects.
+function bulkSetUnclassified(type){
+  var r=loadRelationships();
+  COMPETITORS.forEach(function(c){
+    if(!r[c.label]){
+      if(type==='unclassified') return; // no-op
+      r[c.label]=type;
+    }
+  });
+  saveRelationships(r);
 }
 
 /* #1 Annotations — AI-generated {impact, soWhat} per article id.
@@ -2248,11 +2343,11 @@ function computeSummary(items){
   items.forEach(function(a){(a.comp||[]).forEach(function(c){compTally[c]=(compTally[c]||0)+1;});});
   var topComp=Object.keys(compTally).map(function(k){return {k:k,n:compTally[k]};})
     .sort(function(x,y){return y.n-x.n;}).slice(0,10);
-  // Group: { customer:[{k,n}], competitor:[...], partner:[...], prospect:[...] }
-  var compByRel={customer:[],competitor:[],partner:[],prospect:[]};
+  // Group: { customer:[{k,n}], partner:[...], prospect:[...], competitor:[...], unclassified:[...] }
+  var compByRel={customer:[],partner:[],prospect:[],competitor:[],unclassified:[]};
   topComp.forEach(function(c){
     var rel=getRelationship(c.k);
-    (compByRel[rel] || compByRel.competitor).push(c);
+    (compByRel[rel] || compByRel.unclassified).push(c);
   });
   // Cap each bucket to 5 chips so the summary block doesn't blow up.
   Object.keys(compByRel).forEach(function(k){ compByRel[k]=compByRel[k].slice(0,5); });
@@ -2302,13 +2397,16 @@ function renderSmartSummary(items, isShortlist){
              esc(c.k)+' ·'+c.n+'</button>';
     }).join('');
   };
-  // Ordered rendering: Customers first (most important to surface), then
-  // Partners, Prospects, then Competitors last.
+  // Ordered rendering: Customers (most important to surface), then
+  // Partners, Prospects, Competitors, Unclassified last. Each group
+  // appears ONLY if it has entries — so "Competitors" no longer shows
+  // up just because the user hasn't classified Bayer/BASF/etc.
   var relOrder=[
-    {id:'customer',   label:'Customers'},
-    {id:'partner',    label:'Partners'},
-    {id:'prospect',   label:'Prospects'},
-    {id:'competitor', label:'Competitors'}
+    {id:'customer',     label:'Customers'},
+    {id:'partner',      label:'Partners'},
+    {id:'prospect',     label:'Prospects'},
+    {id:'competitor',   label:'Competitors'},
+    {id:'unclassified', label:'Unclassified'}
   ];
   var compBlocks='';
   var anyCompany=false;
@@ -2317,13 +2415,23 @@ function renderSmartSummary(items, isShortlist){
     if(!arr.length) return;
     anyCompany=true;
     var def=relationshipDef(r.id);
-    compBlocks+='<div class="rel-group rel-group-'+r.id+'" style="--rel-c:'+def.color+'">'+
+    var isUncl = r.id==='unclassified';
+    // Unclassified group gets a "Classify in Settings" CTA so the user
+    // can fix the grouping in one tap instead of being left wondering.
+    var cta = isUncl
+      ? '<button class="rel-group-cta" type="button" data-open-settings="1" title="Open Settings to classify these companies">'+icon('icon-gear')+' Classify in Settings</button>'
+      : '';
+    compBlocks+='<div class="rel-group rel-group-'+r.id+(isUncl?' rel-group-unset':'')+'" style="--rel-c:'+def.color+'">'+
                   '<div class="rel-group-head">'+
                     '<span class="rel-group-icon">'+icon(def.icon)+'</span>'+
                     '<span class="rel-group-title">'+esc(r.label)+'</span>'+
                     '<span class="rel-group-count">'+arr.length+' mentioned</span>'+
                   '</div>'+
+                  (isUncl
+                    ? '<div class="rel-group-note">'+icon('icon-warning')+' Companies you haven\'t yet assigned a relationship. Tap a chip to filter, or use the button to classify them.</div>'
+                    : '')+
                   '<div class="rel-group-chips">'+renderRelChips(arr, r.id)+'</div>'+
+                  cta+
                 '</div>';
   });
   var companiesSection;
@@ -3186,6 +3294,12 @@ document.getElementById("content").addEventListener("click",function(e){
     clearCats();
     return;
   }
+  // Smart Summary "Classify in Settings →" CTA on the Unclassified group
+  if(e.target.closest("[data-open-settings]")){
+    e.preventDefault();
+    openSettings();
+    return;
+  }
   // Active-cat banner — pill click removes that one category from the set
   var catPill=e.target.closest(".active-cat-pill[data-cat-id]");
   if(catPill){
@@ -3720,18 +3834,36 @@ function closeSettings(){
 }
 function buildSettingsHtml(){
   var rels=loadRelationships();
+  // Count how many companies are still unclassified so we can show a
+  // bulk-mark action for the rest of the list.
+  var unclassifiedCount=COMPETITORS.filter(function(c){return !rels[c.label];}).length;
   var rows=COMPETITORS.map(function(c){
-    var current=rels[c.label]||'competitor';
+    var current=rels[c.label]||'unclassified';
     var pills=RELATIONSHIP_TYPES.map(function(t){
       var on=current===t.id;
       return '<button type="button" class="rel-pill'+(on?' on-'+t.id:'')+'" data-rel-company="'+esc(c.label)+'" data-rel-type="'+esc(t.id)+'" aria-pressed="'+on+'">'+esc(t.label)+'</button>';
     }).join('');
-    return '<tr><td>'+esc(c.label)+'</td><td><span class="rel-pills">'+pills+'</span></td></tr>';
+    return '<tr'+(current==='unclassified'?' class="rel-row-unset"':'')+'>'+
+             '<td>'+esc(c.label)+'</td>'+
+             '<td><span class="rel-pills">'+pills+'</span></td>'+
+           '</tr>';
   }).join('');
+  // Bulk action: one-tap classify all unset companies.
+  var bulk = unclassifiedCount>0
+    ? '<div class="settings-bulk">'+
+        '<span class="settings-bulk-label">'+icon('icon-warning')+' '+unclassifiedCount+' compan'+(unclassifiedCount===1?'y':'ies')+' still unclassified — mark all as:</span>'+
+        '<div class="settings-bulk-pills">'+
+          RELATIONSHIP_TYPES.filter(function(t){return t.id!=='unclassified';}).map(function(t){
+            return '<button type="button" class="rel-pill on-'+t.id+'" data-rel-bulk="'+esc(t.id)+'">'+esc(t.label)+'</button>';
+          }).join('')+
+        '</div>'+
+      '</div>'
+    : '';
   return ''+
     '<button class="settings-close" id="settingsCloseBtn" aria-label="Close settings">'+icon('icon-close')+'</button>'+
     '<h3 id="settingsTitle">Relationships</h3>'+
-    '<p class="settings-intro">Classify each company as <b>Customer</b>, <b>Competitor</b>, <b>Partner</b>, or <b>Prospect</b>. Chip colors on article cards update to match — so you can see at a glance which news concerns your book of business vs. the competition.</p>'+
+    '<p class="settings-intro">Classify each company as <b>Customer</b>, <b>Partner</b>, <b>Prospect</b>, or <b>Competitor</b>. Anything you leave as <b>Unclassified</b> stays in its own group in the Smart Summary — it will never be silently counted as a competitor. Chip colors on article cards update to match.</p>'+
+    bulk+
     '<table class="relations-table">'+rows+'</table>';
 }
 
@@ -3786,6 +3918,14 @@ document.getElementById("settingsBtn").addEventListener("click", openSettings);
 document.getElementById("settingsOverlay").addEventListener("click",function(e){
   if(e.target===this || e.target.closest("#settingsCloseBtn")){
     closeSettings();
+    return;
+  }
+  // Bulk-classify: mark every unclassified company as the chosen type
+  var bulkBtn=e.target.closest("[data-rel-bulk]");
+  if(bulkBtn){
+    bulkSetUnclassified(bulkBtn.getAttribute("data-rel-bulk"));
+    var card=document.getElementById("settingsCard");
+    card.innerHTML = buildSettingsHtml();
     return;
   }
   var pill=e.target.closest("[data-rel-company]");
@@ -3921,6 +4061,148 @@ document.getElementById("copyBtn").addEventListener("click",async function(){
     }
   }
 });
+
+// CSV export — download the filtered article set as a spreadsheet-friendly
+// file. Escapes embedded quotes/newlines per RFC 4180.
+document.getElementById("csvBtn").addEventListener("click",function(){
+  var items=getFiltered();
+  var rels=loadRelationships();
+  var anns=loadAnnotations();
+  var esc=function(v){
+    if(v==null) return '';
+    var s=String(v);
+    if(/[",\n\r]/.test(s)) return '"'+s.replace(/"/g,'""')+'"';
+    return s;
+  };
+  var headers=['Date','Title','Source','Category','Region(s)','Germains Score','Competitors','Relationships','Product Angles','Impact','So What','URL'];
+  var lines=[headers.join(',')];
+  items.forEach(function(a){
+    var ann=anns[a.id]||{};
+    var comps=(a.comp||[]);
+    var compRels=comps.map(function(c){return (rels[c]||'unclassified');});
+    lines.push([
+      a.iso||'', a.t||'', a.src||'', a.c||'',
+      (a.r||[]).filter(function(r){return r!=='all'&&r!=='shortlist';}).join('|'),
+      a.gs||0,
+      comps.join('|'), compRels.join('|'),
+      (a.ang||[]).join('|'),
+      ann.impact||'', ann.soWhat||'',
+      a.u||''
+    ].map(esc).join(','));
+  });
+  var csv='﻿'+lines.join('\r\n'); // BOM for Excel UTF-8 friendliness
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download='seedpulse-'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},2000);
+  showToast(items.length+' articles exported as CSV');
+});
+
+// Keyboard shortcuts — j/k next/prev card, s star current, ? help
+(function(){
+  var SHORTCUT_HINT_KEY='seedpulse_shortcut_hint_seen_v1';
+  var currentIdx=-1;
+  function inputFocused(){
+    var t=document.activeElement;
+    if(!t) return false;
+    var tag=t.tagName;
+    return tag==='INPUT'||tag==='TEXTAREA'||t.isContentEditable;
+  }
+  function visibleCards(){
+    return Array.prototype.slice.call(document.querySelectorAll('#content .card, #content .tt-card'));
+  }
+  function focusCard(idx){
+    var cards=visibleCards();
+    if(!cards.length) return;
+    if(idx<0) idx=0;
+    if(idx>=cards.length) idx=cards.length-1;
+    currentIdx=idx;
+    cards.forEach(function(c,i){ c.classList.toggle('kbd-focus', i===idx); });
+    cards[idx].scrollIntoView({behavior:'smooth',block:'center'});
+  }
+  function showShortcutHelp(){
+    var html =
+      '<div class="kbd-help-card">'+
+        '<button class="kbd-help-close" aria-label="Close">'+icon('icon-close')+'</button>'+
+        '<h3>Keyboard shortcuts</h3>'+
+        '<dl>'+
+          '<dt><kbd>j</kbd> / <kbd>↓</kbd></dt><dd>Next article</dd>'+
+          '<dt><kbd>k</kbd> / <kbd>↑</kbd></dt><dd>Previous article</dd>'+
+          '<dt><kbd>Enter</kbd></dt><dd>Open focused article</dd>'+
+          '<dt><kbd>s</kbd></dt><dd>Star / un-star focused article</dd>'+
+          '<dt><kbd>/</kbd></dt><dd>Focus search</dd>'+
+          '<dt><kbd>g</kbd> then <kbd>t</kbd></dt><dd>Scroll to top</dd>'+
+          '<dt><kbd>b</kbd></dt><dd>Open briefing</dd>'+
+          '<dt><kbd>?</kbd></dt><dd>Show this help</dd>'+
+          '<dt><kbd>Esc</kbd></dt><dd>Close any open dialog</dd>'+
+        '</dl>'+
+      '</div>';
+    var overlay=document.createElement('div');
+    overlay.className='kbd-help-overlay';
+    overlay.innerHTML=html;
+    overlay.addEventListener('click',function(e){
+      if(e.target===overlay || e.target.closest('.kbd-help-close')) overlay.remove();
+    });
+    document.body.appendChild(overlay);
+  }
+  // Multi-key sequences (vim-style `gt`)
+  var lastKey='', lastKeyAt=0;
+  document.addEventListener('keydown',function(e){
+    if(inputFocused()) return;
+    if(e.metaKey || e.ctrlKey || e.altKey) return;
+    var k=e.key;
+    // Sequence handler — only "g" + "t" today
+    var seqAlive = (Date.now()-lastKeyAt)<900;
+    if(seqAlive && lastKey==='g' && k==='t'){
+      window.scrollTo({top:0,behavior:'smooth'});
+      lastKey=''; return;
+    }
+    if(k==='g'){ lastKey='g'; lastKeyAt=Date.now(); return; }
+    lastKey='';
+    switch(k){
+      case 'j': case 'ArrowDown': e.preventDefault(); focusCard(currentIdx+1); return;
+      case 'k': case 'ArrowUp':   e.preventDefault(); focusCard(currentIdx-1); return;
+      case 'Enter':
+        var cards=visibleCards();
+        if(currentIdx>=0 && cards[currentIdx]){
+          var link=cards[currentIdx].querySelector('.card-link, a');
+          if(link){ link.click(); }
+        }
+        return;
+      case 's':
+        var cards2=visibleCards();
+        if(currentIdx>=0 && cards2[currentIdx]){
+          var starBtn=cards2[currentIdx].querySelector('[data-star]');
+          if(starBtn) starBtn.click();
+        }
+        return;
+      case '/':
+        e.preventDefault();
+        var search=document.getElementById('search');
+        if(search){ search.focus(); search.select(); }
+        return;
+      case 'b':
+        var bb=document.getElementById('briefingBtn');
+        if(bb) bb.click();
+        return;
+      case '?':
+        showShortcutHelp();
+        return;
+    }
+  });
+  // First-time hint — once per browser
+  try{
+    if(!localStorage.getItem(SHORTCUT_HINT_KEY) && window.matchMedia('(hover:hover)').matches){
+      setTimeout(function(){
+        showToast('Tip: press ? for keyboard shortcuts');
+        localStorage.setItem(SHORTCUT_HINT_KEY,'1');
+      }, 4000);
+    }
+  }catch(_){}
+})();
 
 // Scroll-to-top
 var scrollTop=document.getElementById("scrollTop");

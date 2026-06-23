@@ -1,9 +1,9 @@
-// SeedPulse service worker v13 — SWR caches + notifications + Web Push
-// v13: Product angles + Watchlist hits now use the same subhead-and-chip-row
-// rhythm as the relationship groups so the whole Smart Summary stack reads
-// consistently.
-const SHELL_CACHE = 'seedpulse-shell-v13';
-const API_CACHE   = 'seedpulse-api-v13';
+// SeedPulse service worker v14 — SWR caches + notifications + Web Push
+// v14: Unclassified relationship default + bulk-classify in Settings +
+// CSV export + keyboard shortcuts. Bump forces clients to reload so the
+// new default never silently treats unset companies as competitors.
+const SHELL_CACHE = 'seedpulse-shell-v14';
+const API_CACHE   = 'seedpulse-api-v14';
 
 // Push Worker URL — set at build/deploy time; empty means push disabled.
 // The index.html writes this into a property on the SW registration after
