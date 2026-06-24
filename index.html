@@ -122,6 +122,10 @@
     <symbol id="icon-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></symbol>
     <symbol id="icon-warning" viewBox="0 0 24 24"><path d="M12 3l10 18H2z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 10v5M12 18v.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
     <symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3.51-7.12M21 4v5h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <!-- Media icons: video play, podcast mic, article document -->
+    <symbol id="icon-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 8l6 4-6 4z" fill="currentColor"/></symbol>
+    <symbol id="icon-podcast" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6 11a6 6 0 0012 0M12 17v4M9 21h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="icon-article" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M15 3v4h4M9 12h7M9 16h7M9 8h3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
   </defs>
 </svg>
 
@@ -530,6 +534,73 @@ main{max-width:760px;margin:0 auto;padding:18px 16px calc(24px + var(--safe-b))}
 .card.is-read{opacity:.62}
 .card.is-read:hover{opacity:1}
 .card.is-read h4{color:var(--text-2)}
+
+/* Media cards (podcast / video) — distinct visual treatment from articles.
+ * - Themed accent bar on the left replaces the category color
+ * - Soft tinted background patch behind the title
+ * - "PODCAST" / "VIDEO" badge in the top-right corner
+ * - Optional thumbnail on the right (16:9 letterbox when present)
+ * The card structure stays identical so all card-level interactions
+ * (star, share, chips, briefing) keep working unchanged. */
+.card-media{
+  --cat-c: var(--kind-c, var(--accent));
+  padding-top:14px;
+  background:linear-gradient(180deg, var(--kind-soft, transparent) 0%, var(--surface) 60%);
+}
+.card-media::before{ background:var(--kind-c, var(--accent)); }
+.kind-badge{
+  position:absolute;top:10px;right:12px;
+  display:inline-flex;align-items:center;gap:4px;
+  font:700 9.5px var(--sans);letter-spacing:.7px;text-transform:uppercase;
+  padding:3px 8px;border-radius:999px;
+  background:var(--kind-c, var(--accent));color:#fff;
+  z-index:2;line-height:1.2;
+}
+.kind-badge .icon{font-size:11px;width:11px;height:11px}
+.kind-video .kind-badge{background:#B6482D}
+.kind-podcast .kind-badge{background:#6B4A8A}
+.card-media .card-top{padding-right:90px} /* leave room for the badge */
+.card-thumb{
+  width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;
+  margin:6px 0 10px;background:var(--chip-bg);
+  position:relative;
+}
+.card-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.card-media.kind-video .card-thumb::after{
+  content:'';position:absolute;inset:0;
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='rgba(0,0,0,.55)'/><path d='M10 8l6 4-6 4z' fill='%23fff'/></svg>") center/56px no-repeat;
+  opacity:.9;pointer-events:none;
+}
+.card-media .card-link{color:var(--kind-c, var(--accent))}
+
+/* Media-kind segmented filter row (All / Articles / Podcasts / Videos) */
+.media-kind-row{
+  display:flex;gap:3px;padding:3px;border-radius:8px;
+  background:rgba(0,0,0,.18);
+  overflow-x:auto;scrollbar-width:none;flex:1;min-width:0;
+}
+.media-kind-row::-webkit-scrollbar{display:none}
+.mk-pill{
+  --mk-c: rgba(255,255,255,.6);
+  flex-shrink:0;display:inline-flex;align-items:center;gap:5px;
+  padding:5px 10px;border-radius:5px;border:0;cursor:pointer;
+  background:transparent;color:rgba(255,255,255,.72);
+  font:600 11.5px var(--sans);white-space:nowrap;
+  transition:background .15s, color .15s, transform .08s;
+}
+.mk-pill .icon{font-size:12px;width:12px;height:12px;color:var(--mk-c)}
+.mk-pill:active{transform:scale(.97)}
+.mk-pill.on{background:rgba(255,255,255,.22);color:#fff}
+.mk-pill.on .icon{color:#fff}
+.mk-count{
+  font:700 10px var(--sans);padding:1px 6px;border-radius:8px;
+  background:rgba(255,255,255,.12);color:rgba(255,255,255,.85);letter-spacing:.2px;
+}
+.mk-pill.on .mk-count{background:#fff;color:var(--hdr-1)}
+@media (max-width:420px){
+  .mk-pill{padding:4px 8px;font-size:11px}
+  .mk-pill > span:not(.mk-count){display:none} /* icon-only on tight screens */
+}
 .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .card h4{font:700 14.5px/1.4 var(--serif);color:var(--text);flex:1;letter-spacing:-.1px}
 .card-link{
@@ -1226,6 +1297,10 @@ footer{
           <div class="cat-filter-menu" id="catFilterMenu" role="menu" aria-label="Category filter"></div>
         </div>
       </div>
+      <!-- Row 3: media-kind segmented filter (All / Articles / Podcasts / Videos). -->
+      <div class="filter-rail-row filter-rail-row-3">
+        <div class="media-kind-row" id="mediaKindRow" role="tablist" aria-label="Media type filter"></div>
+      </div>
     </div>
     <div class="search-row">
       <div class="search-wrap">
@@ -1347,6 +1422,28 @@ var GN='https://news.google.com/rss/search?hl=en&gl=US&ceid=US:en&num=100&q=';
 // of secondary (crop-name) matches. Articles with gs>=3 trigger notifications.
 var GERMAINS_CORE=['priming','pelleting','film coat','filmcoat','film-coat','germains','seed hygiene','seed sanitation','abiotic stress','biotic stress','stress tolerance','stress resistance','germination uniformity','seedling vigour','seed vigour','seed performance','stand establishment','emergence rate','encrust','biopriming','matrix priming','osmopriming','hydropriming','hydro priming','osmo priming','drum priming','solid matrix priming'];
 var GERMAINS_NOTIFY_MIN=3; // minimum score that warrants a push notification
+
+/* Media-kind metadata — each item has a `k` field set by the worker:
+ *   "article" | "podcast" | "video"
+ * Each kind gets its own color, icon, label, and CTA verb so podcasts
+ * and videos visually stand out from articles in the same card stream. */
+var KIND_DEFS = {
+  article: { label: 'Article',  cta: 'Read',   icon: 'icon-article', color: '#3D6B22', soft: 'transparent' },
+  podcast: { label: 'Podcast',  cta: 'Listen', icon: 'icon-podcast', color: '#6B4A8A', soft: '#EFE8F3' },
+  video:   { label: 'Video',    cta: 'Watch',  icon: 'icon-play',    color: '#B6482D', soft: '#FBE9E1' }
+};
+function kindDef(k){ return KIND_DEFS[k] || KIND_DEFS.article; }
+
+/* Media-type filter — All / Articles / Podcasts / Videos.
+ * Persists across sessions like the reading-mode preference. */
+var MEDIA_KIND_KEY = 'seedpulse_media_kind_v1';
+var mediaKind = (function(){ try{ return localStorage.getItem(MEDIA_KIND_KEY) || 'all'; }catch(e){ return 'all'; } })();
+function setMediaKind(k){
+  if(k===mediaKind) return;
+  mediaKind=k;
+  try{ localStorage.setItem(MEDIA_KIND_KEY, k); }catch(_){}
+  renderWithSpinner();
+}
 
 /* ═══════════════════════ Feed list ═══════════════════════ */
 var FEEDS=[
@@ -2227,6 +2324,12 @@ function getFiltered(){
     // Reading-mode filter — layered on top of the region/period filters
     if(viewMode==='unread' && readMap[a.id]) return false;
     if(viewMode==='priority' && (a.gs||0) < GERMAINS_NOTIFY_MIN) return false;
+    // Media-kind filter — articles/podcasts/videos. Treat missing `k`
+    // as "article" so older items don't disappear.
+    if(mediaKind!=='all'){
+      var ak = a.k || 'article';
+      if(ak !== mediaKind) return false;
+    }
     if(!filter) return true;
     var txt=(a.t+" "+a.s+" "+(a.src||"")).toLowerCase();
     return txt.indexOf(filter.toLowerCase())>=0;
@@ -2318,6 +2421,36 @@ function renderPeriods(){
     h+='<button class="pill '+(period===p.id?'on':'')+'" data-period="'+p.id+'" role="tab" aria-selected="'+(period===p.id)+'">'+esc(p.label)+'</button>';
   });
   document.getElementById("periods").innerHTML=h;
+}
+
+/* Media-kind pill row — segmented control above the article list. Each
+ * pill shows the live count of items of that kind, so the user can see
+ * at a glance how much podcast / video coverage is available without
+ * having to switch the filter. */
+function renderMediaKind(){
+  var el=document.getElementById('mediaKindRow');
+  if(!el) return;
+  var counts={all:A.length, article:0, podcast:0, video:0};
+  for(var i=0;i<A.length;i++){
+    var k=A[i].k||'article';
+    counts[k]=(counts[k]||0)+1;
+  }
+  var kinds=[
+    {id:'all',     label:'All',      icon:'icon-globe'},
+    {id:'article', label:'Articles', icon:'icon-article'},
+    {id:'podcast', label:'Podcasts', icon:'icon-podcast'},
+    {id:'video',   label:'Videos',   icon:'icon-play'}
+  ];
+  el.innerHTML = kinds.map(function(k){
+    var on=mediaKind===k.id;
+    var def=k.id==='all'?null:KIND_DEFS[k.id];
+    var style=def?' style="--mk-c:'+def.color+'"':'';
+    return '<button class="mk-pill mk-'+esc(k.id)+(on?' on':'')+'" data-media-kind="'+esc(k.id)+'"'+style+' aria-pressed="'+on+'">'+
+             icon(k.icon)+
+             '<span>'+esc(k.label)+'</span>'+
+             '<span class="mk-count">'+(counts[k.id]||0)+'</span>'+
+           '</button>';
+  }).join('');
 }
 
 /* Category filter — compact dropdown trigger + popover panel with
@@ -2820,8 +2953,22 @@ function renderCard(a,cat,shortlist){
       '<div class="cluster-children" data-cluster-body="'+esc(a.id)+'">'+kids+'</div>';
   }
 
+  // Media-kind treatment — podcast/video get their own accent color, an
+  // overlay badge, a thumbnail when one is available, and a verb-led CTA
+  // ("Listen" / "Watch") instead of the generic "Source" link.
+  var kdef = kindDef(a.k);
+  var kindBadge = (a.k && a.k !== 'article')
+    ? '<span class="kind-badge kind-'+esc(a.k)+'">'+icon(kdef.icon)+' '+esc(kdef.label)+(a.dur?' · '+esc(a.dur):'')+'</span>'
+    : '';
+  var kindClass = (a.k && a.k !== 'article') ? ' card-media card-media-'+esc(a.k) : '';
+  var thumbHtml = (a.thumb && a.k && a.k !== 'article')
+    ? '<div class="card-thumb"><img loading="lazy" src="'+esc(a.thumb)+'" alt=""></div>'
+    : '';
+
   var readClass = isRead(a.id) ? ' is-read' : '';
-  return '<article class="card'+(starred?' in-shortlist':'')+readClass+'" data-aid="'+esc(a.id)+'">'+
+  return '<article class="card'+(starred?' in-shortlist':'')+readClass+kindClass+'" data-aid="'+esc(a.id)+'"'+(a.k&&a.k!=='article'?' style="--kind-c:'+kdef.color+';--kind-soft:'+kdef.soft+'"':'')+'>'+
+           kindBadge+
+           thumbHtml+
            '<div class="card-top">'+
              '<h4>'+esc(a.t)+'</h4>'+
              '<button class="star-btn '+(starred?'on':'')+'" data-star="'+esc(a.id)+'" aria-pressed="'+starred+'" aria-label="'+(starred?'Remove from shortlist':'Add to shortlist')+'" title="'+(starred?'Remove from shortlist':'Add to shortlist')+'">'+
@@ -2830,7 +2977,7 @@ function renderCard(a,cat,shortlist){
              '<button class="share-btn" data-share="'+esc(a.id)+'" aria-label="Share article" title="Share this article">'+
                icon('icon-share')+
              '</button>'+
-             (a.u?'<a class="card-link" href="'+esc(a.u)+'" target="_blank" rel="noopener">Source '+icon('icon-external')+'</a>':'')+
+             (a.u?'<a class="card-link" href="'+esc(a.u)+'" target="_blank" rel="noopener">'+esc(kdef.cta)+' '+icon('icon-external')+'</a>':'')+
            '</div>'+
            (a.s?'<p>'+esc(a.s)+'</p>':'')+
            impactRow+
@@ -3380,6 +3527,7 @@ function finalizeLoad(){
   checkAndNotify();
   updateBellUI();
   updateBriefingIndicator();
+  renderMediaKind();
   setTimeout(function(){ maybeGenerateBriefing({}); }, 10000);
 }
 
@@ -3406,6 +3554,7 @@ function refreshFromWorker(opts){
         render();
         renderStats(getFiltered());
         updateBriefingIndicator();
+        renderMediaKind();
         var newCount = A.filter(function(a){return !existingIds[a.id];}).length;
         if(newCount>0 && !opts.silent){
           showToast(newCount+' new article'+(newCount===1?'':'s'));
@@ -3514,6 +3663,11 @@ document.getElementById("periods").addEventListener("click",function(e){
 document.getElementById("catFilterTrigger").addEventListener("click",function(e){
   e.stopPropagation();
   toggleCategoryMenu();
+});
+document.getElementById("mediaKindRow").addEventListener("click",function(e){
+  var btn=e.target.closest("[data-media-kind]"); if(!btn) return;
+  setMediaKind(btn.getAttribute("data-media-kind"));
+  renderMediaKind();
 });
 document.getElementById("catFilterMenu").addEventListener("click",function(e){
   e.stopPropagation();
@@ -4588,6 +4742,7 @@ scrollTop.addEventListener("click",function(){ window.scrollTo({top:0,behavior:'
 renderTabs();
 renderPeriods();
 renderCategoryTrigger();
+renderMediaKind();
 checkInstallPrompt();
 pruneRead(); // drop read-state entries older than 90 days
 // Pull cloud-synced relationships + watchlist before rendering so the

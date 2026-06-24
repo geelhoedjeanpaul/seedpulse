@@ -41,32 +41,56 @@ const FEED_TIMEOUT_MS = 8000;
 
 // Same feed list as the app (subset — we only need discovery, not completeness here)
 const GN = 'https://news.google.com/rss/search?hl=en&gl=US&ceid=US:en&num=100&q=';
+const YT = 'https://www.youtube.com/feeds/videos.xml?channel_id='; // append channel id
+
+// Feeds are now objects: { url, kind } where kind is "article", "podcast",
+// or "video". Each item that comes out of parseFeed inherits its feed's
+// kind so the client can render media items with distinct styling.
 const FEEDS = [
-  'https://www.european-seed.com/feed/',
-  'https://worldseed.org/feed/',
-  'https://agfundernews.com/feed',
-  'https://www.sciencedaily.com/rss/plants_animals/seeds.xml',
-  'https://phys.org/rss-feed/biology-news/plants/',
-  GN + 'site:hortidaily.com',
-  GN + 'site:freshplaza.com',
-  GN + 'site:seedworld.com',
-  GN + 'site:igrownews.com',
-  GN + '%22seed+treatment%22+OR+%22seed+coating%22+when:30d',
-  GN + '%22seed+priming%22+OR+%22seed+pelleting%22+OR+%22film+coating%22+when:30d',
-  GN + '%22seed+enhancement%22+OR+%22seed+vigour%22+when:30d',
-  GN + 'microplastic+seed+coating+OR+%22seed+treatment%22+when:30d',
-  GN + 'biologicals+biocontrol+seed+biostimulant+when:30d',
-  GN + 'Syngenta+OR+%22Rijk+Zwaan%22+OR+%22Enza+Zaden%22+seed+news+when:30d',
-  GN + 'germains+seed+technology+when:30d',
+  // ─── Articles ─────────────────────────────────────────────────────────
+  { url: 'https://www.european-seed.com/feed/',                                  kind: 'article' },
+  { url: 'https://worldseed.org/feed/',                                          kind: 'article' },
+  { url: 'https://agfundernews.com/feed',                                        kind: 'article' },
+  { url: 'https://www.sciencedaily.com/rss/plants_animals/seeds.xml',            kind: 'article' },
+  { url: 'https://phys.org/rss-feed/biology-news/plants/',                       kind: 'article' },
+  { url: GN + 'site:hortidaily.com',                                             kind: 'article' },
+  { url: GN + 'site:freshplaza.com',                                             kind: 'article' },
+  { url: GN + 'site:seedworld.com',                                              kind: 'article' },
+  { url: GN + 'site:igrownews.com',                                              kind: 'article' },
+  { url: GN + '%22seed+treatment%22+OR+%22seed+coating%22+when:30d',             kind: 'article' },
+  { url: GN + '%22seed+priming%22+OR+%22seed+pelleting%22+OR+%22film+coating%22+when:30d', kind: 'article' },
+  { url: GN + '%22seed+enhancement%22+OR+%22seed+vigour%22+when:30d',            kind: 'article' },
+  { url: GN + 'microplastic+seed+coating+OR+%22seed+treatment%22+when:30d',      kind: 'article' },
+  { url: GN + 'biologicals+biocontrol+seed+biostimulant+when:30d',               kind: 'article' },
+  { url: GN + 'Syngenta+OR+%22Rijk+Zwaan%22+OR+%22Enza+Zaden%22+seed+news+when:30d', kind: 'article' },
+  { url: GN + 'germains+seed+technology+when:30d',                               kind: 'article' },
   // R&D Developments — peer-reviewed and applied research
-  'https://www.frontiersin.org/journals/plant-science/rss',
-  'https://www.nature.com/nplants.rss',
-  'https://www.mdpi.com/journal/agronomy/rss',
-  GN + '%22CRISPR%22+OR+%22prime+editing%22+plant+OR+crop+when:30d',
-  GN + '%22high-throughput+phenotyping%22+OR+%22digital+phenotyping%22+when:30d',
-  GN + '%22machine+learning%22+seed+OR+crop+when:30d',
-  GN + '%22climate+resilient%22+crop+OR+%22drought+tolerant%22+variety+when:30d',
-  GN + '%22plant+microbiome%22+OR+%22rhizosphere%22+research+when:30d'
+  { url: 'https://www.frontiersin.org/journals/plant-science/rss',               kind: 'article' },
+  { url: 'https://www.nature.com/nplants.rss',                                   kind: 'article' },
+  { url: 'https://www.mdpi.com/journal/agronomy/rss',                            kind: 'article' },
+  { url: GN + '%22CRISPR%22+OR+%22prime+editing%22+plant+OR+crop+when:30d',      kind: 'article' },
+  { url: GN + '%22high-throughput+phenotyping%22+OR+%22digital+phenotyping%22+when:30d', kind: 'article' },
+  { url: GN + '%22machine+learning%22+seed+OR+crop+when:30d',                    kind: 'article' },
+  { url: GN + '%22climate+resilient%22+crop+OR+%22drought+tolerant%22+variety+when:30d', kind: 'article' },
+  { url: GN + '%22plant+microbiome%22+OR+%22rhizosphere%22+research+when:30d',   kind: 'article' },
+
+  // ─── Podcasts (RSS audio feeds) ──────────────────────────────────────
+  // Apple Podcasts RSS — Seed World podcast & sister shows
+  { url: 'https://feeds.buzzsprout.com/1932571.rss',                             kind: 'podcast' }, // Seed World - Giant Views
+  { url: 'https://feeds.megaphone.fm/futureofag',                                kind: 'podcast' }, // Future of Agriculture
+  { url: 'https://anchor.fm/s/4d4ab7c0/podcast/rss',                             kind: 'podcast' }, // AgTech So What
+  { url: 'https://feeds.transistor.fm/the-modern-acre',                          kind: 'podcast' }, // The Modern Acre
+  { url: 'https://feeds.buzzsprout.com/1996867.rss',                             kind: 'podcast' }, // CropLife - Ag Tech Talk
+  // Generic Google News podcast search for seed-industry coverage
+  { url: GN + 'podcast+seed+OR+horticulture+OR+%22plant+breeding%22+when:30d',   kind: 'podcast' },
+
+  // ─── Videos (YouTube channel RSS) ────────────────────────────────────
+  { url: YT + 'UC0PXVy5j2J7BVZQDl0sUPbg',                                        kind: 'video' }, // SeedWorld TV (placeholder; replace with verified ID)
+  { url: YT + 'UCTKqJDPCEDQSv-IZUaJJ-vw',                                        kind: 'video' }, // Syngenta channel
+  { url: YT + 'UCNJk1xK45Yvi1JtNiSx9hWQ',                                        kind: 'video' }, // BASF Agricultural Solutions
+  { url: YT + 'UC0Q8b2I3JK1H1NkV5OZAr8w',                                        kind: 'video' }, // Bayer Crop Science
+  { url: GN + 'youtube.com+seed+technology+OR+%22seed+treatment%22+when:30d',    kind: 'video' },
+  { url: GN + 'video+seed+coating+OR+pelleting+OR+priming+when:30d',             kind: 'video' }
 ];
 
 const CAT_KW_GERMAINS = ['priming','pelleting','film coat','filmcoat','film-coat','seed hygiene','seed sanitation','hydro priming','osmo priming','drum priming','solid matrix priming','biopriming','matrix priming','abiotic stress','biotic stress','stress tolerance','stress resistance','germination uniformity','stand establishment','seedling vigour','emergence rate','seed vigour','seed performance','sugar beet','sugarbeet','beet seed','fodder beet','wheat seed','winter wheat','spring wheat','barley seed','winter barley','spring barley','oilseed rape','osr','canola seed','sorghum seed','sunflower seed','maize seed','corn seed','carrot seed','onion seed','leek seed','spinach seed','lettuce seed','celery seed','fennel seed','parsnip seed','parsley seed','beetroot seed','swiss chard','beet seedling','germains'];
@@ -492,7 +516,12 @@ async function signVapidJwt(audience, subject, keys) {
 }
 
 /* ═══════════════════════ RSS fetching + parsing ═══════════════════════ */
-async function fetchFeedSafe(feedUrl) {
+// Accepts either a string URL (legacy) or {url, kind}. Returns items
+// tagged with `kind` so the client can render articles vs podcasts vs
+// videos with distinct styling.
+async function fetchFeedSafe(feed) {
+  const feedUrl = typeof feed === 'string' ? feed : feed.url;
+  const kind = typeof feed === 'string' ? 'article' : (feed.kind || 'article');
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), FEED_TIMEOUT_MS);
@@ -507,13 +536,14 @@ async function fetchFeedSafe(feedUrl) {
     clearTimeout(timer);
     if (!res.ok) return [];
     const xml = await res.text();
-    return parseFeed(xml, feedUrl);
+    return parseFeed(xml, feedUrl, kind);
   } catch {
     return [];
   }
 }
 
-function parseFeed(xml, srcUrl) {
+function parseFeed(xml, srcUrl, kind) {
+  kind = kind || 'article';
   const items = [];
   const itemRe = /<(item|entry)\b[\s\S]*?<\/\1>/g;
   let m;
@@ -521,12 +551,26 @@ function parseFeed(xml, srcUrl) {
     const block = m[0];
     const title = decodeEntities(stripCdata(extractTag(block, 'title') || ''));
     const desc = decodeEntities(stripCdata(
-      extractTag(block, 'description') || extractTag(block, 'summary') || extractTag(block, 'content') || ''
+      extractTag(block, 'description') || extractTag(block, 'summary') || extractTag(block, 'content') ||
+      extractTag(block, 'itunes:summary') || extractTag(block, 'media:description') || ''
     )).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 280);
     const link = extractLink(block);
     const pub = extractTag(block, 'pubDate') || extractTag(block, 'published') || extractTag(block, 'updated') || '';
     const iso = (new Date(pub || Date.now())).toISOString().split('T')[0];
-    items.push({ id: articleId(title, link), t: title, s: desc, u: link, iso, src: hostname(srcUrl) });
+    // Media-specific extras: duration (iTunes podcasts + YouTube Atom)
+    // and a thumbnail URL where available (media:thumbnail, itunes:image,
+    // or <media:content url="...">). All optional — falls through silently
+    // when not present so non-media feeds aren't penalised.
+    const item = { id: articleId(title, link), t: title, s: desc, u: link, iso, src: hostname(srcUrl), k: kind };
+    if (kind !== 'article') {
+      const dur = extractTag(block, 'itunes:duration') || extractTag(block, 'yt:duration') || '';
+      if (dur) item.dur = String(dur).trim().slice(0, 12);
+      const thumbMatch = block.match(/<media:thumbnail[^>]*url=["']([^"']+)["']/i)
+        || block.match(/<itunes:image[^>]*href=["']([^"']+)["']/i)
+        || block.match(/<media:content[^>]*url=["']([^"']+)["']/i);
+      if (thumbMatch) item.thumb = thumbMatch[1];
+    }
+    items.push(item);
   }
   return items;
 }

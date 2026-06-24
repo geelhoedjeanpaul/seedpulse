@@ -1,9 +1,9 @@
-// SeedPulse service worker v17 — SWR caches + notifications + Web Push
-// v17: Article pool served from worker /articles (30-min cron) instead
-// of direct browser fetch of 70+ RSS feeds. Plus product-angle layout
-// alignment with the relationship blocks.
-const SHELL_CACHE = 'seedpulse-shell-v17';
-const API_CACHE   = 'seedpulse-api-v17';
+// SeedPulse service worker v18 — SWR caches + notifications + Web Push
+// v18: Podcasts + Videos are now first-class media items in the same
+// stream. New `k` field, kind-specific card treatment, media-kind
+// segmented filter row, and worker feeds for YouTube + podcast RSS.
+const SHELL_CACHE = 'seedpulse-shell-v18';
+const API_CACHE   = 'seedpulse-api-v18';
 
 // Push Worker URL — set at build/deploy time; empty means push disabled.
 // The index.html writes this into a property on the SW registration after
