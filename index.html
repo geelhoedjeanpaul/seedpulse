@@ -544,22 +544,23 @@ main{max-width:760px;margin:0 auto;padding:18px 16px calc(24px + var(--safe-b))}
  * (star, share, chips, briefing) keep working unchanged. */
 .card-media{
   --cat-c: var(--kind-c, var(--accent));
-  padding-top:14px;
   background:linear-gradient(180deg, var(--kind-soft, transparent) 0%, var(--surface) 60%);
 }
 .card-media::before{ background:var(--kind-c, var(--accent)); }
+/* Kind badge — was absolutely positioned at top-right and visually
+ * collided with the Listen/Watch link inside .card-top. Now it's an
+ * inline block above the title, so it never overlaps the action area
+ * regardless of label length (PODCAST · 1 h 12 min etc.). */
 .kind-badge{
-  position:absolute;top:10px;right:12px;
   display:inline-flex;align-items:center;gap:4px;
   font:700 9.5px var(--sans);letter-spacing:.7px;text-transform:uppercase;
   padding:3px 8px;border-radius:999px;
   background:var(--kind-c, var(--accent));color:#fff;
-  z-index:2;line-height:1.2;
+  line-height:1.2;margin-bottom:8px;align-self:flex-start;max-width:100%;
 }
 .kind-badge .icon{font-size:11px;width:11px;height:11px}
 .kind-video .kind-badge{background:#B6482D}
 .kind-podcast .kind-badge{background:#6B4A8A}
-.card-media .card-top{padding-right:90px} /* leave room for the badge */
 .card-thumb{
   width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;
   margin:6px 0 10px;background:var(--chip-bg);
