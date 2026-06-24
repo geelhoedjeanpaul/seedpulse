@@ -108,6 +108,25 @@ export default {
         return cors(json(raw ? JSON.parse(raw) : { items: [] }));
       }
 
+      // Full article pool — populated every 30 min by runCheck. The client
+      // pulls this on app open INSTEAD of fetching 70+ RSS feeds direct,
+      // so first paint is ~300-500 ms instead of 8-30 s. Falls back to
+      // direct RSS fetch in the client if this is empty (cold worker).
+      if (url.pathname === '/articles' && request.method === 'GET') {
+        const raw = await env.SUBS.get('articles');
+        if (!raw) return cors(json({ items: [], updatedAt: 0, count: 0, cold: true }));
+        // Forward as-is. Edge cache for 60 s so multiple page loads in
+        // quick succession don't all hit KV.
+        const res = new Response(raw, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'public, max-age=60'
+          }
+        });
+        return cors(res);
+      }
+
       // Dev helper: triggers a check immediately. Protect or remove in prod.
       if (url.pathname === '/trigger-test' && request.method === 'GET') {
         if (url.searchParams.get('key') !== env.TRIGGER_KEY) return cors(json({ error: 'forbidden' }, 403));
@@ -350,12 +369,28 @@ async function runCheck(env) {
   const results = await Promise.all(FEEDS.map(fetchFeedSafe));
   const articles = results.flat();
 
-  // 2. Dedupe, score, filter to high-priority
+  // 2. Dedupe + score every article (not just the high-priority ones).
+  //    The full pool gets stored in KV under 'articles' so the client
+  //    can pull one fast JSON blob instead of fetching 70+ RSS feeds.
   const byId = new Map();
   for (const a of articles) if (!byId.has(a.id)) byId.set(a.id, a);
-  const scored = [...byId.values()]
+  const allScored = [...byId.values()]
     .map(a => ({ ...a, gs: germainsScore(a.t, a.s) }))
-    .filter(a => a.gs >= NOTIFY_MIN);
+    .sort((a, b) => (b.iso || '').localeCompare(a.iso || ''));
+  // Persist the top 600 by recency — covers ~weekly window for 70+ feeds
+  // and stays well under KV's value-size limit. Stored under 'articles'.
+  const articlesPayload = {
+    items: allScored.slice(0, 600),
+    updatedAt: Date.now(),
+    count: allScored.length
+  };
+  // Fire-and-forget; don't block scoring/push on this write.
+  // (runCheck has no ctx.waitUntil access since it's called from the
+  // scheduled handler — but the awaited put below is fine, KV is fast.)
+  await env.SUBS.put('articles', JSON.stringify(articlesPayload));
+
+  // 3. High-priority filter for notifications
+  const scored = allScored.filter(a => a.gs >= NOTIFY_MIN);
 
   // 3. Load seen set, determine what's new
   const seenRaw = await env.SUBS.get('__seen');

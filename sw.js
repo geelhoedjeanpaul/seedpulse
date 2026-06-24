@@ -1,9 +1,9 @@
-// SeedPulse service worker v16 — SWR caches + notifications + Web Push
-// v16: Cloud-sync per-user Settings (relationships + watchlist) keyed by
-// a stable anonymous UUID stored client-side. Survives PWA reinstall,
-// "Clear website data", and switches between devices.
-const SHELL_CACHE = 'seedpulse-shell-v16';
-const API_CACHE   = 'seedpulse-api-v16';
+// SeedPulse service worker v17 — SWR caches + notifications + Web Push
+// v17: Article pool served from worker /articles (30-min cron) instead
+// of direct browser fetch of 70+ RSS feeds. Plus product-angle layout
+// alignment with the relationship blocks.
+const SHELL_CACHE = 'seedpulse-shell-v17';
+const API_CACHE   = 'seedpulse-api-v17';
 
 // Push Worker URL — set at build/deploy time; empty means push disabled.
 // The index.html writes this into a property on the SW registration after

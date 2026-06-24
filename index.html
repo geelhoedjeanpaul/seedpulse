@@ -251,6 +251,11 @@ a{color:var(--accent);text-decoration:none}
   font-size:18px;color:#fff;flex-shrink:0;
 }
 .hdr-mark .icon{width:18px;height:18px}
+.hdr-mark.refreshing{
+  animation:refreshPulse 1.2s ease-in-out infinite;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.5), 0 0 0 2px rgba(255,255,255,.18);
+}
+@keyframes refreshPulse{0%,100%{opacity:1}50%{opacity:.55}}
 .hdr-brand{display:flex;flex-direction:column;flex:1;min-width:0;gap:1px}
 .hdr h1{font:700 18px/1.1 var(--sans);letter-spacing:-.2px;color:#fff}
 .hdr-sub{font:500 10.5px var(--sans);letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.62)}
@@ -2614,20 +2619,39 @@ function renderSmartSummary(items, isShortlist){
       (s.shortlistCount&&!isShortlist?' · <b>'+s.shortlistCount+'</b> starred total':'')+
       '</span></div>'+
     companiesSection+
-    // Product angles — match the relationship-group rhythm with a labelled
-    // subhead + standalone chip row, so the whole summary block reads as
-    // a consistent vertical stack instead of mixing two row styles.
+    // Product angles — same titled-block layout as the relationship
+    // groups for visual consistency. Single umbrella block with all
+    // angle chips inside (mirrors "Customers" block containing every
+    // customer chip).
     '<div class="summary-subhead">'+icon('icon-target')+' Germains product angles'+
       (s.topAng.length?'<span class="summary-subhead-hint">'+s.topAng.length+' detected</span>':'')+
     '</div>'+
     (s.topAng.length
-      ? '<div class="chip-row">'+angHtml+'</div>'
+      ? '<div class="rel-groups">'+
+          '<div class="rel-group rel-group-angles" style="--rel-c:var(--accent)">'+
+            '<div class="rel-group-head">'+
+              '<span class="rel-group-icon">'+icon('icon-target')+'</span>'+
+              '<span class="rel-group-title">Product Angles</span>'+
+              '<span class="rel-group-count">'+s.topAng.length+' mentioned</span>'+
+            '</div>'+
+            '<div class="rel-group-chips">'+angHtml+'</div>'+
+          '</div>'+
+        '</div>'
       : '<div class="rel-empty">No product angles detected in the current view.</div>')+
     (wlHtml
       ? '<div class="summary-subhead">'+icon('icon-eye')+' Watchlist hits'+
           '<span class="summary-subhead-hint">'+s.topWl.length+' keyword'+(s.topWl.length===1?'':'s')+'</span>'+
         '</div>'+
-        '<div class="chip-row">'+wlHtml+'</div>'
+        '<div class="rel-groups">'+
+          '<div class="rel-group rel-group-watchlist" style="--rel-c:#C79B3A">'+
+            '<div class="rel-group-head">'+
+              '<span class="rel-group-icon">'+icon('icon-eye')+'</span>'+
+              '<span class="rel-group-title">Watchlist Matches</span>'+
+              '<span class="rel-group-count">'+s.topWl.length+' keyword'+(s.topWl.length===1?'':'s')+'</span>'+
+            '</div>'+
+            '<div class="rel-group-chips">'+wlHtml+'</div>'+
+          '</div>'+
+        '</div>'
       : '')+
     // #10 AI summary button — enabled when push worker URL configured
     (PUSH_WORKER_URL?'<button class="summary-btn-ai" id="aiSumBtn">'+icon('icon-sparkles')+' Summarize for leadership</button>':'')+
@@ -3285,40 +3309,143 @@ function loadCached(){
   }catch(e){return false;}
 }
 
-/* ═══════════════════════ Load articles ═══════════════════════ */
+/* ═══════════════════════ Load articles ═══════════════════════
+ * Two-tier strategy:
+ *   1. Local cache → instant first paint
+ *   2. Worker /articles → fresh pool fetched server-side every 30 min
+ *      (single ~50 KB JSON instead of 70+ slow RSS round-trips)
+ *   3. Direct RSS as fallback only if the worker is cold or unreachable
+ *
+ * After first load, refreshFromWorker fires every 30 min while the
+ * tab is alive, AND when the user returns from a backgrounded tab
+ * with stale data (>5 min).
+ */
+var REFRESH_INTERVAL_MS = 30*60*1000; // match the worker cron
+var REFRESH_STALE_MS    = 5*60*1000;  // re-fetch on tab-return if older
+var _lastWorkerFetchTs  = 0;
+var _refreshTimer       = null;
+
 function loadArticles(){
   var usedCache=loadCached();
   renderAll();
   updateBellUI();
 
-  // If cache is fresh, skip the network fetch on this launch — still check notifications
-  if(usedCache){ checkAndNotify(); updateBellUI(); updateBriefingIndicator(); setTimeout(function(){ maybeGenerateBriefing({}); }, 10000); return; }
-
-  batchedFetch(FEEDS,8).then(function(fresh){
-    fresh=dedupe(fresh.filter(function(a){return a.t;}));
-    if(fresh.length>0){
-      var titleMap={};
-      fresh.forEach(function(a){titleMap[a.t]=true;});
-      var merged=fresh.concat(FALLBACK.filter(function(a){return !titleMap[a.t];}));
-      A=dedupe(merged);
-      // Ensure fallback items have ids + scores (they're authored without them)
-      A.forEach(function(a){
-        if(a.id==null) a.id=articleId(a.t,a.u);
-        if(a.gs==null) a.gs=germainsScore(a.t,a.s);
-      });
-      liveLoaded=true;
-      try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),items:A}));}catch(e){}
-    } else {
-      liveLoaded=true;
-    }
-    render();
-    renderStats(getFiltered());
-    checkAndNotify();
-    updateBellUI();
-    updateBriefingIndicator();
+  if(usedCache){
+    // Show cached articles immediately, then refresh from worker in the
+    // background so the UI updates with anything new.
+    checkAndNotify(); updateBellUI(); updateBriefingIndicator();
     setTimeout(function(){ maybeGenerateBriefing({}); }, 10000);
+    refreshFromWorker({silent:true});
+    scheduleAutoRefresh();
+    return;
+  }
+
+  // Cold start (no cache) — try the worker first; if it's empty/down,
+  // fall back to direct RSS so the user isn't left staring at fallback.
+  refreshFromWorker({initial:true}).then(function(got){
+    if(!got){
+      // Worker unavailable or empty — last resort, direct RSS fetch
+      batchedFetch(FEEDS,8).then(function(fresh){
+        mergeFreshArticles(fresh);
+        finalizeLoad();
+      });
+    } else {
+      finalizeLoad();
+    }
   });
+  scheduleAutoRefresh();
 }
+
+function mergeFreshArticles(fresh){
+  fresh=dedupe((fresh||[]).filter(function(a){return a.t;}));
+  if(fresh.length>0){
+    var titleMap={};
+    fresh.forEach(function(a){titleMap[a.t]=true;});
+    var merged=fresh.concat(FALLBACK.filter(function(a){return !titleMap[a.t];}));
+    A=dedupe(merged);
+    A.forEach(function(a){
+      if(a.id==null) a.id=articleId(a.t,a.u);
+      if(a.gs==null) a.gs=germainsScore(a.t,a.s);
+    });
+    liveLoaded=true;
+    try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),items:A}));}catch(e){}
+  } else {
+    liveLoaded=true;
+  }
+}
+
+function finalizeLoad(){
+  render();
+  renderStats(getFiltered());
+  checkAndNotify();
+  updateBellUI();
+  updateBriefingIndicator();
+  setTimeout(function(){ maybeGenerateBriefing({}); }, 10000);
+}
+
+/* Pull the pre-aggregated article pool from the worker. Returns Promise<bool>
+ * resolving to true when we got usable data, false otherwise (caller falls
+ * back to direct RSS fetch when this returns false on cold start). */
+function refreshFromWorker(opts){
+  opts=opts||{};
+  if(!PUSH_WORKER_URL) return Promise.resolve(false);
+  showRefreshIndicator(true);
+  return fetch(PUSH_WORKER_URL.replace(/\/$/,'')+'/articles',{cache:'no-store'})
+    .then(function(r){return r.ok?r.json():null;})
+    .then(function(data){
+      showRefreshIndicator(false);
+      if(!data || !Array.isArray(data.items) || data.items.length===0) return false;
+      _lastWorkerFetchTs = Date.now();
+      // Existing IDs we know about — used to detect what's new for a
+      // subtle "+N new" toast on subsequent refreshes (not on cold load).
+      var existingIds = {};
+      if(!opts.initial){ A.forEach(function(a){ existingIds[a.id]=true; }); }
+      mergeFreshArticles(data.items);
+      if(!opts.initial){
+        // Don't blow away the user's scroll position — re-render in place
+        render();
+        renderStats(getFiltered());
+        updateBriefingIndicator();
+        var newCount = A.filter(function(a){return !existingIds[a.id];}).length;
+        if(newCount>0 && !opts.silent){
+          showToast(newCount+' new article'+(newCount===1?'':'s'));
+        }
+      }
+      updateRefreshTimestamp(data.updatedAt);
+      return true;
+    })
+    .catch(function(){ showRefreshIndicator(false); return false; });
+}
+
+function scheduleAutoRefresh(){
+  if(_refreshTimer) clearInterval(_refreshTimer);
+  _refreshTimer = setInterval(function(){ refreshFromWorker({}); }, REFRESH_INTERVAL_MS);
+}
+
+// Refresh-state UI helpers — small dot in the header
+function showRefreshIndicator(on){
+  var hdr=document.querySelector('.hdr-mark');
+  if(!hdr) return;
+  hdr.classList.toggle('refreshing', !!on);
+}
+function updateRefreshTimestamp(ts){
+  if(!ts) return;
+  var el=document.getElementById('hdrSub');
+  if(!el) return;
+  var diff=Date.now()-ts;
+  var mins=Math.round(diff/60000);
+  var label=mins<1?'just now':(mins<60?mins+' min ago':Math.round(mins/60)+' h ago');
+  el.textContent = 'Updated '+label+' · Seed industry intelligence';
+}
+
+// Re-fetch on tab return if data is stale — gives the user fresh content
+// the moment they come back from another app.
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState!=='visible') return;
+  if(!_lastWorkerFetchTs || (Date.now()-_lastWorkerFetchTs) > REFRESH_STALE_MS){
+    refreshFromWorker({silent:true});
+  }
+});
 
 /* ═══════════════════════ Install banner ═══════════════════════ */
 var deferredInstallPrompt=null;
