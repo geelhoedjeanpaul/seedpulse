@@ -1,9 +1,10 @@
-// SeedPulse service worker v18 — SWR caches + notifications + Web Push
-// v18: Podcasts + Videos are now first-class media items in the same
-// stream. New `k` field, kind-specific card treatment, media-kind
-// segmented filter row, and worker feeds for YouTube + podcast RSS.
-const SHELL_CACHE = 'seedpulse-shell-v18';
-const API_CACHE   = 'seedpulse-api-v18';
+// SeedPulse service worker v19 — SWR caches + notifications + Web Push
+// v19: Refresh stall fixes — request timeout, concurrency lock, content-
+// hash short-circuit, deferred localStorage write, single init path
+// (was firing two parallel 30-min intervals). Worker pool trimmed
+// 600 → 400 items.
+const SHELL_CACHE = 'seedpulse-shell-v19';
+const API_CACHE   = 'seedpulse-api-v19';
 
 // Push Worker URL — set at build/deploy time; empty means push disabled.
 // The index.html writes this into a property on the SW registration after

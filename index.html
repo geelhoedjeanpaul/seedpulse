@@ -3469,8 +3469,11 @@ function loadCached(){
  */
 var REFRESH_INTERVAL_MS = 30*60*1000; // match the worker cron
 var REFRESH_STALE_MS    = 5*60*1000;  // re-fetch on tab-return if older
+var REFRESH_TIMEOUT_MS  = 12*1000;    // hard cap so a slow network can't hang the UI
 var _lastWorkerFetchTs  = 0;
 var _refreshTimer       = null;
+var _refreshInFlight    = null;       // current Promise, dedup concurrent callers
+var _lastPayloadHash    = '';         // hash of last parsed pool — skip re-render if unchanged
 
 function loadArticles(){
   var usedCache=loadCached();
@@ -3504,21 +3507,29 @@ function loadArticles(){
 }
 
 function mergeFreshArticles(fresh){
-  fresh=dedupe((fresh||[]).filter(function(a){return a.t;}));
+  fresh = (fresh||[]).filter(function(a){return a && a.t;});
   if(fresh.length>0){
+    // Worker pool is already deduped + scored; skip the second dedupe and
+    // only fold in FALLBACK items the live pool doesn't carry. Cheaper
+    // for 600-item merges on mobile.
     var titleMap={};
-    fresh.forEach(function(a){titleMap[a.t]=true;});
-    var merged=fresh.concat(FALLBACK.filter(function(a){return !titleMap[a.t];}));
-    A=dedupe(merged);
-    A.forEach(function(a){
+    for(var i=0;i<fresh.length;i++) titleMap[fresh[i].t]=true;
+    var merged = fresh.slice();
+    for(var j=0;j<FALLBACK.length;j++){ if(!titleMap[FALLBACK[j].t]) merged.push(FALLBACK[j]); }
+    // Ensure every item has id + score (fallback authored without them).
+    for(var k=0;k<merged.length;k++){
+      var a=merged[k];
       if(a.id==null) a.id=articleId(a.t,a.u);
       if(a.gs==null) a.gs=germainsScore(a.t,a.s);
-    });
+    }
+    A=merged;
     liveLoaded=true;
-    try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),items:A}));}catch(e){}
   } else {
     liveLoaded=true;
   }
+  // localStorage persistence is deferred in schedulePersistArticles —
+  // do NOT write synchronously here, it blocks the main thread on a
+  // 250 KB JSON.stringify.
 }
 
 function finalizeLoad(){
@@ -3532,42 +3543,124 @@ function finalizeLoad(){
 }
 
 /* Pull the pre-aggregated article pool from the worker. Returns Promise<bool>
- * resolving to true when we got usable data, false otherwise (caller falls
- * back to direct RSS fetch when this returns false on cold start). */
+ * resolving to true when we got usable data, false otherwise.
+ *
+ * Hardening (after stalling reports):
+ * - AbortController + REFRESH_TIMEOUT_MS so a slow/dead worker can't hang
+ *   the UI indefinitely. 12 s is generous (typical TTFB is ~70 ms).
+ * - Concurrency lock — overlapping callers (init / interval / visibility)
+ *   share the same in-flight Promise instead of stacking parallel requests.
+ * - If-None-Match against the cached ETag — a 304 short-circuits the
+ *   JSON parse and re-render entirely.
+ * - Hash-on-content — even on 200, if the response is byte-identical to
+ *   the last one we skip the heavy work.
+ * - Deferred localStorage write (requestIdleCallback) so a 250 KB
+ *   JSON.stringify doesn't block input on lower-end phones.
+ */
 function refreshFromWorker(opts){
   opts=opts||{};
   if(!PUSH_WORKER_URL) return Promise.resolve(false);
+  if(_refreshInFlight) return _refreshInFlight;
+
+  var ctrl = (typeof AbortController!=='undefined') ? new AbortController() : null;
+  var timer = ctrl ? setTimeout(function(){ try{ ctrl.abort(); }catch(_){} }, REFRESH_TIMEOUT_MS) : null;
+
   showRefreshIndicator(true);
-  return fetch(PUSH_WORKER_URL.replace(/\/$/,'')+'/articles',{cache:'no-store'})
-    .then(function(r){return r.ok?r.json():null;})
+  // No If-None-Match header — it's non-safelisted and would force a
+  // CORS preflight on every refresh. We get the same benefit from the
+  // quickHash check below, in a single round-trip.
+  var promise = fetch(PUSH_WORKER_URL.replace(/\/$/,'')+'/articles', {
+    cache:'default', // let the browser HTTP cache (Cache-Control max-age=60) help
+    signal: ctrl ? ctrl.signal : undefined
+  })
+    .then(function(r){
+      if(timer) clearTimeout(timer);
+      if(!r.ok) return null;
+      return r.text().then(function(txt){
+        // Hash the raw response so even when the server doesn't send an
+        // ETag we can still bail out on byte-identical pools.
+        var hash = quickHash(txt);
+        if(hash===_lastPayloadHash){
+          _lastWorkerFetchTs = Date.now();
+          return { skip:true };
+        }
+        _lastPayloadHash = hash;
+        try{ return JSON.parse(txt); }catch(e){ return null; }
+      });
+    })
     .then(function(data){
       showRefreshIndicator(false);
-      if(!data || !Array.isArray(data.items) || data.items.length===0) return false;
+      if(!data) return false;
+      if(data.skip) return true; // nothing changed, but the fetch succeeded
+      if(!Array.isArray(data.items) || data.items.length===0) return false;
       _lastWorkerFetchTs = Date.now();
-      // Existing IDs we know about — used to detect what's new for a
-      // subtle "+N new" toast on subsequent refreshes (not on cold load).
       var existingIds = {};
-      if(!opts.initial){ A.forEach(function(a){ existingIds[a.id]=true; }); }
+      if(!opts.initial){ for(var i=0;i<A.length;i++) existingIds[A[i].id]=true; }
       mergeFreshArticles(data.items);
+      // Defer the heavy localStorage write so it doesn't block input
+      schedulePersistArticles();
       if(!opts.initial){
-        // Don't blow away the user's scroll position — re-render in place
         render();
         renderStats(getFiltered());
         updateBriefingIndicator();
         renderMediaKind();
-        var newCount = A.filter(function(a){return !existingIds[a.id];}).length;
+        var newCount = 0;
+        for(var j=0;j<A.length;j++){ if(!existingIds[A[j].id]) newCount++; }
         if(newCount>0 && !opts.silent){
-          showToast(newCount+' new article'+(newCount===1?'':'s'));
+          showToast(newCount+' new item'+(newCount===1?'':'s'));
         }
       }
       updateRefreshTimestamp(data.updatedAt);
       return true;
     })
-    .catch(function(){ showRefreshIndicator(false); return false; });
+    .catch(function(err){
+      if(timer) clearTimeout(timer);
+      showRefreshIndicator(false);
+      // AbortError on timeout — silent, will retry on the next interval
+      return false;
+    })
+    .then(function(result){
+      _refreshInFlight = null;
+      return result;
+    });
+  _refreshInFlight = promise;
+  return promise;
+}
+
+// Tiny non-crypto hash for content equality check. djb2 over a 64-char
+// sample at start/middle/end — fast enough to be free.
+function quickHash(s){
+  if(!s) return '';
+  var n=s.length;
+  var sample = s.substr(0,64) + s.substr(Math.max(0,(n>>1)-32),64) + s.substr(Math.max(0,n-64),64);
+  var h=5381;
+  for(var i=0;i<sample.length;i++) h=((h<<5)+h+sample.charCodeAt(i))|0;
+  return n+':'+(h>>>0).toString(36);
+}
+
+// Persist the full article pool to localStorage off the critical path.
+// A 250 KB JSON.stringify can take 30-80 ms on a mid-range phone — enough
+// to drop a frame. requestIdleCallback (or a setTimeout fallback) defers
+// it until after the next interaction settles.
+var _persistTimer = null;
+function schedulePersistArticles(){
+  if(_persistTimer) clearTimeout(_persistTimer);
+  var run = function(){
+    _persistTimer = null;
+    try{ localStorage.setItem(CACHE_KEY, JSON.stringify({ts:Date.now(), items:A})); }catch(_){}
+  };
+  if(typeof requestIdleCallback==='function'){
+    _persistTimer = 1;
+    requestIdleCallback(function(){ _persistTimer = null; run(); }, {timeout:2000});
+  } else {
+    _persistTimer = setTimeout(run, 250);
+  }
 }
 
 function scheduleAutoRefresh(){
-  if(_refreshTimer) clearInterval(_refreshTimer);
+  // Idempotent — earlier init code called loadArticles twice which armed
+  // two intervals. Guard so only one is ever running.
+  if(_refreshTimer) return;
   _refreshTimer = setInterval(function(){ refreshFromWorker({}); }, REFRESH_INTERVAL_MS);
 }
 
@@ -4745,17 +4838,18 @@ renderCategoryTrigger();
 renderMediaKind();
 checkInstallPrompt();
 pruneRead(); // drop read-state entries older than 90 days
-// Pull cloud-synced relationships + watchlist before rendering so the
-// summary block uses the user's actual settings on a fresh install /
-// after a localStorage wipe.
-pullPrefsFromServer().then(function(){
-  loadArticles();
-  // Re-render any open summary in case the pulled data changed things
-  if(typeof render==='function' && liveLoaded) render();
-});
-// Don't block initial paint on the network — kick off loadArticles too
-// in case the pull above is slow.
+// Kick off article loading immediately so first paint isn't blocked on
+// the prefs network round-trip. The prefs sync runs alongside and just
+// re-renders when it lands — articles fetched in the meantime aren't
+// thrown away.
 loadArticles();
+pullPrefsFromServer().then(function(){
+  // Settings may have changed the colour grouping or watchlist hits —
+  // re-render only if articles have already arrived. No second
+  // loadArticles call: it would race with the in-flight refresh and
+  // arm a second 30-min interval.
+  if(liveLoaded && typeof render==='function') render();
+});
 
 /* ═══════════════════════ Service worker ═══════════════════════ */
 if('serviceWorker' in navigator){

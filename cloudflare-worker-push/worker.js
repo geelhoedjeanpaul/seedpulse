@@ -139,13 +139,27 @@ export default {
       if (url.pathname === '/articles' && request.method === 'GET') {
         const raw = await env.SUBS.get('articles');
         if (!raw) return cors(json({ items: [], updatedAt: 0, count: 0, cold: true }));
+        // ETag = first 16 hex chars of SHA-256 of the body. Cheap, stable
+        // across multiple requests for the same pool. If the client
+        // sends If-None-Match matching the current ETag, return 304 so
+        // it can skip JSON.parse + render entirely.
+        const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
+        const etag = '"' + [...new Uint8Array(buf)].slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('') + '"';
+        const ifNoneMatch = request.headers.get('If-None-Match');
+        if (ifNoneMatch && ifNoneMatch === etag) {
+          return cors(new Response(null, {
+            status: 304,
+            headers: { 'ETag': etag, 'Cache-Control': 'public, max-age=60' }
+          }));
+        }
         // Forward as-is. Edge cache for 60 s so multiple page loads in
         // quick succession don't all hit KV.
         const res = new Response(raw, {
           status: 200,
           headers: {
             'Content-Type': 'application/json',
-            'Cache-Control': 'public, max-age=60'
+            'Cache-Control': 'public, max-age=60',
+            'ETag': etag
           }
         });
         return cors(res);
@@ -401,10 +415,11 @@ async function runCheck(env) {
   const allScored = [...byId.values()]
     .map(a => ({ ...a, gs: germainsScore(a.t, a.s) }))
     .sort((a, b) => (b.iso || '').localeCompare(a.iso || ''));
-  // Persist the top 600 by recency — covers ~weekly window for 70+ feeds
-  // and stays well under KV's value-size limit. Stored under 'articles'.
+  // Persist the top 400 by recency — covers ~weekly window for 70+ feeds.
+  // Lowered from 600 because the wire/parse cost on mobile was visible.
+  // KV value-size limit is 25 MB; we're at ~60-80 KB. Keep slim.
   const articlesPayload = {
-    items: allScored.slice(0, 600),
+    items: allScored.slice(0, 400),
     updatedAt: Date.now(),
     count: allScored.length
   };
@@ -641,8 +656,12 @@ function json(body, status = 200) {
 function cors(res) {
   const headers = new Headers(res.headers);
   headers.set('Access-Control-Allow-Origin', '*');
-  headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  headers.set('Access-Control-Allow-Headers', 'Content-Type');
+  headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
+  // If-None-Match is non-safelisted, so without it here the browser
+  // would preflight and fail. Expose ETag so JS code (and any future
+  // diagnostics) can read it from the response object.
+  headers.set('Access-Control-Allow-Headers', 'Content-Type, If-None-Match');
+  headers.set('Access-Control-Expose-Headers', 'ETag');
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
 }
 
