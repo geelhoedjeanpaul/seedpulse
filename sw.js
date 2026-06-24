@@ -5,11 +5,11 @@
 // R&D stops sweeping every research-sourced article. FALLBACK dates
 // refreshed to the last 7-14 days so every category is populated even
 // when live feeds are sparse.
-// v23: Podcast/video kind-badge moved out of absolute top-right
-// positioning into an inline block above the title — was overlapping
-// the Listen/Watch action link inside .card-top.
-const SHELL_CACHE = 'seedpulse-shell-v23';
-const API_CACHE   = 'seedpulse-api-v23';
+// v24: Video cards now show an inline Germains-branded mascot SVG (a
+// smiling sprouting seed in a hard hat) as the default thumbnail —
+// replaces the placeholder youtube URLs that often 404'd.
+const SHELL_CACHE = 'seedpulse-shell-v24';
+const API_CACHE   = 'seedpulse-api-v24';
 
 // Push Worker URL — set at build/deploy time; empty means push disabled.
 // The index.html writes this into a property on the SW registration after
