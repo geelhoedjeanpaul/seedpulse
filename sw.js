@@ -1,10 +1,12 @@
-// SeedPulse service worker v19 — SWR caches + notifications + Web Push
-// v19: Refresh stall fixes — request timeout, concurrency lock, content-
-// hash short-circuit, deferred localStorage write, single init path
-// (was firing two parallel 30-min intervals). Worker pool trimmed
-// 600 → 400 items.
-const SHELL_CACHE = 'seedpulse-shell-v19';
-const API_CACHE   = 'seedpulse-api-v19';
+// SeedPulse service worker v20 — SWR caches + notifications + Web Push
+// v20: Hydrate worker-supplied items with c/r/comp/ang on the client
+// (the wire shape skipped them) — fixes the bug where only Germains-
+// Relevant + R&D sections showed items. Categorize order reshuffled so
+// R&D stops sweeping every research-sourced article. FALLBACK dates
+// refreshed to the last 7-14 days so every category is populated even
+// when live feeds are sparse.
+const SHELL_CACHE = 'seedpulse-shell-v20';
+const API_CACHE   = 'seedpulse-api-v20';
 
 // Push Worker URL — set at build/deploy time; empty means push disabled.
 // The index.html writes this into a property on the SW registration after
