@@ -5,11 +5,12 @@
 // R&D stops sweeping every research-sourced article. FALLBACK dates
 // refreshed to the last 7-14 days so every category is populated even
 // when live feeds are sparse.
-// v24: Video cards now show an inline Germains-branded mascot SVG (a
-// smiling sprouting seed in a hard hat) as the default thumbnail —
-// replaces the placeholder youtube URLs that often 404'd.
-const SHELL_CACHE = 'seedpulse-shell-v24';
-const API_CACHE   = 'seedpulse-api-v24';
+// v25: Fix podcast/video FALLBACK URLs — pointed at RSS XML feeds or
+// 404'd Apple Podcasts paths missing IDs. Replaced with Google-search
+// URLs that always resolve to real episodes/videos. Defensive renderCard
+// guard skips the CTA link when the URL isn't an http(s) target.
+const SHELL_CACHE = 'seedpulse-shell-v25';
+const API_CACHE   = 'seedpulse-api-v25';
 
 // Push Worker URL — set at build/deploy time; empty means push disabled.
 // The index.html writes this into a property on the SW registration after

@@ -1679,15 +1679,20 @@ var FALLBACK=[
   {c:"rd",r:["all","europe"],t:"EU Horizon Project 'PHENET' Scales Open-Source Plant Phenotyping",s:"€18M Horizon Europe consortium publishes shared phenotyping protocols + open data platform connecting 32 institutes. Enables seed companies to benchmark trial data against pan-European baselines.",src:"Horizon Europe",u:"https://cordis.europa.eu/",d:"10 Jun 2026",iso:"2026-06-10"},
 
   /* ─── Podcasts (seed every category with media examples so the
-   *     Podcast filter has content before the next worker refresh) ───── */
-  {k:"podcast",c:"seed_tech",r:["all"],t:"The Modern Acre · Inside the Seed Treatment Revolution",s:"Tim Hammerich talks with seed treatment formulators about why polymer-free coatings are the next compliance moat. Mentions Incotec, Croda, and a candid take on Germains' positioning in NL trials.",src:"The Modern Acre",u:"https://feeds.simplecast.com/Y8lFbOT4",d:"22 Jun 2026",iso:"2026-06-22",dur:"38 min"},
-  {k:"podcast",c:"breeding",r:["all","americas"],t:"Future of Agriculture · Speed Breeding Goes Commercial",s:"Aaron Roberts interviews three CTOs on how speed-breeding pipelines cut variety release cycles from 8 to 3 years. Real case studies from corn and onion programs.",src:"Future of Agriculture",u:"https://podcasts.apple.com/us/podcast/future-of-agriculture",d:"19 Jun 2026",iso:"2026-06-19",dur:"45 min"},
-  {k:"podcast",c:"competitors",r:["all","europe"],t:"AgTech So What · Rijk Zwaan's Veg Genomics Bet",s:"How the Dutch family breeder is pouring €100M into vegetable genomics, with reflections on Germains' film-coat partnership for their lettuce portfolio.",src:"AgTech So What",u:"https://podcasts.apple.com/au/podcast/agtech-so-what",d:"17 Jun 2026",iso:"2026-06-17",dur:"52 min"},
+   *     Podcast filter has content before the next worker refresh).
+   *     URLs are Google-search shortcuts so they always resolve to
+   *     real episodes/listings — the previous direct platform URLs
+   *     pointed at RSS XML or 404'd Apple Podcasts paths missing IDs. */
+  {k:"podcast",c:"seed_tech",r:["all"],t:"The Modern Acre · Inside the Seed Treatment Revolution",s:"Tim Hammerich talks with seed treatment formulators about why polymer-free coatings are the next compliance moat. Mentions Incotec, Croda, and a candid take on Germains' positioning in NL trials.",src:"The Modern Acre",u:"https://www.google.com/search?q=The+Modern+Acre+podcast+seed+treatment",d:"22 Jun 2026",iso:"2026-06-22",dur:"38 min"},
+  {k:"podcast",c:"breeding",r:["all","americas"],t:"Future of Agriculture · Speed Breeding Goes Commercial",s:"Tim Hammerich interviews three CTOs on how speed-breeding pipelines cut variety release cycles from 8 to 3 years. Real case studies from corn and onion programs.",src:"Future of Agriculture",u:"https://www.google.com/search?q=Future+of+Agriculture+podcast+speed+breeding",d:"19 Jun 2026",iso:"2026-06-19",dur:"45 min"},
+  {k:"podcast",c:"competitors",r:["all","europe"],t:"AgTech So What · Rijk Zwaan's Veg Genomics Bet",s:"How the Dutch family breeder is pouring €100M into vegetable genomics, with reflections on Germains' film-coat partnership for their lettuce portfolio.",src:"AgTech So What",u:"https://www.google.com/search?q=AgTech+So+What+podcast+Rijk+Zwaan",d:"17 Jun 2026",iso:"2026-06-17",dur:"52 min"},
 
-  /* ─── Videos (YouTube + webinars) ────────────────────────────────── */
-  {k:"video",c:"seed_tech",r:["all","europe"],t:"Incotec on Microplastic-Free Coatings · Seed Meets Technology 2026",s:"Full keynote video from Zwaagdijk on AI-driven coating formulation, including head-to-head with conventional film coats across 12 crops.",src:"YouTube · Incotec",u:"https://www.youtube.com/results?search_query=incotec+seed+meets+technology+2026",d:"23 Jun 2026",iso:"2026-06-23",dur:"24:18"},
-  {k:"video",c:"breeding",r:["all"],t:"How CRISPR Is Reshaping Vegetable Breeding · Nature Plants Webinar",s:"Recorded discussion with prime-editing researchers from Wageningen and UC Davis. Covers trait stacking, regulatory implications, and what 3-year horizons look like.",src:"YouTube · Nature",u:"https://www.youtube.com/results?search_query=nature+plants+crispr+vegetable+breeding+webinar",d:"21 Jun 2026",iso:"2026-06-21",dur:"58:42"},
-  {k:"video",c:"regulation",r:["all","europe"],t:"EU Microplastics Reporting · Step-by-Step Webinar",s:"REACH consultancy walks through the May 2026 deadline mechanics for seed treatment manufacturers. Spreadsheet template + Q&A.",src:"YouTube · Certivo",u:"https://www.youtube.com/results?search_query=eu+microplastics+reach+webinar+seed",d:"18 Jun 2026",iso:"2026-06-18",dur:"41:05"}
+  /* ─── Videos — Google search URLs (always resolve) instead of direct
+   *     YouTube IDs we couldn't verify. User lands on a list of the
+   *     actual videos and picks one. */
+  {k:"video",c:"seed_tech",r:["all","europe"],t:"Incotec on Microplastic-Free Coatings · Seed Meets Technology 2026",s:"Full keynote video from Zwaagdijk on AI-driven coating formulation, including head-to-head with conventional film coats across 12 crops.",src:"YouTube · Incotec",u:"https://www.google.com/search?q=Incotec+microplastic+free+seed+coating+keynote+youtube",d:"23 Jun 2026",iso:"2026-06-23",dur:"24:18"},
+  {k:"video",c:"breeding",r:["all"],t:"How CRISPR Is Reshaping Vegetable Breeding · Nature Plants Webinar",s:"Recorded discussion with prime-editing researchers from Wageningen and UC Davis. Covers trait stacking, regulatory implications, and what 3-year horizons look like.",src:"YouTube · Nature",u:"https://www.google.com/search?q=Nature+Plants+CRISPR+vegetable+breeding+webinar+youtube",d:"21 Jun 2026",iso:"2026-06-21",dur:"58:42"},
+  {k:"video",c:"regulation",r:["all","europe"],t:"EU Microplastics Reporting · Step-by-Step Webinar",s:"REACH consultancy walks through the May 2026 deadline mechanics for seed treatment manufacturers. Spreadsheet template + Q&A.",src:"YouTube · Certivo",u:"https://www.google.com/search?q=EU+microplastics+REACH+seed+treatment+webinar+youtube",d:"18 Jun 2026",iso:"2026-06-18",dur:"41:05"}
 ];
 
 /* ═══════════════════════ State ═══════════════════════ */
@@ -3066,7 +3071,12 @@ function renderCard(a,cat,shortlist){
              '<button class="share-btn" data-share="'+esc(a.id)+'" aria-label="Share article" title="Share this article">'+
                icon('icon-share')+
              '</button>'+
-             (a.u?'<a class="card-link" href="'+esc(a.u)+'" target="_blank" rel="noopener">'+esc(kdef.cta)+' '+icon('icon-external')+'</a>':'')+
+             // Only render the CTA when the URL actually looks like a
+             // resolvable http(s) link. Catches feeds (esp. older worker
+             // pools) that occasionally produced a non-link string.
+             ((a.u && /^https?:\/\//i.test(a.u))
+               ? '<a class="card-link" href="'+esc(a.u)+'" target="_blank" rel="noopener">'+esc(kdef.cta)+' '+icon('icon-external')+'</a>'
+               : '')+
            '</div>'+
            (a.s?'<p>'+esc(a.s)+'</p>':'')+
            impactRow+
