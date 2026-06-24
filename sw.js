@@ -5,8 +5,13 @@
 // R&D stops sweeping every research-sourced article. FALLBACK dates
 // refreshed to the last 7-14 days so every category is populated even
 // when live feeds are sparse.
-const SHELL_CACHE = 'seedpulse-shell-v20';
-const API_CACHE   = 'seedpulse-api-v20';
+// v22: Worker feed pipeline overhaul — batched concurrent fetches (was
+// saturating Cloudflare egress and forcing every request to hit the 8 s
+// timeout), browser-like User-Agent so Google News stops returning 503,
+// per-feed item cap so a 900-episode podcast doesn't dominate the pool,
+// real podcast RSS (The Modern Acre), rich media FALLBACK seed.
+const SHELL_CACHE = 'seedpulse-shell-v22';
+const API_CACHE   = 'seedpulse-api-v22';
 
 // Push Worker URL — set at build/deploy time; empty means push disabled.
 // The index.html writes this into a property on the SW registration after

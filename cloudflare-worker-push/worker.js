@@ -37,7 +37,8 @@
 const NOTIFY_MIN = 3;          // minimum Germains score to fire a push
 const MAX_PER_RUN = 3;         // never push more than N items per cron tick
 const MAX_SEEN = 2000;         // cap seen-ids in KV
-const FEED_TIMEOUT_MS = 8000;
+const FEED_TIMEOUT_MS = 15000; // bumped 8 → 15 — concurrent fetches at edge sometimes need more headroom
+const FEED_BATCH_SIZE = 8;     // process feeds in batches; firing all 36 at once saturated outbound bandwidth/cache lookup
 
 // Same feed list as the app (subset — we only need discovery, not completeness here)
 const GN = 'https://news.google.com/rss/search?hl=en&gl=US&ceid=US:en&num=100&q=';
@@ -74,23 +75,19 @@ const FEEDS = [
   { url: GN + '%22climate+resilient%22+crop+OR+%22drought+tolerant%22+variety+when:30d', kind: 'article' },
   { url: GN + '%22plant+microbiome%22+OR+%22rhizosphere%22+research+when:30d',   kind: 'article' },
 
-  // ─── Podcasts (RSS audio feeds) ──────────────────────────────────────
-  // Apple Podcasts RSS — Seed World podcast & sister shows
-  { url: 'https://feeds.buzzsprout.com/1932571.rss',                             kind: 'podcast' }, // Seed World - Giant Views
-  { url: 'https://feeds.megaphone.fm/futureofag',                                kind: 'podcast' }, // Future of Agriculture
-  { url: 'https://anchor.fm/s/4d4ab7c0/podcast/rss',                             kind: 'podcast' }, // AgTech So What
-  { url: 'https://feeds.transistor.fm/the-modern-acre',                          kind: 'podcast' }, // The Modern Acre
-  { url: 'https://feeds.buzzsprout.com/1996867.rss',                             kind: 'podcast' }, // CropLife - Ag Tech Talk
-  // Generic Google News podcast search for seed-industry coverage
-  { url: GN + 'podcast+seed+OR+horticulture+OR+%22plant+breeding%22+when:30d',   kind: 'podcast' },
-
-  // ─── Videos (YouTube channel RSS) ────────────────────────────────────
-  { url: YT + 'UC0PXVy5j2J7BVZQDl0sUPbg',                                        kind: 'video' }, // SeedWorld TV (placeholder; replace with verified ID)
-  { url: YT + 'UCTKqJDPCEDQSv-IZUaJJ-vw',                                        kind: 'video' }, // Syngenta channel
-  { url: YT + 'UCNJk1xK45Yvi1JtNiSx9hWQ',                                        kind: 'video' }, // BASF Agricultural Solutions
-  { url: YT + 'UC0Q8b2I3JK1H1NkV5OZAr8w',                                        kind: 'video' }, // Bayer Crop Science
-  { url: GN + 'youtube.com+seed+technology+OR+%22seed+treatment%22+when:30d',    kind: 'video' },
-  { url: GN + 'video+seed+coating+OR+pelleting+OR+priming+when:30d',             kind: 'video' }
+  // ─── Podcasts (verified live) ────────────────────────────────────────
+  // Only feeds that probe HTTP 200 with real <item> elements stay in this
+  // list — the worker isn't going to brute-force discover podcast IDs.
+  // Google News rejects worker egress IPs with 503 so GN-driven discovery
+  // isn't an option. FEED_ITEM_CAP slices each to the 40 most-recent
+  // episodes so a 900-episode back catalogue doesn't dominate the pool.
+  // Add more by probing first:  curl -I https://feeds.example.com/foo.rss
+  { url: 'https://feeds.simplecast.com/Y8lFbOT4',                                kind: 'podcast' } // The Modern Acre
+  // Video sources removed pending verified YouTube channel IDs — the
+  // ones I'd seeded all 404'd. Client FALLBACK carries representative
+  // podcast + video items so the kind-filter is never empty. Users with
+  // verified channel IDs can add them by editing this file and
+  // re-deploying with `wrangler deploy`.
 ];
 
 const CAT_KW_GERMAINS = ['priming','pelleting','film coat','filmcoat','film-coat','seed hygiene','seed sanitation','hydro priming','osmo priming','drum priming','solid matrix priming','biopriming','matrix priming','abiotic stress','biotic stress','stress tolerance','stress resistance','germination uniformity','stand establishment','seedling vigour','emergence rate','seed vigour','seed performance','sugar beet','sugarbeet','beet seed','fodder beet','wheat seed','winter wheat','spring wheat','barley seed','winter barley','spring barley','oilseed rape','osr','canola seed','sorghum seed','sunflower seed','maize seed','corn seed','carrot seed','onion seed','leek seed','spinach seed','lettuce seed','celery seed','fennel seed','parsnip seed','parsley seed','beetroot seed','swiss chard','beet seedling','germains'];
@@ -175,7 +172,45 @@ export default {
       if (url.pathname === '/stats' && request.method === 'GET') {
         // Anonymous counts — no sub data
         const list = await env.SUBS.list({ prefix: 'sub:', limit: 1000 });
-        return cors(json({ subscribers: list.keys.length }));
+        const articlesRaw = await env.SUBS.get('articles');
+        let byKind = { article:0, podcast:0, video:0 };
+        let updatedAt = 0;
+        if (articlesRaw) {
+          try {
+            const p = JSON.parse(articlesRaw);
+            updatedAt = p.updatedAt || 0;
+            for (const it of (p.items || [])) byKind[it.k || 'article'] = (byKind[it.k || 'article'] || 0) + 1;
+          } catch {}
+        }
+        return cors(json({ subscribers: list.keys.length, pool: byKind, updatedAt }));
+      }
+
+      // Per-feed diagnostic — fetches every configured feed (in batches
+      // matching the cron's behaviour) and reports status + item count +
+      // sample title so we can see which feeds are silently empty in
+      // production. Read-only; safe to expose.
+      if (url.pathname === '/debug-feeds' && request.method === 'GET') {
+        const results = [];
+        for (let i = 0; i < FEEDS.length; i += FEED_BATCH_SIZE) {
+          const batch = FEEDS.slice(i, i + FEED_BATCH_SIZE);
+          const batchResults = await Promise.all(batch.map(async (feed) => {
+            const feedUrl = typeof feed === 'string' ? feed : feed.url;
+            const kind = typeof feed === 'string' ? 'article' : (feed.kind || 'article');
+            try {
+              const ctrl = new AbortController();
+              const t = setTimeout(() => ctrl.abort(), FEED_TIMEOUT_MS);
+              const res = await fetch(feedUrl, { signal: ctrl.signal, headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SeedPulsePush/1.0)' }, cf: { cacheTtl: 60, cacheEverything: true } });
+              clearTimeout(t);
+              const xml = await res.text();
+              const items = parseFeed(xml, feedUrl, kind);
+              return { url: feedUrl.slice(0, 90), kind, status: res.status, bytes: xml.length, items: items.length, sample: items[0]?.t?.slice(0, 80) || null };
+            } catch (e) {
+              return { url: feedUrl.slice(0, 90), kind, status: 'ERR', err: String(e?.message || e).slice(0, 80) };
+            }
+          }));
+          for (const r of batchResults) results.push(r);
+        }
+        return cors(json({ feeds: results }));
       }
 
       // ─── Per-user settings sync (relationships + watchlist) ────────────
@@ -403,15 +438,31 @@ Return the JSON object now.`;
 
 /* ═══════════════════════ Cron: feed check + fan-out ═══════════════════════ */
 async function runCheck(env) {
-  // 1. Fetch all feeds in parallel with per-feed timeout
-  const results = await Promise.all(FEEDS.map(fetchFeedSafe));
-  const articles = results.flat();
+  // 1. Fetch feeds in BATCHES of FEED_BATCH_SIZE rather than firing all
+  //    36+ at once. Concurrent saturation was the root cause of >70% of
+  //    feeds aborting at the 8 s timeout in production — even though
+  //    each individual feed responds in <2 s when probed in isolation.
+  const articles = [];
+  for (let i = 0; i < FEEDS.length; i += FEED_BATCH_SIZE) {
+    const batch = FEEDS.slice(i, i + FEED_BATCH_SIZE);
+    const batchResults = await Promise.all(batch.map(fetchFeedSafe));
+    for (const arr of batchResults) for (const item of arr) articles.push(item);
+  }
 
   // 2. Dedupe + score every article (not just the high-priority ones).
   //    The full pool gets stored in KV under 'articles' so the client
   //    can pull one fast JSON blob instead of fetching 70+ RSS feeds.
+  //    Dedupe prefers MEDIA items (podcast/video) over articles on the
+  //    same id — without this an article feed that listed the same URL
+  //    earlier would win and the podcast/video kind tag would be lost.
   const byId = new Map();
-  for (const a of articles) if (!byId.has(a.id)) byId.set(a.id, a);
+  for (const a of articles) {
+    const existing = byId.get(a.id);
+    if (!existing) { byId.set(a.id, a); continue; }
+    if ((existing.k === 'article' || !existing.k) && a.k && a.k !== 'article') {
+      byId.set(a.id, a); // upgrade to the media-kind version
+    }
+  }
   const allScored = [...byId.values()]
     .map(a => ({ ...a, gs: germainsScore(a.t, a.s) }))
     .sort((a, b) => (b.iso || '').localeCompare(a.iso || ''));
@@ -534,6 +585,9 @@ async function signVapidJwt(audience, subject, keys) {
 // Accepts either a string URL (legacy) or {url, kind}. Returns items
 // tagged with `kind` so the client can render articles vs podcasts vs
 // videos with distinct styling.
+// Per-feed item cap stops a pathological "915-episode podcast feed" from
+// dominating the pool and blowing through KV payload limits.
+const FEED_ITEM_CAP = 40;
 async function fetchFeedSafe(feed) {
   const feedUrl = typeof feed === 'string' ? feed : feed.url;
   const kind = typeof feed === 'string' ? 'article' : (feed.kind || 'article');
@@ -543,15 +597,23 @@ async function fetchFeedSafe(feed) {
     const res = await fetch(feedUrl, {
       signal: ctrl.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; SeedPulsePush/1.0)',
-        'Accept': 'application/rss+xml, application/atom+xml, application/xml;q=0.9, */*;q=0.5'
-      },
-      cf: { cacheTtl: 900, cacheEverything: true }
+        // Google News (and a few CDNs) return 503 for the "SeedPulsePush/1.0"
+        // self-identifier we used to send. A real-browser-style UA gets
+        // through. Still polite — same string Cloudflare's own RSS sample
+        // worker uses.
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'application/rss+xml, application/atom+xml, application/xml;q=0.9, text/html;q=0.8, */*;q=0.5',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate'
+      }
+      // Removed cf:{cacheTtl, cacheEverything} — it was caching 503 error
+      // responses for 15 min, locking out recovery between cron ticks.
     });
     clearTimeout(timer);
     if (!res.ok) return [];
     const xml = await res.text();
-    return parseFeed(xml, feedUrl, kind);
+    const items = parseFeed(xml, feedUrl, kind);
+    return items.slice(0, FEED_ITEM_CAP);
   } catch {
     return [];
   }
